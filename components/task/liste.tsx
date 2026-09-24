@@ -24,7 +24,7 @@ export function ListaTask({
     return vuoto ? <div className="px-2 py-3 text-sm text-muted-foreground">{vuoto}</div> : null;
   }
   return (
-    <div className={cn("divide-y divide-border/60", className)}>
+    <div className={cn("divide-y divide-black/5", className)}>
       {tasks.map((t) => (
         <TaskRow key={t.id} task={t} opzioni={opzioni} />
       ))}
@@ -47,9 +47,9 @@ export function GruppoTask({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-1">
-      <div className="flex items-center gap-2 border-b pb-1.5">
-        <h2 className={cn("text-sm font-semibold", tono === "ritardo" && "text-red-600")}>{titolo}</h2>
+    <section className="space-y-1.5">
+      <div className="flex items-center gap-2 px-1">
+        <h2 className={cn("text-[13px] font-semibold", tono === "ritardo" ? "text-red-600" : "text-muted-foreground")}>{titolo}</h2>
         {conteggio !== undefined && conteggio > 0 && (
           <span className="text-xs text-muted-foreground tabular-nums">{conteggio}</span>
         )}
@@ -64,8 +64,17 @@ export function GruppoTask({
           </button>
         )}
       </div>
-      {children}
+      <Superficie>{children}</Superficie>
     </section>
+  );
+}
+
+/** Riquadro bianco che contiene una lista (stile "inset grouped"). */
+export function Superficie({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn("overflow-hidden rounded-2xl bg-card px-1 py-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8", className)}>
+      {children}
+    </div>
   );
 }
 

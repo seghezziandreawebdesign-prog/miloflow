@@ -43,7 +43,7 @@ export function ProgettiLista({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) 
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Segmented label="" value={filtro} onChange={setFiltro} opzioni={FILTRI} />
-        <Button onClick={() => setNuovoOpen(true)}>
+        <Button className="rounded-full" onClick={() => setNuovoOpen(true)}>
           <Plus />
           Nuovo progetto
         </Button>
@@ -92,7 +92,7 @@ export function ProgettoCard({ progetto: p, senzaCliente }: { progetto: Progetto
   return (
     <Link
       href={`/task/progetti/${p.id}`}
-      className="flex flex-col gap-3 rounded-xl p-4 ring-1 ring-black/8 transition-colors hover:bg-muted/40"
+      className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8 transition-shadow hover:shadow-md"
     >
       <div className="flex items-start gap-2">
         <span className="mt-1.5 size-2.5 shrink-0 rounded-full" style={{ backgroundColor: p.colore ?? "var(--muted-foreground)" }} />

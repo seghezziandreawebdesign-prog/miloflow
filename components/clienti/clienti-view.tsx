@@ -208,7 +208,7 @@ export function ClientiView({
             ))}
           </div>
           {vista === "tabella" && (
-            <div className="hidden overflow-hidden rounded-xl ring-1 ring-black/8 md:block">
+            <div className="hidden overflow-hidden rounded-2xl bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8 md:block">
               <Table>
                 <TableHeader>
                   {table.getHeaderGroups().map((hg) => (
@@ -273,7 +273,7 @@ function ClienteCard({ cliente }: { cliente: ClienteLista }) {
   return (
     <Link
       href={`/clienti/${cliente.id}`}
-      className="flex flex-col gap-3 rounded-xl bg-card p-4 ring-1 ring-black/8 transition-shadow hover:shadow-md"
+      className="flex flex-col gap-3 rounded-2xl bg-card p-4 ring-1 ring-black/8 transition-shadow hover:shadow-md"
     >
       <div className="flex items-center gap-3">
         <ClienteLogo nome={nome} colore={cliente.colore} logoUrl={cliente.logo_url} sito={cliente.sito} size="lg" />

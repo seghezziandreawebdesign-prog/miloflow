@@ -165,7 +165,7 @@ export function Kanban({
         </div>
         <DragOverlay dropAnimation={null}>
           {taskAttiva && (
-            <div className="rounded-lg bg-background shadow-lg ring-1 ring-black/8">
+            <div className="rounded-xl bg-card shadow-xl ring-1 ring-black/8">
               <TaskRow task={taskAttiva} opzioni={opzioniRiga} />
             </div>
           )}
@@ -210,7 +210,7 @@ function Colonna({
     <section
       ref={setNodeRef}
       aria-label={titolo}
-      className={cn("flex min-h-40 flex-col gap-1 rounded-xl bg-muted/50 p-2", isOver && "ring-2 ring-primary")}
+      className={cn("flex min-h-40 flex-col gap-1.5 rounded-2xl bg-black/4 p-2", isOver && "ring-2 ring-primary")}
     >
       <h3 className="flex items-baseline gap-2 px-1 pb-1 text-sm font-semibold">
         {titolo}
@@ -235,7 +235,7 @@ function Scheda({ task, opzioniRiga }: { task: TaskLista; opzioniRiga: OpzioniRi
       {...attributes}
       {...listeners}
       className={cn(
-        "cursor-grab touch-manipulation rounded-lg bg-background ring-1 ring-black/8 active:cursor-grabbing",
+        "cursor-grab touch-manipulation rounded-xl bg-card shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-black/5 active:cursor-grabbing",
         isDragging && "opacity-40",
       )}
     >
