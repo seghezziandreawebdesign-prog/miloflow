@@ -42,7 +42,15 @@ const features = tableFeatures({
 });
 const col = createColumnHelper<typeof features, ClienteLista>();
 
-export function ClientiView({ clienti, tags }: { clienti: ClienteLista[]; tags: string[] }) {
+export function ClientiView({
+  clienti,
+  tags,
+  puoCreare,
+}: {
+  clienti: ClienteLista[];
+  tags: string[];
+  puoCreare: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -51,7 +59,7 @@ export function ClientiView({ clienti, tags }: { clienti: ClienteLista[]; tags: 
   const [stato, setStato] = useState("correnti");
   const [tag, setTag] = useState<string | null>(null);
   const [vista, cambiaVista] = useLocalPreference<Vista>(VISTA_KEY, ["tabella", "card"], "tabella");
-  const creaAperto = searchParams.get("nuovo") === "1";
+  const creaAperto = puoCreare && searchParams.get("nuovo") === "1";
 
   function setCreaAperto(open: boolean) {
     const params = new URLSearchParams(searchParams.toString());
@@ -123,12 +131,18 @@ export function ClientiView({ clienti, tags }: { clienti: ClienteLista[]; tags: 
         <EmptyState
           icon={Building2}
           title="Nessun cliente"
-          description="Aggiungi il primo cliente: parti dalla partita IVA e VIES compila il resto."
+          description={
+            puoCreare
+              ? "Aggiungi il primo cliente: parti dalla partita IVA e VIES compila il resto."
+              : "Non ci sono clienti assegnati al tuo account."
+          }
           action={
-            <Button onClick={() => setCreaAperto(true)}>
-              <Plus />
-              Aggiungi il primo cliente
-            </Button>
+            puoCreare && (
+              <Button onClick={() => setCreaAperto(true)}>
+                <Plus />
+                Aggiungi il primo cliente
+              </Button>
+            )
           }
         />
         {dialog}
@@ -181,10 +195,12 @@ export function ClientiView({ clienti, tags }: { clienti: ClienteLista[]; tags: 
             </button>
           ))}
         </div>
-        <Button onClick={() => setCreaAperto(true)}>
-          <Plus />
-          Nuovo cliente
-        </Button>
+        {puoCreare && (
+          <Button onClick={() => setCreaAperto(true)}>
+            <Plus />
+            Nuovo cliente
+          </Button>
+        )}
       </div>
 
       {tags.length > 0 && (

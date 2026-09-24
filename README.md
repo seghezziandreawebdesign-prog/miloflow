@@ -72,6 +72,14 @@ La registrazione pubblica è disattivata: gli utenti entrano solo su invito. Il 
    where id = (select id from auth.users where email = 'tua@email.it');
    ```
 
+La query deve rispondere **1 row affected**. Se risponde 0, l'email non corrisponde a quella dell'utente creato. Per controllare il risultato:
+
+```sql
+select u.email, p.ruolo from auth.users u join public.profili p on p.id = u.id;
+```
+
+Finché il ruolo è `collaboratore` senza permessi, l'app mostra un avviso giallo in cima e non lascia creare nulla.
+
 Il profilo viene creato in automatico da un trigger. Nasce con ruolo `collaboratore`, e solo da SQL Editor o da un owner si può cambiare.
 
 ## Configurazione di Supabase Auth

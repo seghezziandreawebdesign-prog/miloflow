@@ -38,6 +38,7 @@ export async function createCliente(input: unknown): Promise<ActionResult<{ id: 
     if (error.code === "23505") {
       return { ok: false, error: "Esiste già un cliente con questa P.IVA", fieldErrors: { piva: "P.IVA già presente" } };
     }
+    if (error.code === "42501") return { ok: false, error: "Solo l'owner può creare nuovi clienti" };
     return { ok: false, error: dbErrorMessage(error, "Salvataggio non riuscito") };
   }
   revalidaCliente();
