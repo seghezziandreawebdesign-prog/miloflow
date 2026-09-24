@@ -14,21 +14,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { signOut } from "@/lib/actions/auth";
 
-export function UserMenu({ nome, email }: { nome: string; email: string }) {
-  const iniziali = nome
-    .split(/\s+/)
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+import { iniziali } from "./mobile-nav";
 
+export function UserMenu({ nome, email }: { nome: string; email: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={<Button variant="ghost" size="icon" className="rounded-full" aria-label="Account" />}
       >
-        <span className="grid size-7 place-items-center rounded-full bg-muted text-xs font-medium">
-          {iniziali || "?"}
+        <span className="grid size-8 place-items-center rounded-full bg-primary-soft text-xs font-semibold text-primary">
+          {iniziali(nome)}
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

@@ -25,7 +25,7 @@ export function AmbitoSwitch({ value }: { value: FiltroAmbito }) {
   }
 
   return (
-    <div role="radiogroup" aria-label="Ambito" className="inline-flex rounded-lg bg-muted p-0.5">
+    <div role="radiogroup" aria-label="Ambito" className="inline-flex rounded-[10px] bg-black/6 p-[3px]">
       {FILTRI_AMBITO.map((filtro) => {
         const active = filtro === optimistic;
         return (
@@ -36,8 +36,8 @@ export function AmbitoSwitch({ value }: { value: FiltroAmbito }) {
             aria-checked={active}
             onClick={() => select(filtro)}
             className={cn(
-              "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors sm:px-2.5 sm:text-sm",
-              active && "bg-background text-foreground shadow-sm",
+              "flex items-center gap-1.5 rounded-[8px] px-2 py-1 text-xs font-medium text-muted-foreground transition-[background-color,box-shadow,color] outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:px-2.5 sm:text-[13px]",
+              active && "bg-white text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]",
             )}
           >
             {PALLINO[filtro] && <span aria-hidden className={cn("size-2 rounded-full", PALLINO[filtro])} />}

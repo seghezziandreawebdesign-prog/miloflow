@@ -5,6 +5,7 @@ import { EntityDrawer } from "@/components/drawer/entity-drawer";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppNav, Brand } from "@/components/layout/app-nav";
 import { CommandPaletteProvider } from "@/components/layout/command-palette";
+import { QuickCreateFab } from "@/components/layout/quick-create";
 import { NuovaTaskProvider } from "@/components/task/nuova-task";
 import { getFiltroAmbito } from "@/lib/ambito.server";
 import { getUtenteCorrente } from "@/lib/utente.server";
@@ -20,7 +21,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <NuovaTaskProvider filtroAmbito={filtroAmbito}>
         <CommandPaletteProvider filtroAmbito={filtroAmbito}>
           <div className="flex min-h-svh">
-            <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col gap-4 border-r bg-sidebar p-3 lg:flex">
+            <aside className="sticky top-0 hidden h-svh w-56 shrink-0 flex-col gap-5 border-r border-sidebar-border bg-sidebar px-3 pt-4 pb-3 lg:flex">
               <div className="flex h-8 items-center">
                 <Brand />
               </div>
@@ -42,11 +43,13 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
                   l&apos;owner sei tu, segui «Impostare l&apos;owner» nel README.
                 </div>
               )}
-              <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+              {/* In basso lo spazio per il pulsante + fisso su mobile. */}
+              <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-28 sm:px-6 lg:pb-8">
                 {children}
               </main>
             </div>
           </div>
+          <QuickCreateFab />
           <Suspense>
             <EntityDrawer />
           </Suspense>
