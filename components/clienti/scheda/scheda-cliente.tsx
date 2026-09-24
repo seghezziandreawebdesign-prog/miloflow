@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, CalendarDays, FolderKanban } from "lucide-react";
+import { ArrowLeft, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -13,6 +13,7 @@ import type { ServizioLista } from "@/lib/queries/servizi";
 import { DiarioCliente } from "./diario-cliente";
 import { IntestazioneCliente } from "./intestazione-cliente";
 import { PanoramicaCliente } from "./panoramica-cliente";
+import { ProgettiTaskCliente } from "./progetti-task-cliente";
 import { ServiziCliente } from "./servizi-cliente";
 
 const TABS = [
@@ -87,11 +88,7 @@ export function SchedaCliente({
           <ServiziCliente clienteId={scheda.cliente.id} servizi={servizi} mostraCosti={mostraCosti} />
         </TabsContent>
         <TabsContent value="progetti" className="pt-4">
-          <EmptyState
-            icon={FolderKanban}
-            title="Nessun progetto"
-            description="Progetti e task di questo cliente compariranno qui con la fase 3."
-          />
+          <ProgettiTaskCliente clienteId={scheda.cliente.id} />
         </TabsContent>
         <TabsContent value="eventi" className="pt-4">
           <EmptyState

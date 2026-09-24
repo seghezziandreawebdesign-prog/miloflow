@@ -27,6 +27,7 @@ import { RinnovaDialog } from "@/components/servizi/rinnova-dialog";
 import { ServizioDialog } from "@/components/servizi/servizio-dialog";
 import { servizioToForm } from "@/components/servizi/servizio-values";
 import { StatoScadenzaBadge } from "@/components/servizi/stato-scadenza-badge";
+import { useNuovaTask } from "@/components/task/nuova-task";
 import { TipoIcona } from "@/components/tipo-icona";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -101,6 +102,7 @@ export function ServizioDrawer({ id }: { id: string }) {
   const [avvisaOpen, setAvvisaOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [, startTransition] = useTransition();
+  const nuovaTask = useNuovaTask();
 
   function aggiorna() {
     void queryClient.invalidateQueries({ queryKey: ["servizio", id] });
@@ -201,9 +203,20 @@ export function ServizioDrawer({ id }: { id: string }) {
                 Avvisa cliente
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem disabled>
+            <DropdownMenuItem
+              onClick={() =>
+                nuovaTask({
+                  titolo: `Rinnovare ${s.nome}`,
+                  servizio_id: id,
+                  ambito: s.ambito ?? "lavoro",
+                  scadenza: s.prossima_scadenza ?? "",
+                  // Con più clienti collegati si sceglie nel dialog.
+                  cliente_id: clienti.length === 1 ? clienti[0].id : "",
+                })
+              }
+            >
               <ListPlus />
-              Crea task (dalla fase 3)
+              Crea task
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
