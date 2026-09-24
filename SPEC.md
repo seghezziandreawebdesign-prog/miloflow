@@ -68,7 +68,7 @@ Pulsante **+** sempre visibile nell'header con menu: Nuova task, Nuova spesa, Nu
 Palette comandi **⌘K / Ctrl+K** (shadcn Command) che cerca tra clienti, servizi, task, progetti ed eventi e permette di aprirli nel pannello. Include anche comandi rapidi ("Nuova task", "Vai al calendario").
 
 ### 3.5 Layout
-Stile pulito alla Apple: font di sistema, sfondo grigio chiarissimo, superfici bianche, un solo accento blu, filtri a chip. Sidebar a sinistra: **Oggi, Task, Calendario, Clienti, Servizi & Scadenze, Budget & Spese, Impostazioni**. Su mobile il menu si apre dal pulsante in alto a destra, il pulsante **+** è fisso in basso a destra e le liste si adattano a card. Solo tema chiaro. L'app deve essere installabile come **PWA** (manifest + icone) a partire dalla fase 6.
+Stile pulito alla Apple: font di sistema, sfondo grigio chiarissimo, superfici bianche, un solo accento blu, filtri a chip. Sidebar a sinistra: **Oggi, Task, Calendario, Clienti, Servizi & Scadenze, Budget & Spese, Impostazioni**. Su mobile il menu si apre dal pulsante in alto a destra, il pulsante **+** è fisso in basso a destra e le liste si adattano a card. Solo tema chiaro. L'app è installabile come **PWA** (manifest, icone, service worker): le pagine visitate restano consultabili offline in sola lettura.
 
 ### 3.6 Stati vuoti e feedback
 Ogni lista vuota ha uno stato vuoto con un'azione chiara ("Aggiungi il primo servizio"). Ogni azione mostra un toast di conferma; le azioni distruttive chiedono conferma. Preferire l'archiviazione alla cancellazione.
@@ -92,13 +92,13 @@ Tutte le tabelle hanno `id uuid` (default `gen_random_uuid()`), `created_at` e `
 
 ### 4.3 Servizi e scadenze
 - **tipi_servizio**: `nome`, `icona`, `preavviso_default` (giorni). Seed iniziale: Dominio, Hosting, Licenza plugin/tema, SaaS, Abbonamento, Assicurazione, Bollo/Tassa, Altro.
-- **servizi**: `ambito`, `nome` (obbligatorio), `tipo_id`, `fornitore`, `costo`, `valuta` (default EUR), `frequenza` (`mensile` | `trimestrale` | `semestrale` | `annuale` | `biennale` | `una_tantum`), `prossima_scadenza date` (obbligatoria), `rinnovo_automatico bool`, `chi_paga` (`io` | `cliente`), `metodo_pagamento` (testo libero descrittivo, es. "Revolut *4417": **mai** numeri di carta completi), `preavviso_giorni`, `url_pannello`, `username`, `categoria_spesa_id`, `stato` (`attivo` | `disdetto` | `archiviato`), `note`.
+- **servizi**: `ambito`, `nome` (obbligatorio), `tipo_id`, `fornitore`, `costo`, `valuta` (default EUR), `frequenza` (`mensile` | `trimestrale` | `semestrale` | `annuale` | `biennale` | `una_tantum`), `prossima_scadenza date` (facoltativa: senza data il servizio è un "accesso" — email, account — e resta fuori da contatori, calendario, previsti e digest), `rinnovo_automatico bool`, `chi_paga` (`io` | `cliente`), `metodo_pagamento` (testo libero descrittivo, es. "Revolut *4417": **mai** numeri di carta completi), `preavviso_giorni`, `url_pannello`, `username`, `categoria_spesa_id`, `stato` (`attivo` | `disdetto` | `archiviato`), `note`.
 - **servizi_clienti**: `servizio_id`, `cliente_id`, `prezzo_rivendita`, `note`. Chiave primaria composta. Un servizio può essere collegato a più clienti (es. un piano hosting con i siti di più clienti).
 - **servizi_economico** (opzionale ma consigliata): se vuoi separare costi e prezzi di rivendita dai dati operativi, per poterli nascondere ai collaboratori. Discutine con me prima di implementarla.
 - **servizi_rinnovi**: `servizio_id`, `data`, `importo`, `movimento_id`. Storico dei rinnovi.
 - **credenziali**: tabella separata dai servizi. `servizio_id` (o `cliente_id`), `etichetta`, `tipo` (`link_password_manager` | `cifrata`), `url_password_manager`, `payload_cifrato`, `iv`, `salt`. Vedi 5.4.
 
-**Stato calcolato**: non salvare lo stato di scadenza. Crea una view `v_servizi` con `giorni_alla_scadenza` e `stato_scadenza`: `scaduto` (< 0), `urgente` (≤ 7), `in_scadenza` (≤ preavviso), `ok`. La view deve usare `security_invoker = true` per rispettare l'RLS.
+**Stato calcolato**: non salvare lo stato di scadenza. Crea una view `v_servizi` con `giorni_alla_scadenza` e `stato_scadenza`: `scaduto` (< 0), `urgente` (≤ 7), `in_scadenza` (≤ preavviso), `ok`, `senza_scadenza` (data assente). La view deve usare `security_invoker = true` per rispettare l'RLS.
 
 ### 4.4 Task e progetti
 - **progetti**: `ambito`, `nome`, `cliente_id`, `stato` (`attivo` | `in_pausa` | `completato` | `archiviato`), `scadenza`, `colore`, `descrizione`.
@@ -182,7 +182,8 @@ Tutto rispetta lo switch di ambito. Ogni elemento si apre nel pannello laterale.
   - *Diario*: note datate in ordine cronologico, aggiunta rapida.
 
 ### 6.3 Servizi & Scadenze
-- **Intestazione**: tre contatori cliccabili che filtrano la lista: Scaduti, Entro 7 giorni, Entro 30 giorni.
+- **Intestazione**: contatori cliccabili che filtrano la lista: Scaduti, Entro 7 giorni, Entro 30 giorni, più **Accessi** (servizi senza scadenza: email, account, credenziali varie) quando ce ne sono.
+- **Accessi**: nel form la spunta «Senza scadenza» nasconde frequenza, scadenza, preavviso e rinnovo. Un accesso usa le stesse credenziali/cassaforte dei servizi e non compare tra le scadenze, nel calendario, nei previsti né nel digest.
 - **Lista**: ordinata per scadenza. Per riga: badge stato colorato (rosso scaduto, arancio urgente, giallo in scadenza, verde ok), nome, tipo con icona, loghi dei clienti collegati, costo e frequenza, icona rinnovo automatico, chi paga. Filtri: ambito, tipo, cliente, chi paga, stato.
 - **Vista "Per mese"**: scadenze raggruppate per mese sui prossimi 12 mesi, con totale di costo per mese.
 - **Creazione**: campi visibili nome, costo, frequenza, prossima scadenza, cliente/i. Il resto in "Altri dettagli". Il preavviso si precompila dal tipo di servizio.

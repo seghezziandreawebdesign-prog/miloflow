@@ -27,7 +27,7 @@ import { EliminaServizioButton } from "./elimina-servizio";
 import { ServizioDialog } from "./servizio-dialog";
 import { StatoScadenzaBadge } from "./stato-scadenza-badge";
 
-type FiltroScadenza = "tutti" | "scaduti" | "7" | "30";
+type FiltroScadenza = "tutti" | "scaduti" | "7" | "30" | "senza";
 type Vista = "lista" | "mese";
 
 const FILTRI_STATO = [
@@ -79,10 +79,12 @@ export function ServiziView({
   }
 
   const attivi = servizi.filter((s) => s.stato === "attivo");
+  // giorni_alla_scadenza è null per gli accessi (servizi senza scadenza).
   const conteggi = {
-    scaduti: attivi.filter((s) => (s.giorni_alla_scadenza ?? 0) < 0).length,
-    "7": attivi.filter((s) => (s.giorni_alla_scadenza ?? 0) >= 0 && (s.giorni_alla_scadenza ?? 0) <= 7).length,
-    "30": attivi.filter((s) => (s.giorni_alla_scadenza ?? 0) >= 0 && (s.giorni_alla_scadenza ?? 0) <= 30).length,
+    scaduti: attivi.filter((s) => s.giorni_alla_scadenza !== null && s.giorni_alla_scadenza < 0).length,
+    "7": attivi.filter((s) => s.giorni_alla_scadenza !== null && s.giorni_alla_scadenza >= 0 && s.giorni_alla_scadenza <= 7).length,
+    "30": attivi.filter((s) => s.giorni_alla_scadenza !== null && s.giorni_alla_scadenza >= 0 && s.giorni_alla_scadenza <= 30).length,
+    senza: attivi.filter((s) => s.giorni_alla_scadenza === null).length,
   };
 
   const tipi = useMemo(() => {
@@ -99,12 +101,13 @@ export function ServiziView({
   const filtrati = useMemo(() => {
     const q = query.trim().toLowerCase();
     return servizi.filter((s) => {
-      const giorni = s.giorni_alla_scadenza ?? 0;
+      const giorni = s.giorni_alla_scadenza;
       // I contatori guardano solo i servizi attivi.
       if (scadenza !== "tutti" && s.stato !== "attivo") return false;
-      if (scadenza === "scaduti" && giorni >= 0) return false;
-      if (scadenza === "7" && (giorni < 0 || giorni > 7)) return false;
-      if (scadenza === "30" && (giorni < 0 || giorni > 30)) return false;
+      if (scadenza === "scaduti" && (giorni === null || giorni >= 0)) return false;
+      if (scadenza === "7" && (giorni === null || giorni < 0 || giorni > 7)) return false;
+      if (scadenza === "30" && (giorni === null || giorni < 0 || giorni > 30)) return false;
+      if (scadenza === "senza" && giorni !== null) return false;
       if (scadenza === "tutti" && stato !== "tutti" && s.stato !== stato) return false;
       if (tipo !== "tutti" && s.tipo_id !== tipo) return false;
       if (cliente !== "tutti" && !s.clienti.some((c) => c.id === cliente)) return false;
@@ -133,7 +136,7 @@ export function ServiziView({
         <EmptyState
           icon={RefreshCw}
           title="Nessun servizio"
-          description="Domini, hosting, licenze, abbonamenti: tutto ciò che scade e va rinnovato."
+          description="Domini, hosting, licenze, abbonamenti, ma anche accessi e account senza scadenza."
           action={
             <Button onClick={() => setCreaAperto(true)}>
               <Plus />
@@ -158,8 +161,9 @@ export function ServiziView({
           { value: "scaduti", label: "Scaduti", conteggio: conteggi.scaduti, tono: "text-red-600" },
           { value: "7", label: "Entro 7 giorni", conteggio: conteggi["7"], tono: "text-orange-600" },
           { value: "30", label: "Entro 30 giorni", conteggio: conteggi["30"], tono: "text-yellow-700" },
+          ...(conteggi.senza > 0 ? [{ value: "senza" as const, label: "Accessi", conteggio: conteggi.senza }] : []),
         ]}
-        className="max-w-2xl"
+        className="max-w-3xl"
       />
 
       <BarraFiltri
@@ -276,10 +280,12 @@ function RigaServizio({
           <TipoIcona nome={s.tipo_icona} className="size-4 shrink-0 text-muted-foreground" aria-label={s.tipo_nome ?? undefined} />
           <div className="min-w-0">
             <p className="truncate font-medium">{s.nome}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {formatDate(s.prossima_scadenza ?? "")}
-              {s.fornitore && ` · ${s.fornitore}`}
-            </p>
+            {/* Il badge dice già «Senza scadenza»: qui restano data e fornitore. */}
+            {(s.prossima_scadenza || s.fornitore) && (
+              <p className="truncate text-xs text-muted-foreground">
+                {[s.prossima_scadenza && formatDate(s.prossima_scadenza), s.fornitore].filter(Boolean).join(" · ")}
+              </p>
+            )}
           </div>
         </div>
         <div className="hidden md:block">
@@ -290,7 +296,7 @@ function RigaServizio({
             <p className="font-medium tabular-nums">{formatCurrency(s.costo)}</p>
           )}
           <p className="text-xs text-muted-foreground">
-            {frequenza(s.frequenza ?? "annuale").label}
+            {s.prossima_scadenza ? frequenza(s.frequenza ?? "annuale").label : ""}
             {mostraCosti && s.chi_paga === "io" && s.metodo_pagamento_nome && (
               <span className="block truncate">
                 {etichettaMetodo({ nome: s.metodo_pagamento_nome, ultime_cifre: s.metodo_pagamento_cifre })}

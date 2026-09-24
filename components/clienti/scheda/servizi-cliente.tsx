@@ -107,7 +107,9 @@ export function ServiziCliente({
                   <div className="min-w-0">
                     <p className="truncate font-medium">{s.nome}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDate(s.prossima_scadenza ?? "")} · {frequenza(s.frequenza ?? "annuale").label}
+                      {s.prossima_scadenza
+                        ? `${formatDate(s.prossima_scadenza)} · ${frequenza(s.frequenza ?? "annuale").label}`
+                        : "Senza scadenza"}
                       {s.chi_paga === "cliente" && " · paga il cliente"}
                     </p>
                   </div>

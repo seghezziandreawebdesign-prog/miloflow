@@ -83,7 +83,8 @@ Deno.serve(async (req) => {
     oggi,
     siteUrl: Deno.env.get("SITE_URL") ?? "https://miloflow.vercel.app",
     servizi: (servizi.data ?? [])
-      .filter((s) => (s.giorni_alla_scadenza ?? 0) <= (s.preavviso_effettivo ?? 30))
+      // giorni null = servizio senza scadenza (accesso): non entra nel digest.
+      .filter((s) => s.giorni_alla_scadenza !== null && s.giorni_alla_scadenza <= (s.preavviso_effettivo ?? 30))
       .map((s) => ({ id: s.id!, nome: s.nome!, prossima_scadenza: s.prossima_scadenza!, giorni: s.giorni_alla_scadenza! })),
     task: task.data ?? [],
     rate: (rate.data ?? []).map((r) => ({

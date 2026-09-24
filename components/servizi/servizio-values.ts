@@ -14,6 +14,7 @@ export function servizioToForm(
     nome: s.nome ?? "",
     costo: numero(s.costo),
     frequenza: s.frequenza ?? "annuale",
+    senza_scadenza: s.prossima_scadenza === null,
     prossima_scadenza: s.prossima_scadenza ?? "",
     clienti: clienti.map((c) => ({ cliente_id: c.id, prezzo_rivendita: numero(c.prezzo_rivendita) })),
     ambito: s.ambito ?? "lavoro",

@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { DatePicker } from "@/components/date-picker";
-import { EditorTesto } from "@/components/editor-testo";
+import { EditorTesto } from "@/components/editor-testo-lazy";
 import { SceltaPicker } from "@/components/scelta-picker";
 import { Segmented } from "@/components/segmented";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -227,7 +227,8 @@ export function CampiPrincipali({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field>
           <FieldLabel htmlFor={`${idPrefix}-pianificata`}>Inizio</FieldLabel>
-          <div className="flex gap-2">
+          {/* Se la colonna è stretta l'ora scende sotto la data invece di sovrapporsi. */}
+          <div className="flex flex-wrap gap-2">
             <DatePicker
               id={`${idPrefix}-pianificata`}
               value={valori.data_pianificata}
@@ -235,7 +236,9 @@ export function CampiPrincipali({
               placeholder="Nessuna data"
               clearable
               disabled={dateDalTesto.data_pianificata}
-              className="min-w-0 flex-1"
+              // Larghezza minima per la data completa: se manca spazio
+              // l'ora va a capo (flex-wrap) invece di coprirla.
+              className="min-w-[8.5rem] flex-1"
             />
             <Input
               type="time"

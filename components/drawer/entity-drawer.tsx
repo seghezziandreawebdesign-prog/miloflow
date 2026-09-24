@@ -1,22 +1,35 @@
 "use client";
 
 import { XIcon } from "lucide-react";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { APRI_PARAM, parseApri, type RiferimentoEntita } from "@/lib/entita";
 import { cn } from "@/lib/utils";
 
-import { ClienteDrawer } from "./cliente-drawer";
-import { DebitoDrawer } from "./debito-drawer";
-import { EventoDrawer } from "./evento-drawer";
-import { MovimentoDrawer } from "./movimento-drawer";
-import { ProgettoDrawer } from "./progetto-drawer";
-import { SalvadanaioDrawer } from "./salvadanaio-drawer";
-import { ServizioDrawer } from "./servizio-drawer";
-import { TaskDrawer } from "./task-drawer";
+// I contenuti si scaricano solo alla prima apertura del pannello: così le
+// pagine non portano con sé editor, grafici e il resto degli otto pannelli.
+function Caricamento() {
+  return (
+    <div className="space-y-3 p-6 pt-14">
+      <Skeleton className="h-7 w-2/5" />
+      <Skeleton className="h-4 w-3/5" />
+      <Skeleton className="h-40 w-full" />
+    </div>
+  );
+}
+const ClienteDrawer = dynamic(() => import("./cliente-drawer").then((m) => m.ClienteDrawer), { loading: Caricamento });
+const DebitoDrawer = dynamic(() => import("./debito-drawer").then((m) => m.DebitoDrawer), { loading: Caricamento });
+const EventoDrawer = dynamic(() => import("./evento-drawer").then((m) => m.EventoDrawer), { loading: Caricamento });
+const MovimentoDrawer = dynamic(() => import("./movimento-drawer").then((m) => m.MovimentoDrawer), { loading: Caricamento });
+const ProgettoDrawer = dynamic(() => import("./progetto-drawer").then((m) => m.ProgettoDrawer), { loading: Caricamento });
+const SalvadanaioDrawer = dynamic(() => import("./salvadanaio-drawer").then((m) => m.SalvadanaioDrawer), { loading: Caricamento });
+const ServizioDrawer = dynamic(() => import("./servizio-drawer").then((m) => m.ServizioDrawer), { loading: Caricamento });
+const TaskDrawer = dynamic(() => import("./task-drawer").then((m) => m.TaskDrawer), { loading: Caricamento });
 
 // Pannello unico delle entità: una finestra al centro dello schermo (un
 // foglio dal basso su mobile). Si apre da qualsiasi pagina con

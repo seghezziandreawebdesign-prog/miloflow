@@ -29,7 +29,7 @@ export function StatoScadenzaBadge({
       title={s.label}
     >
       <span aria-hidden className={cn("size-1.5 rounded-full", s.dot)} />
-      {descrizione(giorni)}
+      {stato === "senza_scadenza" ? s.label : descrizione(giorni)}
     </span>
   );
 }
