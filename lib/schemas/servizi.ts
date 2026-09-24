@@ -8,10 +8,6 @@ const importo = testo.refine((v) => {
   const n = parseImporto(v);
   return n === null || (Number.isFinite(n) && n >= 0);
 }, "Importo non valido");
-const senzaNumeroCarta = testo.refine(
-  (v) => !/\d{12,}/.test(v.replace(/[\s.-]/g, "")),
-  "Non salvare numeri di carta completi: scrivi solo un riferimento, es. \"Revolut *4417\"",
-);
 
 export const servizioSchema = z.object({
   nome: testo.min(1, "Inserisci il nome"),
@@ -24,7 +20,7 @@ export const servizioSchema = z.object({
   fornitore: testo,
   rinnovo_automatico: z.boolean(),
   chi_paga: z.enum(["io", "cliente"]),
-  metodo_pagamento: senzaNumeroCarta,
+  metodo_pagamento_id: z.union([z.uuid(), z.literal("")]),
   preavviso_giorni: testo.refine((v) => v === "" || (/^\d+$/.test(v) && Number(v) <= 365), "Da 0 a 365 giorni"),
   url_pannello: testo.refine((v) => v === "" || /^(https?:\/\/)?[^\s.]+\.[^\s]+$/i.test(v), "Indirizzo non valido"),
   username: testo,
@@ -46,7 +42,7 @@ export function servizioVuoto(ambito: "lavoro" | "personale", scadenza: string):
     fornitore: "",
     rinnovo_automatico: false,
     chi_paga: "io",
-    metodo_pagamento: "",
+    metodo_pagamento_id: "",
     preavviso_giorni: "",
     url_pannello: "",
     username: "",
@@ -78,7 +74,11 @@ export function servizioToRpc(v: ServizioFormValues) {
       stato: v.stato,
       note: v.note,
     },
-    p_economico: { costo: numero(v.costo), valuta: "EUR", metodo_pagamento: v.metodo_pagamento },
+    p_economico: {
+      costo: numero(v.costo),
+      valuta: "EUR",
+      metodo_pagamento_id: v.chi_paga === "io" ? v.metodo_pagamento_id : "",
+    },
     p_clienti: v.clienti.map((c) => ({ cliente_id: c.cliente_id, prezzo_rivendita: numero(c.prezzo_rivendita) })),
   };
 }
@@ -106,6 +106,15 @@ export const credenzialeSchema = z.discriminatedUnion("tipo", [
   }),
 ]);
 export type CredenzialeInput = z.infer<typeof credenzialeSchema>;
+
+export const metodoPagamentoSchema = z.object({
+  nome: testo.min(1, "Inserisci un nome, es. \"Revolut\" o \"Visa Intesa\""),
+  tipo: z.enum(["carta_credito", "carta_debito", "prepagata", "contanti", "conto", "altro"]),
+  ultime_cifre: testo.refine((v) => v === "" || /^\d{4}$/.test(v), "Solo le ultime 4 cifre"),
+  ambito: z.enum(["lavoro", "personale", "entrambi"]),
+  colore: testo,
+});
+export type MetodoPagamentoFormValues = z.infer<typeof metodoPagamentoSchema>;
 
 export const parametriCassaforteSchema = z.object({
   salt: z.string().regex(/^[A-Za-z0-9+/]{22}==$/),

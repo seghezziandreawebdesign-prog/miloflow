@@ -101,7 +101,7 @@ export async function duplicaServizio(id: string): Promise<ActionResult<{ id: st
       ? {
           costo: economico.data.costo === null ? "" : String(economico.data.costo),
           valuta: economico.data.valuta,
-          metodo_pagamento: economico.data.metodo_pagamento ?? "",
+          metodo_pagamento_id: economico.data.metodo_pagamento_id ?? "",
         }
       : null),
     p_clienti: (clienti.data ?? []).map((c) => ({

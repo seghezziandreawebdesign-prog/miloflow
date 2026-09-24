@@ -1,11 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown, Loader2, Lock } from "lucide-react";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Controller, useFieldArray, useForm, useWatch, type FieldPath } from "react-hook-form";
 import { toast } from "sonner";
 
+import { SbloccaDialog } from "@/components/credenziali/sblocca-dialog";
+import { useVault } from "@/components/credenziali/vault-provider";
 import { DatePicker } from "@/components/date-picker";
 import { TipoIcona } from "@/components/tipo-icona";
 import { Button } from "@/components/ui/button";
@@ -15,8 +18,10 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { saveCredenziale } from "@/lib/actions/credenziali";
 import { saveServizio } from "@/lib/actions/servizi";
 import { formatCurrency } from "@/lib/dates/format";
+import { etichettaMetodo, tipoMetodo } from "@/lib/metodi-pagamento";
 import { servizioSchema, type ServizioFormValues } from "@/lib/schemas/servizi";
 import { CHI_PAGA, FREQUENZE, parseImporto, STATI_SERVIZIO } from "@/lib/servizi";
 import { cn } from "@/lib/utils";
@@ -25,8 +30,7 @@ import { ClientiPicker } from "./clienti-picker";
 import type { OpzioniServizio } from "./use-opzioni-servizio";
 
 const CAMPI_DETTAGLI: string[] = [
-  "ambito", "tipo_id", "fornitore", "rinnovo_automatico", "chi_paga", "metodo_pagamento",
-  "preavviso_giorni", "url_pannello", "username", "stato", "note", "clienti",
+  "ambito", "tipo_id", "fornitore", "rinnovo_automatico", "preavviso_giorni", "stato", "note", "clienti",
 ];
 
 export function ServizioForm({
@@ -56,6 +60,10 @@ export function ServizioForm({
   const frequenza = useWatch({ control, name: "frequenza" });
   const clienti = useWatch({ control, name: "clienti" });
   const costo = useWatch({ control, name: "costo" });
+  const chiPaga = useWatch({ control, name: "chi_paga" });
+  const vault = useVault();
+  // La password non entra nel form inviato al server: si cifra qui e si salva a parte.
+  const [password, setPassword] = useState("");
   const tipo = opzioni.tipi.find((t) => t.id === tipoId);
   const nomeCliente = new Map(opzioni.clienti.map((c) => [c.id, c.nome]));
   const err = formState.errors;
@@ -63,6 +71,10 @@ export function ServizioForm({
   const onSubmit = handleSubmit(
     (values) =>
       startSaving(async () => {
+        if (password && vault.stato !== "sbloccata") {
+          toast.error("Sblocca la cassaforte per salvare la password, oppure svuota il campo");
+          return;
+        }
         const result = await saveServizio(servizioId ?? null, values);
         if (!result.ok) {
           for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
@@ -72,8 +84,21 @@ export function ServizioForm({
           toast.error(result.error);
           return;
         }
+        const id = "data" in result ? (result.data as { id: string }).id : (servizioId ?? "");
+        if (password) {
+          try {
+            const cifrata = await vault.cifra(password);
+            const cred = await saveCredenziale(
+              { servizio_id: id },
+              { tipo: "cifrata", etichetta: "Password di accesso", ...cifrata },
+            );
+            if (!cred.ok) toast.error(`Servizio salvato, ma la password no: ${cred.error}`);
+          } catch {
+            toast.error("Servizio salvato, ma la cifratura della password non è riuscita");
+          }
+        }
         toast.success(isEdit ? "Servizio aggiornato" : "Servizio creato");
-        onSaved("data" in result ? (result.data as { id: string }).id : (servizioId ?? ""));
+        onSaved(id);
       }),
     (errors) => {
       if (Object.keys(errors).some((k) => CAMPI_DETTAGLI.includes(k))) setDettagliAperti(true);
@@ -159,7 +184,84 @@ export function ServizioForm({
             }
           />
         </Field>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Controller
+            control={control}
+            name="chi_paga"
+            render={({ field }) => (
+              <Segmented label="Chi paga" value={field.value} onChange={field.onChange} opzioni={CHI_PAGA} />
+            )}
+          />
+          {mostraEconomico && chiPaga === "io" && (
+            <Field>
+              <FieldLabel>Pagato con</FieldLabel>
+              <Controller
+                control={control}
+                name="metodo_pagamento_id"
+                render={({ field }) => (
+                  <Select
+                    items={[
+                      { value: "", label: "Non indicato" },
+                      ...opzioni.metodi.map((m) => ({ value: m.id, label: etichettaMetodo(m) })),
+                    ]}
+                    value={field.value}
+                    onValueChange={(v) => field.onChange(v ?? "")}
+                  >
+                    <SelectTrigger className="w-full" aria-label="Pagato con">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Non indicato</SelectItem>
+                      {opzioni.metodi.map((m) => {
+                        const Tipo = tipoMetodo(m.tipo).icon;
+                        return (
+                          <SelectItem key={m.id} value={m.id}>
+                            <Tipo />
+                            {etichettaMetodo(m)}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldDescription>
+                <Link href="/impostazioni#metodi-pagamento" className="underline underline-offset-4">
+                  Gestisci carte e metodi
+                </Link>
+              </FieldDescription>
+            </Field>
+          )}
+        </div>
       </FieldGroup>
+
+      <fieldset className="space-y-3 rounded-lg border p-3">
+        <legend className="px-1 text-sm font-medium">Accesso</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field data-invalid={Boolean(err.url_pannello) || undefined} className="sm:col-span-2">
+            <FieldLabel htmlFor="servizio-pannello">Pannello di gestione</FieldLabel>
+            <Input
+              id="servizio-pannello"
+              {...register("url_pannello")}
+              placeholder="https://…"
+              aria-invalid={Boolean(err.url_pannello) || undefined}
+            />
+            <FieldError errors={[err.url_pannello]} />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="servizio-username">Email o username</FieldLabel>
+            <Input id="servizio-username" {...register("username")} autoComplete="off" />
+          </Field>
+          {isEdit ? (
+            <p className="self-end pb-2 text-xs text-muted-foreground">
+              Le password si aggiungono e si cambiano dal pannello del servizio, sezione Credenziali.
+            </p>
+          ) : (
+            <PasswordField value={password} onChange={setPassword} />
+          )}
+        </div>
+      </fieldset>
 
       <Collapsible open={dettagliAperti} onOpenChange={setDettagliAperti}>
         <CollapsibleTrigger render={<Button type="button" variant="ghost" className="-ml-2 text-muted-foreground" />}>
@@ -182,13 +284,6 @@ export function ServizioForm({
                       { value: "personale", label: "Personale" },
                     ]}
                   />
-                )}
-              />
-              <Controller
-                control={control}
-                name="chi_paga"
-                render={({ field }) => (
-                  <Segmented label="Chi paga" value={field.value} onChange={field.onChange} opzioni={CHI_PAGA} />
                 )}
               />
             </div>
@@ -238,32 +333,6 @@ export function ServizioForm({
               <Field>
                 <FieldLabel htmlFor="servizio-fornitore">Fornitore</FieldLabel>
                 <Input id="servizio-fornitore" {...register("fornitore")} placeholder="es. Aruba, SiteGround" />
-              </Field>
-              {mostraEconomico && (
-                <Field data-invalid={Boolean(err.metodo_pagamento) || undefined}>
-                  <FieldLabel htmlFor="servizio-metodo">Metodo di pagamento</FieldLabel>
-                  <Input
-                    id="servizio-metodo"
-                    {...register("metodo_pagamento")}
-                    placeholder='es. "Revolut *4417"'
-                    aria-invalid={Boolean(err.metodo_pagamento) || undefined}
-                  />
-                  <FieldError errors={[err.metodo_pagamento]} />
-                </Field>
-              )}
-              <Field data-invalid={Boolean(err.url_pannello) || undefined}>
-                <FieldLabel htmlFor="servizio-pannello">Pannello di gestione</FieldLabel>
-                <Input
-                  id="servizio-pannello"
-                  {...register("url_pannello")}
-                  placeholder="https://…"
-                  aria-invalid={Boolean(err.url_pannello) || undefined}
-                />
-                <FieldError errors={[err.url_pannello]} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="servizio-username">Username</FieldLabel>
-                <Input id="servizio-username" {...register("username")} autoComplete="off" />
               </Field>
               <Field>
                 <FieldLabel>Stato</FieldLabel>
@@ -394,5 +463,45 @@ function Segmented<T extends string>({
         ))}
       </div>
     </div>
+  );
+}
+
+/** Password del servizio, cifrata nel browser al salvataggio. Serve la cassaforte sbloccata. */
+function PasswordField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const vault = useVault();
+  const [sbloccaOpen, setSbloccaOpen] = useState(false);
+
+  if (vault.stato === "non_configurata") {
+    return (
+      <p className="self-end pb-2 text-xs text-muted-foreground">
+        Per salvare password cifrate{" "}
+        <Link href="/impostazioni" className="underline underline-offset-4">
+          crea la cassaforte
+        </Link>
+        .
+      </p>
+    );
+  }
+
+  return (
+    <Field>
+      <FieldLabel htmlFor="servizio-password">Password</FieldLabel>
+      {vault.stato === "sbloccata" ? (
+        <Input
+          id="servizio-password"
+          type="password"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete="new-password"
+        />
+      ) : (
+        <Button type="button" variant="outline" onClick={() => setSbloccaOpen(true)} disabled={vault.stato === "caricamento"}>
+          <Lock />
+          Sblocca la cassaforte per inserirla
+        </Button>
+      )}
+      <FieldDescription>Cifrata in questo browser prima dell&apos;invio.</FieldDescription>
+      <SbloccaDialog open={sbloccaOpen} onOpenChange={setSbloccaOpen} />
+    </Field>
   );
 }

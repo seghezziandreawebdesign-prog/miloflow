@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ambitoDiDefault, type FiltroAmbito } from "@/lib/ambito";
 import { capitalize, formatCurrency, formatDate, todayISO } from "@/lib/dates/format";
+import { etichettaMetodo } from "@/lib/metodi-pagamento";
 import type { ServizioLista } from "@/lib/queries/servizi";
 import { servizioVuoto } from "@/lib/schemas/servizi";
 import { frequenza, scadenzeNelPeriodo, type StatoScadenza } from "@/lib/servizi";
@@ -330,7 +331,14 @@ function RigaServizio({
         {mostraCosti && s.costo !== null && (
           <p className="font-medium tabular-nums">{formatCurrency(s.costo)}</p>
         )}
-        <p className="text-xs text-muted-foreground">{frequenza(s.frequenza ?? "annuale").label}</p>
+        <p className="text-xs text-muted-foreground">
+          {frequenza(s.frequenza ?? "annuale").label}
+          {mostraCosti && s.chi_paga === "io" && s.metodo_pagamento_nome && (
+            <span className="block truncate">
+              {etichettaMetodo({ nome: s.metodo_pagamento_nome, ultime_cifre: s.metodo_pagamento_cifre })}
+            </span>
+          )}
+        </p>
       </div>
       <div className="hidden items-center justify-end gap-1.5 md:flex">
         {s.rinnovo_automatico && (

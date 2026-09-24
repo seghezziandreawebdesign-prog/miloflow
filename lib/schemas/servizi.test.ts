@@ -21,9 +21,9 @@ describe("servizioSchema", () => {
     expect(errori({ url_pannello: "non valido" })).toHaveProperty("url_pannello");
   });
 
-  it("rifiuta numeri di carta completi nel metodo di pagamento", () => {
-    expect(errori({ metodo_pagamento: "Revolut *4417" })).toEqual({});
-    expect(errori({ metodo_pagamento: "4111 1111 1111 1111" })).toHaveProperty("metodo_pagamento");
+  it("accetta solo un metodo di pagamento esistente o nessuno", () => {
+    expect(errori({ metodo_pagamento_id: "3f2b8c1e-9a4d-4e21-8b0f-1c2d3e4f5a6b" })).toEqual({});
+    expect(errori({ metodo_pagamento_id: "Revolut *4417" })).toHaveProperty("metodo_pagamento_id");
   });
 
   it("valida i prezzi di rivendita dei clienti", () => {
@@ -44,6 +44,22 @@ describe("servizioToRpc", () => {
     expect(rpc.p_economico.costo).toBe("1234.5");
     expect(rpc.p_servizio.url_pannello).toBe("https://pannello.host.it");
     expect(rpc.p_clienti[0].prezzo_rivendita).toBe("");
+  });
+
+  it("non manda il metodo di pagamento se paga il cliente", () => {
+    const id = "3f2b8c1e-9a4d-4e21-8b0f-1c2d3e4f5a6b";
+    expect(servizioToRpc({ ...base, metodo_pagamento_id: id }).p_economico.metodo_pagamento_id).toBe(id);
+    expect(servizioToRpc({ ...base, chi_paga: "cliente", metodo_pagamento_id: id }).p_economico.metodo_pagamento_id).toBe("");
+  });
+});
+
+describe("metodoPagamentoSchema", () => {
+  it("accetta solo le ultime 4 cifre", async () => {
+    const { metodoPagamentoSchema } = await import("./servizi");
+    const base = { nome: "Revolut", tipo: "prepagata", ambito: "entrambi", colore: "" } as const;
+    expect(metodoPagamentoSchema.safeParse({ ...base, ultime_cifre: "4417" }).success).toBe(true);
+    expect(metodoPagamentoSchema.safeParse({ ...base, ultime_cifre: "" }).success).toBe(true);
+    expect(metodoPagamentoSchema.safeParse({ ...base, ultime_cifre: "4111111111111111" }).success).toBe(false);
   });
 });
 

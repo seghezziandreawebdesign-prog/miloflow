@@ -21,7 +21,7 @@ export function servizioToForm(
     fornitore: s.fornitore ?? "",
     rinnovo_automatico: s.rinnovo_automatico ?? false,
     chi_paga: s.chi_paga ?? "io",
-    metodo_pagamento: s.metodo_pagamento ?? "",
+    metodo_pagamento_id: s.metodo_pagamento_id ?? "",
     preavviso_giorni: s.preavviso_giorni === null ? "" : String(s.preavviso_giorni),
     url_pannello: s.url_pannello ?? "",
     username: s.username ?? "",

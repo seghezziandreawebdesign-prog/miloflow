@@ -40,6 +40,7 @@ import { SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet
 import { Skeleton } from "@/components/ui/skeleton";
 import { deleteServizio, duplicaServizio, setStatoServizio } from "@/lib/actions/servizi";
 import { nomeCliente } from "@/lib/clienti";
+import { etichettaMetodo } from "@/lib/metodi-pagamento";
 import { formatCurrency, formatDate } from "@/lib/dates/format";
 import { APRI_PARAM, formatApri } from "@/lib/entita";
 import { CHI_PAGA, costoAnnuo, frequenza, type StatoScadenza } from "@/lib/servizi";
@@ -263,7 +264,13 @@ export function ServizioDrawer({ id }: { id: string }) {
           <Dato label="Rinnovo automatico">{s.rinnovo_automatico ? "Sì" : "No"}</Dato>
           <Dato label="Preavviso">{s.preavviso_effettivo} giorni</Dato>
           <Dato label="Fornitore">{s.fornitore ?? "—"}</Dato>
-          {puoBudget && <Dato label="Metodo di pagamento">{s.metodo_pagamento ?? "—"}</Dato>}
+          {puoBudget && s.chi_paga === "io" && (
+            <Dato label="Metodo di pagamento">
+              {s.metodo_pagamento_nome
+                ? etichettaMetodo({ nome: s.metodo_pagamento_nome, ultime_cifre: s.metodo_pagamento_cifre })
+                : "—"}
+            </Dato>
+          )}
         </dl>
 
         <section className="space-y-2">
