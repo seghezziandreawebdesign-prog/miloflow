@@ -62,8 +62,8 @@ export function DatePicker({
           />
         }
       >
-        <CalendarIcon />
-        {selected ? formatDate(value) : placeholder}
+        <CalendarIcon className="shrink-0" />
+        <span className="truncate">{selected ? formatDate(value) : placeholder}</span>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
