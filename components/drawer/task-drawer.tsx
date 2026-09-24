@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { PannelloDescription, PannelloHeader, PannelloTitle } from "@/components/drawer/pannello";
 import { Skeleton } from "@/components/ui/skeleton";
 import { deleteTask } from "@/lib/actions/task";
 import { formatDate, todayISO } from "@/lib/dates/format";
@@ -81,10 +81,10 @@ export function TaskDrawer({ id }: { id: string }) {
   }
   if (isError || !data) {
     return (
-      <SheetHeader>
-        <SheetTitle>Task non trovata</SheetTitle>
-        <SheetDescription>Potrebbe essere stata eliminata, oppure non hai accesso.</SheetDescription>
-      </SheetHeader>
+      <PannelloHeader>
+        <PannelloTitle>Task non trovata</PannelloTitle>
+        <PannelloDescription>Potrebbe essere stata eliminata, oppure non hai accesso.</PannelloDescription>
+      </PannelloHeader>
     );
   }
 
@@ -107,10 +107,10 @@ export function TaskDrawer({ id }: { id: string }) {
 
   return (
     <div
-      className={cn("flex h-full flex-col overflow-y-auto", ricezione.trascinando && "bg-primary/5 ring-2 ring-primary ring-inset")}
+      className={cn("flex min-h-[50svh] flex-col", ricezione.trascinando && "bg-primary/5 ring-2 ring-primary ring-inset")}
       {...ricezione.props}
     >
-      <SheetHeader className="gap-3 pr-12">
+      <PannelloHeader className="gap-3 pr-12 sm:pr-14">
         {task.genitore && (
           <button
             type="button"
@@ -123,7 +123,7 @@ export function TaskDrawer({ id }: { id: string }) {
         )}
         <div className="flex items-start gap-3">
           <TaskCheckbox task={task} className="mt-1.5 size-5" />
-          <SheetTitle className="sr-only">{task.titolo}</SheetTitle>
+          <PannelloTitle className="sr-only">{task.titolo}</PannelloTitle>
           <TestoAlBlur
             aria-label="Titolo"
             value={task.titolo}
@@ -134,15 +134,15 @@ export function TaskDrawer({ id }: { id: string }) {
             )}
           />
         </div>
-        <SheetDescription className="flex flex-wrap items-center gap-2 text-xs empty:hidden">
+        <PannelloDescription className="flex flex-wrap items-center gap-2 text-xs empty:hidden">
           {task.ambito === "personale" && (
             <span className="rounded-full bg-ambito-personale-soft px-2 py-0.5 text-ambito-personale">Personale</span>
           )}
           {fatta && task.completata_il && <span>Completata il {formatDate(task.completata_il)}</span>}
-        </SheetDescription>
-      </SheetHeader>
+        </PannelloDescription>
+      </PannelloHeader>
 
-      <div className="space-y-6 px-4 pb-6">
+      <div className="space-y-6 px-4 pb-5 sm:px-5">
         {(task.progetti || task.cliente_nome || task.servizi) && (
           <div className="-mt-2 flex flex-wrap gap-2 text-xs">
             {task.progetti && (

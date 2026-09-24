@@ -8,7 +8,7 @@ import { ClienteLogo } from "@/components/clienti/cliente-logo";
 import { StatoClienteBadge } from "@/components/clienti/stato-badge";
 import { CopyButton } from "@/components/copy-button";
 import { buttonVariants } from "@/components/ui/button";
-import { SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { PannelloDescription, PannelloHeader, PannelloTitle } from "@/components/drawer/pannello";
 import { Skeleton } from "@/components/ui/skeleton";
 import { nomeCliente } from "@/lib/clienti";
 import { createClient } from "@/lib/supabase/client";
@@ -44,10 +44,10 @@ export function ClienteDrawer({ id }: { id: string }) {
   }
   if (isError || !data) {
     return (
-      <SheetHeader>
-        <SheetTitle>Cliente non trovato</SheetTitle>
-        <SheetDescription>Potrebbe essere stato eliminato, oppure non hai accesso.</SheetDescription>
-      </SheetHeader>
+      <PannelloHeader>
+        <PannelloTitle>Cliente non trovato</PannelloTitle>
+        <PannelloDescription>Potrebbe essere stato eliminato, oppure non hai accesso.</PannelloDescription>
+      </PannelloHeader>
     );
   }
 
@@ -55,15 +55,15 @@ export function ClienteDrawer({ id }: { id: string }) {
   const nome = nomeCliente(c);
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
-      <SheetHeader className="gap-3 pr-12">
+    <div className="flex flex-col">
+      <PannelloHeader className="gap-3 pr-12 sm:pr-14">
         <ClienteLogo nome={nome} colore={c.colore} logoUrl={logoUrl} sito={c.sito} size="lg" />
         <div>
-          <SheetTitle className="text-lg">{nome}</SheetTitle>
-          <SheetDescription>{c.nome_breve ? c.ragione_sociale : c.citta}</SheetDescription>
+          <PannelloTitle className="text-lg">{nome}</PannelloTitle>
+          <PannelloDescription>{c.nome_breve ? c.ragione_sociale : c.citta}</PannelloDescription>
         </div>
         <StatoClienteBadge stato={c.stato} className="w-fit" />
-      </SheetHeader>
+      </PannelloHeader>
 
       <dl className="space-y-3 px-4 text-sm">
         {c.piva && <Riga label="Partita IVA" value={`${c.nazione} ${c.piva}`} copia={c.piva} />}

@@ -170,10 +170,11 @@ Nel database finiscono solo payload cifrato, IV e salt. La cassaforte si richiud
 ```
 app/(auth)/login        login con password o magic link
 app/auth/callback       rientro dai link via email
-app/(app)/...           sezioni dell'app (layout con sidebar, header, ⌘K, pannello laterale)
+app/(app)/...           sezioni dell'app (layout con sidebar, header, ⌘K, pannello delle entità)
 components/ui           componenti shadcn
 components/layout       sidebar, header, switch ambito, menu +, palette ⌘K
-components/drawer       EntityDrawer: pannello laterale aperto da ?apri=<tipo>:<id>
+components/drawer       EntityDrawer: pannello centrato (foglio dal basso su mobile) aperto da ?apri=<tipo>:<id>
+components/filtri       barra dei filtri e chip
 lib/supabase            client browser, server, admin e proxy di sessione
 lib/actions             Server Actions
 lib/schemas             schemi zod

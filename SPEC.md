@@ -58,8 +58,8 @@ Ogni entità operativa (task, progetto, servizio, evento, movimento, debito) ha 
 
 Nell'header c'è uno switch fisso **Tutto / Lavoro / Personale**, salvato in un cookie, che filtra tutte le pagine. Due colori fissi definiti come token CSS (es. `--ambito-lavoro`, `--ambito-personale`) usati in badge, calendario e grafici. Quando si crea un elemento, l'ambito di default è quello attivo nello switch (se "Tutto", default `lavoro`).
 
-### 3.2 Pannello laterale unico
-Tutte le entità si aprono in un **pannello laterale (Sheet)** sopra la lista, non in una pagina nuova. Il pannello è indirizzabile via URL con un parametro `?apri=<tipo>:<id>` (es. `?apri=servizio:uuid`), così è apribile da qualsiasi pagina, dal calendario e dai link nelle email. Un componente `EntityDrawer` che smista al contenuto giusto in base al tipo. Nel pannello: dettagli, modifica inline o tramite form, azioni contestuali.
+### 3.2 Pannello unico delle entità
+Tutte le entità si aprono in un **pannello centrato (Dialog)** sopra la lista, non in una pagina nuova; su mobile è un foglio che sale dal basso. Il pannello è indirizzabile via URL con un parametro `?apri=<tipo>:<id>` (es. `?apri=servizio:uuid`), così è apribile da qualsiasi pagina, dal calendario e dai link nelle email. Un componente `EntityDrawer` che smista al contenuto giusto in base al tipo. Nel pannello: dettagli, modifica inline o tramite form, azioni contestuali.
 
 ### 3.3 Creazione rapida
 Pulsante **+** sempre visibile nell'header con menu: Nuova task, Nuova spesa, Nuovo servizio, Nuovo evento, Nuovo cliente. Ogni form di creazione mostra **solo i campi essenziali**; gli altri stanno in una sezione espandibile "Altri dettagli".
@@ -68,7 +68,7 @@ Pulsante **+** sempre visibile nell'header con menu: Nuova task, Nuova spesa, Nu
 Palette comandi **⌘K / Ctrl+K** (shadcn Command) che cerca tra clienti, servizi, task, progetti ed eventi e permette di aprirli nel pannello. Include anche comandi rapidi ("Nuova task", "Vai al calendario").
 
 ### 3.5 Layout
-Sidebar a sinistra: **Oggi, Task, Calendario, Clienti, Servizi & Scadenze, Budget, Impostazioni**. Su mobile la sidebar diventa un menu a scomparsa e le liste si adattano a card. Tema chiaro/scuro. L'app deve essere installabile come **PWA** (manifest + icone) a partire dalla fase 6.
+Stile pulito alla Apple: font di sistema, sfondo grigio chiarissimo, superfici bianche, un solo accento blu, filtri a chip. Sidebar a sinistra: **Oggi, Task, Calendario, Clienti, Servizi & Scadenze, Budget, Impostazioni**. Su mobile il menu si apre dal pulsante in alto a destra, il pulsante **+** è fisso in basso a destra e le liste si adattano a card. Solo tema chiaro. L'app deve essere installabile come **PWA** (manifest + icone) a partire dalla fase 6.
 
 ### 3.6 Stati vuoti e feedback
 Ogni lista vuota ha uno stato vuoto con un'azione chiara ("Aggiungi il primo servizio"). Ogni azione mostra un toast di conferma; le azioni distruttive chiedono conferma. Preferire l'archiviazione alla cancellazione.
@@ -194,13 +194,13 @@ Tutto rispetta lo switch di ambito. Ogni elemento si apre nel pannello laterale.
   - *Duplica*.
 
 ### 6.4 Task
-- **Viste** (tab o sottomenu):
+- **Layout**: su desktop una colonna a sinistra con le viste e i progetti, a destra il contenuto. Su mobile la colonna diventa un selettore che apre un foglio dal basso.
+- **Viste** (nella colonna):
   - *Inbox*: task senza data pianificata, senza scadenza e senza progetto.
   - *Oggi*, *Prossimi 7 giorni* (raggruppati per giorno).
-  - *Progetti*: elenco progetti con barra di avanzamento (task fatte / totali) e, dentro ogni progetto, vista lista o kanban per stato con drag & drop.
   - *In attesa*: con "in attesa di" e da quanti giorni.
-  - *Tutte*: tabella con filtri per ambito, cliente, progetto, priorità, stato, assegnatario.
   - *Pianifica settimana*: a sinistra Inbox e task senza data pianificata, a destra i 7 giorni della settimana; trascinando una task su un giorno si imposta `data_pianificata`.
+- **Progetti** (nella colonna, sotto le viste): *Tutte le task* (voce generica) e poi i progetti attivi e in pausa con barra di avanzamento (task fatte / totali). Ogni voce si apre a destra con lo switch **Lista / Board**: la lista è una tabella con filtri per ambito, cliente, progetto, priorità, stato, assegnatario; la board è un kanban per stato con drag & drop. *Tutti i progetti* mostra la griglia con il filtro per stato.
 - **Aggiunta rapida**: un campo di testo singolo con parsing in italiano:
   - date: `oggi`, `domani`, `dopodomani`, giorni della settimana (`lun`, `lunedì`, … → prossima occorrenza), `tra N giorni`, `dd/mm`;
   - `#nome` → cliente o progetto (con autocompletamento mentre scrivi);

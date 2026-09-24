@@ -19,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { PannelloDescription, PannelloHeader, PannelloTitle } from "@/components/drawer/pannello";
 import { Skeleton } from "@/components/ui/skeleton";
 import { setStatoProgetto } from "@/lib/actions/task";
 import { formatDate } from "@/lib/dates/format";
@@ -50,10 +50,10 @@ export function ProgettoDrawer({ id }: { id: string }) {
   }
   if (isError || !progetto) {
     return (
-      <SheetHeader>
-        <SheetTitle>Progetto non trovato</SheetTitle>
-        <SheetDescription>Potrebbe essere stato eliminato, oppure non hai accesso.</SheetDescription>
-      </SheetHeader>
+      <PannelloHeader>
+        <PannelloTitle>Progetto non trovato</PannelloTitle>
+        <PannelloDescription>Potrebbe essere stato eliminato, oppure non hai accesso.</PannelloDescription>
+      </PannelloHeader>
     );
   }
 
@@ -74,8 +74,8 @@ export function ProgettoDrawer({ id }: { id: string }) {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
-      <SheetHeader className="gap-2 pr-12">
+    <div className="flex flex-col">
+      <PannelloHeader className="gap-2 pr-12 sm:pr-14">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="size-2.5 rounded-full" style={{ backgroundColor: progetto.colore ?? "var(--muted-foreground)" }} />
           Progetto
@@ -83,14 +83,14 @@ export function ProgettoDrawer({ id }: { id: string }) {
             <span className="rounded-full bg-ambito-personale-soft px-2 py-0.5 text-xs text-ambito-personale">Personale</span>
           )}
         </div>
-        <SheetTitle className="text-lg">{progetto.nome}</SheetTitle>
-        <SheetDescription className="flex flex-wrap items-center gap-2">
+        <PannelloTitle className="text-lg">{progetto.nome}</PannelloTitle>
+        <PannelloDescription className="flex flex-wrap items-center gap-2">
           <span className={cn("rounded-full px-2 py-0.5 text-xs ring-1 ring-inset", stato.className)}>{stato.label}</span>
           {progetto.scadenza && <span>Scadenza {formatDate(progetto.scadenza)}</span>}
-        </SheetDescription>
-      </SheetHeader>
+        </PannelloDescription>
+      </PannelloHeader>
 
-      <div className="space-y-6 px-4 pb-6">
+      <div className="space-y-6 px-4 pb-5 sm:px-5">
         <div className="flex flex-wrap gap-2">
           <Link href={`/task/progetti/${id}`} className={buttonVariants()}>
             Apri il progetto

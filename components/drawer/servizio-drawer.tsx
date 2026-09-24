@@ -37,7 +37,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { PannelloDescription, PannelloHeader, PannelloTitle } from "@/components/drawer/pannello";
 import { Skeleton } from "@/components/ui/skeleton";
 import { deleteServizio, duplicaServizio, setStatoServizio } from "@/lib/actions/servizi";
 import { nomeCliente } from "@/lib/clienti";
@@ -126,10 +126,10 @@ export function ServizioDrawer({ id }: { id: string }) {
   }
   if (isError || !data) {
     return (
-      <SheetHeader>
-        <SheetTitle>Servizio non trovato</SheetTitle>
-        <SheetDescription>Potrebbe essere stato eliminato, oppure non hai accesso.</SheetDescription>
-      </SheetHeader>
+      <PannelloHeader>
+        <PannelloTitle>Servizio non trovato</PannelloTitle>
+        <PannelloDescription>Potrebbe essere stato eliminato, oppure non hai accesso.</PannelloDescription>
+      </PannelloHeader>
     );
   }
 
@@ -149,8 +149,8 @@ export function ServizioDrawer({ id }: { id: string }) {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
-      <SheetHeader className="gap-2 pr-12">
+    <div className="flex flex-col">
+      <PannelloHeader className="gap-2 pr-12 sm:pr-14">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <TipoIcona nome={s.tipo_icona} className="size-4" />
           {s.tipo_nome ?? "Servizio"}
@@ -158,8 +158,8 @@ export function ServizioDrawer({ id }: { id: string }) {
             <span className="rounded-full bg-ambito-personale-soft px-2 py-0.5 text-xs text-ambito-personale">Personale</span>
           )}
         </div>
-        <SheetTitle className="text-lg">{s.nome}</SheetTitle>
-        <SheetDescription className="flex flex-wrap items-center gap-2">
+        <PannelloTitle className="text-lg">{s.nome}</PannelloTitle>
+        <PannelloDescription className="flex flex-wrap items-center gap-2">
           {attivo ? (
             <StatoScadenzaBadge stato={s.stato_scadenza as StatoScadenza} giorni={s.giorni_alla_scadenza ?? 0} />
           ) : (
@@ -168,10 +168,10 @@ export function ServizioDrawer({ id }: { id: string }) {
           <span>
             {freq.value === "una_tantum" ? "Scadenza" : "Prossima scadenza"} {formatDate(s.prossima_scadenza ?? "")}
           </span>
-        </SheetDescription>
-      </SheetHeader>
+        </PannelloDescription>
+      </PannelloHeader>
 
-      <div className="flex flex-wrap gap-2 px-4">
+      <div className="flex flex-wrap gap-2 px-4 sm:px-5">
         {freq.mesi && (
           <Button onClick={() => setRinnovaOpen(true)}>
             <RefreshCw />
@@ -262,7 +262,7 @@ export function ServizioDrawer({ id }: { id: string }) {
         </DropdownMenu>
       </div>
 
-      <div className="space-y-6 p-4">
+      <div className="space-y-6 p-4 sm:p-5">
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
           {puoBudget && (
             <Dato label="Costo">
