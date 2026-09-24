@@ -499,6 +499,43 @@ export function spesaPerMetodo(
     .sort((a, b) => b.totale - a.totale);
 }
 
+export type RiepilogoDebiti = {
+  /** Residuo complessivo oggi. */
+  residuo: number;
+  /** Rate pagate nel periodo (movimenti pagati con rata). */
+  pagate: { numero: number; totale: number };
+  /** Prossime rate da pagare, per scadenza. */
+  prossime: { debito_id: string; creditore: string; numero: number; scadenza: string; importo: number }[];
+  perCreditore: { debito_id: string; creditore: string; residuo: number; pagato: number; avanzamento: number; inRitardo: number }[];
+};
+
+/** Stato dei debiti per il report: residuo, rate pagate nel periodo, prossime rate. */
+export function riepilogoDebiti(
+  debiti: { id: string; creditore: string; importo_totale: number; debiti_rate: { numero: number; scadenza: string; importo: number; pagata: boolean }[] }[],
+  movimentiPeriodo: MovimentoBase[],
+  oggi: string,
+  massimoProssime = 6,
+): RiepilogoDebiti {
+  const pagateNelPeriodo = movimentiPeriodo.filter((m) => m.stato === "pagato" && m.rata_id !== null);
+  const perCreditore = debiti
+    .map((d) => {
+      const s = statoDebito(d, d.debiti_rate, oggi);
+      return { debito_id: d.id, creditore: d.creditore, residuo: s.residuo, pagato: s.pagato, avanzamento: s.avanzamento, inRitardo: s.inRitardo };
+    })
+    .filter((d) => d.residuo > 0 || d.pagato > 0)
+    .sort((a, b) => b.residuo - a.residuo);
+  const prossime = debiti
+    .flatMap((d) => d.debiti_rate.filter((r) => !r.pagata).map((r) => ({ debito_id: d.id, creditore: d.creditore, numero: r.numero, scadenza: r.scadenza, importo: r.importo })))
+    .sort((a, b) => a.scadenza.localeCompare(b.scadenza))
+    .slice(0, massimoProssime);
+  return {
+    residuo: somma(perCreditore.map((d) => d.residuo)),
+    pagate: { numero: pagateNelPeriodo.length, totale: somma(pagateNelPeriodo.map((m) => m.importo)) },
+    prossime,
+    perCreditore,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Periodi dei report
 // ---------------------------------------------------------------------------

@@ -13,6 +13,7 @@ const riga = (over: Partial<RigaCalendario>): RigaCalendario => ({
   cliente_id: null,
   progetto_id: null,
   colore: null,
+  colore_sfondo: null,
   modificabile: true,
   ricorrenza: null,
   ...over,
@@ -90,7 +91,9 @@ describe("eventiPerCalendario", () => {
 describe("coloriEvento", () => {
   it("gli eventi sono pieni, le task chiare, con il bordo del progetto", () => {
     expect(coloriEvento("evento", "personale", null).backgroundColor).toBe("#9b59d0");
-    expect(coloriEvento("task", "lavoro", "#059669")).toEqual({
+    expect(coloriEvento("evento", "personale", null, "#16a34a")).toMatchObject({ backgroundColor: "#16a34a", borderColor: "#16a34a" });
+    expect(coloriEvento("evento", "personale", null, "#16a34a").color).toBe("#16a34a");
+    expect(coloriEvento("task", "lavoro", "#059669")).toMatchObject({
       backgroundColor: "#e6eefb",
       borderColor: "#059669",
       textColor: "#3a7bd5",

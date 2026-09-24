@@ -17,6 +17,7 @@ import {
   marginePerCliente,
   nomeCategoria,
   primoDelMese,
+  riepilogoDebiti,
   spesaPerCategoria,
   spesaPerMese,
   spesaPerMetodo,
@@ -151,6 +152,29 @@ describe("piano rate e debiti", () => {
       { scadenza: "2026-09-01", importo: 100, pagata: true },
     ]);
     expect(punti.map((p) => p.residuo)).toEqual([100, 0]);
+  });
+});
+
+describe("riepilogo debiti", () => {
+  it("somma residui, rate pagate nel periodo e prossime rate", () => {
+    const debiti = [
+      {
+        id: "d1",
+        creditore: "Banca",
+        importo_totale: 300,
+        debiti_rate: [
+          { numero: 1, scadenza: "2026-08-01", importo: 100, pagata: true },
+          { numero: 2, scadenza: "2026-10-01", importo: 100, pagata: false },
+          { numero: 3, scadenza: "2026-11-01", importo: 100, pagata: false },
+        ],
+      },
+      { id: "d2", creditore: "Amico", importo_total: 0, importo_totale: 50, debiti_rate: [{ numero: 1, scadenza: "2026-09-30", importo: 50, pagata: false }] },
+    ];
+    const r = riepilogoDebiti(debiti, [mov({ id: "m", importo: 100, rata_id: "r1" }), mov({ id: "n", importo: 7 })], "2026-09-24", 2);
+    expect(r.residuo).toBe(250);
+    expect(r.pagate).toEqual({ numero: 1, totale: 100 });
+    expect(r.prossime.map((p) => `${p.creditore}${p.numero}`)).toEqual(["Amico1", "Banca2"]);
+    expect(r.perCreditore[0]).toMatchObject({ creditore: "Banca", residuo: 200, pagato: 100, avanzamento: 33 });
   });
 });
 

@@ -14,6 +14,7 @@ import {
   isPeriodoReport,
   marginePerCliente,
   primoDelMese,
+  riepilogoDebiti,
   spesaPerCategoria,
   spesaPerMese,
   spesaPerMetodo,
@@ -124,13 +125,14 @@ async function TabReport({
 }) {
   const { dal, al } = intervalloReport(periodo, oggi);
   const mesi = ultimiMesi(primoDelMese(oggi), 12);
-  const [movimenti, dodiciMesi, categorie, metodi, servizi, rivendite] = await Promise.all([
+  const [movimenti, dodiciMesi, categorie, metodi, servizi, rivendite, debiti] = await Promise.all([
     leggiMovimentiPeriodo(dal, al, filtroAmbito),
     leggiMovimentiPeriodo(mesi[0], al, filtroAmbito),
     leggiCategorie(),
     leggiMetodi(),
     leggiAbbonamenti(filtroAmbito),
     filtroAmbito === "personale" ? Promise.resolve([]) : leggiRivendite(),
+    leggiDebiti(filtroAmbito),
   ]);
   return (
     <ReportView
@@ -143,6 +145,7 @@ async function TabReport({
       abbonamenti={abbonamentiAnnui(servizi)}
       margini={marginePerCliente(rivendite)}
       perMetodo={spesaPerMetodo(movimenti, metodi)}
+      debiti={riepilogoDebiti(debiti, movimenti, oggi)}
       totaleMovimenti={movimenti.length}
     />
   );

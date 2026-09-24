@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { CategoriaIcona } from "@/components/budget/categoria-icona";
+import { ColorePicker } from "@/components/colore-picker";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -16,8 +17,6 @@ import { AMBITI_CATEGORIA, type Categoria } from "@/lib/budget";
 import { NOMI_ICONE_CATEGORIE } from "@/lib/icone";
 import { categoriaVuota, type CategoriaFormValues } from "@/lib/schemas/budget";
 import { cn } from "@/lib/utils";
-
-const COLORI = ["#2563eb", "#0891b2", "#16a34a", "#ca8a04", "#ea580c", "#dc2626", "#db2777", "#9333ea", "#7c3aed", "#475569", "#0f766e", "#b45309"];
 
 export function CategoriaDialog({
   open,
@@ -126,20 +125,7 @@ export function CategoriaDialog({
             </Field>
             <Field>
               <FieldLabel>Colore</FieldLabel>
-              <div className="flex flex-wrap gap-2">
-                {COLORI.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-label={c}
-                    aria-pressed={v.colore === c}
-                    onClick={() => set("colore", v.colore === c ? "" : c)}
-                    className={cn("size-7 rounded-full ring-offset-2 transition-transform", v.colore === c && "scale-110 ring-2 ring-foreground/60")}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-                <input type="color" value={v.colore || "#8e8e93"} onChange={(e) => set("colore", e.target.value)} aria-label="Colore personalizzato" className="size-7 cursor-pointer rounded-full border-0 bg-transparent p-0" />
-              </div>
+              <ColorePicker value={v.colore} onChange={(c) => set("colore", c)} />
               <FieldError>{errori.colore}</FieldError>
             </Field>
             <Field>

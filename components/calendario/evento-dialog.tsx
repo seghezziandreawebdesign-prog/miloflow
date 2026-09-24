@@ -11,6 +11,7 @@ import { DatePicker } from "@/components/date-picker";
 import { SceltaPicker } from "@/components/scelta-picker";
 import { Segmented } from "@/components/segmented";
 import { useOpzioniTask } from "@/components/task/dati";
+import { ColorePicker } from "@/components/colore-picker";
 import { RicorrenzaPicker } from "@/components/task/ricorrenza-picker";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -259,6 +260,12 @@ function EventoForm({
             />
           </Field>
         </div>
+
+        <Field>
+          <FieldLabel>Colore nel calendario</FieldLabel>
+          <Controller control={control} name="colore" render={({ field }) => <ColorePicker value={field.value} onChange={field.onChange} />} />
+          <FieldDescription>Senza colore l&apos;evento usa quello dell&apos;ambito.</FieldDescription>
+        </Field>
 
         <Field>
           <FieldLabel htmlFor="evento-note">Note</FieldLabel>

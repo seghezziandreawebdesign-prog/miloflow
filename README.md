@@ -177,7 +177,14 @@ Nel database finiscono solo payload cifrato, IV e salt. La cassaforte si richiud
 - **Debiti**. `salva_debito` scrive debito e piano delle rate in una transazione: le rate pagate non si toccano, le altre seguono il piano nuovo. `paga_rata` crea (o converte) il movimento `pagato` e segna la rata; `annulla_pagamento_rata` torna indietro. Un debito si elimina solo senza rate pagate (`elimina_debito`). Le rate ereditano `debiti.categoria_id`.
 - **Nuova spesa** (menu +, ⌘K, pagina Budget): importo, griglia di categorie, poi descrizione, data, metodo, foto della ricevuta nel bucket `ricevute/<movimento_id>/`. Un movimento si elimina con conferma; quello di una rata pagata si annulla dal debito.
 - **Report**: i calcoli sono funzioni pure in `lib/budget.ts` (con test) sugli stessi movimenti della lista, quindi i totali coincidono. Il grafico dei 12 mesi usa una tramatura sul personale, oltre al colore, e ha la tabella sotto.
-- **Calendario**: le rate e i previsti dei servizi compaiono una volta sola (come rata e come scadenza); le «Spese previste» sono solo quelle inserite a mano.
+- **Calendario**: le rate e i previsti dei servizi compaiono una volta sola (come rata e come scadenza); le «Spese previste» sono solo quelle inserite a mano. Un evento può avere un colore suo (`eventi.colore`, colonna `colore_sfondo` di `v_calendario`) che ne riempie lo sfondo; senza colore vale quello dell'ambito. FullCalendar 7 legge per ogni evento solo `color` e `contrastColor` (le proprietà `backgroundColor`/`borderColor`/`textColor` della versione 6 sono ignorate): i colori per tipo e ambito stanno in `lib/calendario.ts`.
+- **Report mensile in PDF**: «Esporta PDF» nella pagina del mese apre `/budget/stampa?mese=…`, una pagina senza sidebar (gruppo di route `(stampa)`) con totali, categorie, tutti i movimenti, metodi, abbonamenti e debiti. Il PDF lo fa il browser con «Salva come PDF» (su iPhone: Condividi → Salva in File).
+
+## Backup
+
+In Impostazioni → Backup (solo owner). **Scarica il backup** produce uno ZIP costruito nel browser con `fflate`: `dati.json` (tutte le tabelle, da `esporta_backup()`), `LEGGIMI.txt` e la cartella `file/<bucket>/<percorso>` con loghi, ricevute e allegati delle task scaricati dallo Storage. Le credenziali cifrate restano cifrate: servono la stessa master password e nient'altro.
+
+**Ripristina un backup** vale solo su un account senza clienti, servizi e task: la funzione SQL `importa_backup(jsonb)` inserisce tutto in una sola transazione conservando gli id, sostituisce categorie, tipi di servizio e metodi di esempio con quelli del backup, assegna a chi importa le righe (`created_by`) e le impostazioni, e scarta permessi e accessi dei collaboratori (gli utenti vanno reinvitati). I file vengono poi ricaricati nello Storage agli stessi percorsi. Per un nuovo progetto Supabase: applicare le migration, creare l'owner come descritto sopra, entrare e ripristinare.
 
 ## Da completare nelle fasi successive
 

@@ -614,6 +614,7 @@ export type Database = {
         Row: {
           ambito: Database["public"]["Enums"]["ambito"]
           cliente_id: string | null
+          colore: string | null
           created_at: string
           created_by: string | null
           fine: string | null
@@ -631,6 +632,7 @@ export type Database = {
         Insert: {
           ambito?: Database["public"]["Enums"]["ambito"]
           cliente_id?: string | null
+          colore?: string | null
           created_at?: string
           created_by?: string | null
           fine?: string | null
@@ -648,6 +650,7 @@ export type Database = {
         Update: {
           ambito?: Database["public"]["Enums"]["ambito"]
           cliente_id?: string | null
+          colore?: string | null
           created_at?: string
           created_by?: string | null
           fine?: string | null
@@ -1485,6 +1488,7 @@ export type Database = {
           ambito: Database["public"]["Enums"]["ambito"] | null
           cliente_id: string | null
           colore: string | null
+          colore_sfondo: string | null
           fine: string | null
           id: string | null
           inizio: string | null
@@ -1758,6 +1762,10 @@ export type Database = {
         Args: { p_rata_id: string }
         Returns: undefined
       }
+      backup_inserisci: {
+        Args: { p_righe: Json; p_tabella: string; p_togli?: string[] }
+        Returns: number
+      }
       cambia_cassaforte: {
         Args: { p_credenziali: Json; p_parametri: Json }
         Returns: undefined
@@ -1767,7 +1775,9 @@ export type Database = {
         Returns: string
       }
       elimina_debito: { Args: { p_id: string }; Returns: undefined }
+      esporta_backup: { Args: never; Returns: Json }
       genera_previsti: { Args: { p_mese: string }; Returns: number }
+      importa_backup: { Args: { p_dati: Json }; Returns: Json }
       imposta_contatto_principale: {
         Args: { p_contatto_id: string }
         Returns: undefined
@@ -1858,6 +1868,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      tabelle_backup: { Args: never; Returns: string[] }
       try_uuid: { Args: { valore: string }; Returns: string }
       vede_cliente: { Args: { p_cliente_id: string }; Returns: boolean }
       vede_credenziale: {

@@ -53,6 +53,7 @@ async function leggiCalendario(dal: string, al: string, ambito: FiltroAmbito): P
             colore: x.colore,
             modificabile: x.modificabile ?? false,
             ricorrenza: x.ricorrenza,
+            colore_sfondo: x.colore_sfondo,
           },
         ]
       : [],

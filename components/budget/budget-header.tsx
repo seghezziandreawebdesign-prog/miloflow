@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -74,6 +74,10 @@ export function BudgetHeader({
               Oggi
             </Button>
           )}
+          <Link href={`/budget/stampa?mese=${mese}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "ml-auto")}>
+            <Printer />
+            Esporta PDF
+          </Link>
         </div>
       )}
       {tab === "report" && (

@@ -33,6 +33,8 @@ export type RigaCalendario = {
   colore: string | null;
   modificabile: boolean;
   ricorrenza: string | null;
+  /** Colore scelto per l'evento: riempie lo sfondo. */
+  colore_sfondo: string | null;
 };
 
 export type EventoCalendario = {
@@ -46,6 +48,9 @@ export type EventoCalendario = {
   backgroundColor: string;
   borderColor: string;
   textColor: string;
+  /** FullCalendar 7 legge questi due: tinta dell'evento e colore del testo. */
+  color: string;
+  contrastColor: string;
   classNames: string[];
   extendedProps: { tipo: TipoCalendario; id: string; ambito: Ambito; ricorrente: boolean };
 };
@@ -62,16 +67,18 @@ const TIPI_COLORE: Record<Exclude<TipoCalendario, "task" | "evento">, { forte: s
   movimento: { forte: "#6e6e73", soft: "#f0f0f3" },
 };
 
-export function coloriEvento(tipo: TipoCalendario, ambito: Ambito, coloreProgetto: string | null) {
+export function coloriEvento(tipo: TipoCalendario, ambito: Ambito, coloreProgetto: string | null, coloreSfondo: string | null = null) {
   const a = AMBITI[ambito];
   switch (tipo) {
-    case "evento":
-      return { backgroundColor: a.forte, borderColor: coloreProgetto ?? a.forte, textColor: "#ffffff" };
+    case "evento": {
+      const sfondo = coloreSfondo ?? a.forte;
+      return { backgroundColor: sfondo, borderColor: coloreProgetto ?? sfondo, textColor: "#ffffff", color: sfondo, contrastColor: "#ffffff" };
+    }
     case "task":
-      return { backgroundColor: a.soft, borderColor: coloreProgetto ?? a.forte, textColor: a.forte };
+      return { backgroundColor: a.soft, borderColor: coloreProgetto ?? a.forte, textColor: a.forte, color: a.forte, contrastColor: "#ffffff" };
     default: {
       const c = TIPI_COLORE[tipo];
-      return { backgroundColor: c.soft, borderColor: coloreProgetto ?? c.forte, textColor: c.forte };
+      return { backgroundColor: c.soft, borderColor: coloreProgetto ?? c.forte, textColor: c.forte, color: c.forte, contrastColor: "#ffffff" };
     }
   }
 }
@@ -111,7 +118,7 @@ export function eventiPerCalendario(
   const out: EventoCalendario[] = [];
   for (const r of righe) {
     if (!attivi.has(r.tipo)) continue;
-    const colori = coloriEvento(r.tipo, r.ambito, r.colore);
+    const colori = coloriEvento(r.tipo, r.ambito, r.colore, r.colore_sfondo);
     const base = {
       title: r.tipo === "deadline" ? `Entro: ${r.titolo}` : r.titolo,
       allDay: r.tutto_il_giorno,

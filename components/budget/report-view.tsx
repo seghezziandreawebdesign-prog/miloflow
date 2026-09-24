@@ -12,6 +12,7 @@ import {
   type MargineCliente,
   type PeriodoReport,
   type PuntoMensile,
+  type RiepilogoDebiti,
   type ServizioAbbonamento,
   type SpesaMetodo,
 } from "@/lib/budget";
@@ -35,6 +36,7 @@ export function ReportView({
   abbonamenti,
   margini,
   perMetodo,
+  debiti,
   totaleMovimenti,
 }: {
   periodo: PeriodoReport;
@@ -46,6 +48,7 @@ export function ReportView({
   abbonamenti: { totale: number; mensile: number; elenco: (ServizioAbbonamento & { annuo: number })[] };
   margini: MargineCliente[];
   perMetodo: SpesaMetodo[];
+  debiti: RiepilogoDebiti;
   totaleMovimenti: number;
 }) {
   const etichettaPeriodo = PERIODI_REPORT.find((p) => p.value === periodo)?.label ?? "";
@@ -168,6 +171,58 @@ export function ReportView({
                 </li>
               ))}
             </ul>
+          )}
+        </Riquadro>
+
+        <Riquadro titolo="Debiti" sottotitolo="Residuo di oggi, rate pagate nel periodo e prossime scadenze.">
+          {debiti.perCreditore.length === 0 ? (
+            <Vuoto testo="Nessun debito registrato." />
+          ) : (
+            <div className="space-y-3">
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <dt className="text-xs text-muted-foreground">Residuo totale</dt>
+                  <dd className="text-2xl font-semibold tabular-nums tracking-tight">{formatCurrency(debiti.residuo)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">Rate pagate nel periodo</dt>
+                  <dd className="text-2xl font-semibold tabular-nums tracking-tight">
+                    {formatCurrency(debiti.pagate.totale)}
+                    <span className="ml-1 text-sm font-normal text-muted-foreground">({debiti.pagate.numero})</span>
+                  </dd>
+                </div>
+              </dl>
+              <ul className="space-y-2 text-sm">
+                {debiti.perCreditore.map((d) => (
+                  <li key={d.debito_id}>
+                    <div className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate">{d.creditore}</span>
+                      {d.inRitardo > 0 && <span className="text-xs text-destructive">{d.inRitardo} in ritardo</span>}
+                      <span className="w-24 text-right tabular-nums">{formatCurrency(d.residuo)}</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${d.avanzamento}%` }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {debiti.prossime.length > 0 && (
+                <div>
+                  <p className="mb-1 text-xs text-muted-foreground">Prossime rate</p>
+                  <ul className="divide-y text-sm">
+                    {debiti.prossime.map((r) => (
+                      <li key={`${r.debito_id}-${r.numero}`} className="flex items-center gap-2 py-1">
+                        <span className="w-20 shrink-0 tabular-nums">{formatDate(r.scadenza)}</span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {r.creditore} · rata {r.numero}
+                        </span>
+                        <span className="tabular-nums">{formatCurrency(r.importo)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           )}
         </Riquadro>
 

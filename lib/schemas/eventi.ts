@@ -26,6 +26,7 @@ export const eventoSchema = z
     progetto_id: idFacoltativo,
     ricorrenza: testo.refine((v) => v === "" || isRRuleValida(v), "Ricorrenza non valida"),
     note: testo.max(10_000),
+    colore: testo.refine((v) => v === "" || /^#[0-9a-f]{6}$/i.test(v), "Colore non valido"),
   })
   .superRefine((v, ctx) => {
     if (!v.tutto_il_giorno && !v.ora_inizio) {
@@ -71,6 +72,7 @@ export function eventoVuoto(
     progetto_id: "",
     ricorrenza: "",
     note: "",
+    colore: "",
     ...defaults,
   };
 }
@@ -92,12 +94,13 @@ export function eventoToDb(v: EventoFormValues): Database["public"]["Tables"]["e
     progetto_id: nullIfEmpty(v.progetto_id),
     ricorrenza: nullIfEmpty(v.ricorrenza),
     note: nullIfEmpty(v.note),
+    colore: v.colore ? v.colore.toLowerCase() : null,
   };
 }
 
 type RigaEvento = Pick<
   Database["public"]["Tables"]["eventi"]["Row"],
-  "titolo" | "ambito" | "tutto_il_giorno" | "inizio" | "fine" | "luogo" | "link_call" | "cliente_id" | "progetto_id" | "ricorrenza" | "note"
+  "titolo" | "ambito" | "tutto_il_giorno" | "inizio" | "fine" | "luogo" | "link_call" | "cliente_id" | "progetto_id" | "ricorrenza" | "note" | "colore"
 >;
 
 /** Riga del database → valori del form (ora di Roma). */
@@ -122,6 +125,7 @@ export function eventoToForm(e: RigaEvento): EventoFormValues {
     progetto_id: e.progetto_id ?? "",
     ricorrenza: e.ricorrenza ?? "",
     note: e.note ?? "",
+    colore: e.colore ?? "",
   };
 }
 

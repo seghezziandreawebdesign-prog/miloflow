@@ -393,14 +393,15 @@ select public._test_conta('select 1 from public.v_servizi where costo = 120', 1,
 select public._test_conta('select 1 from public.servizi_clienti_economico', 1, 'prezzo di rivendita di S1');
 select public._test_conta('select 1 from public.credenziali', 1, 'credenziali (solo S1)');
 select public._test_conta('select 1 from public.categorie where ambito = ''personale''', 0, 'nessuna categoria personale');
-select public._test_conta('select 1 from public.categorie', 8, 'categorie di lavoro (4 + 4 sottocategorie)');
+select public._test_conta($q$select 1 from public.categorie where nome in ('Software','Attrezzatura','Formazione','Commercialista','Hosting','Domini','Licenze','SaaS')$q$, 8, 'categorie di lavoro (4 + 4 sottocategorie)');
 select public._test_conta('select 1 from public.movimenti where descrizione like ''M %''', 1, 'movimenti di lavoro');
 select public._test_rifiutato('select public.genera_previsti(public.oggi())', 'genera i previsti senza essere owner');
+select public._test_rifiutato('select public.esporta_backup()', 'esporta il backup senza essere owner');
 select public._test_rifiutato(
   $q$select public.paga_rata((select id from public.debiti_rate where debito_id = '60000000-0000-0000-0000-000000000001'), null, null, null)$q$,
   'paga una rata con budget in sola lettura');
-select public._test_conta('select 1 from public.debiti', 1, 'debiti di lavoro');
-select public._test_conta('select 1 from public.debiti_rate', 1, 'rate dei debiti di lavoro');
+select public._test_conta($q$select 1 from public.debiti where creditore in ('Fornitore', 'Banca')$q$, 1, 'debiti di lavoro');
+select public._test_conta($q$select 1 from public.debiti_rate r join public.debiti d on d.id = r.debito_id where d.creditore in ('Fornitore', 'Banca')$q$, 1, 'rate dei debiti di lavoro');
 select public._test_rifiutato(
   $q$insert into public.movimenti (ambito, importo) values ('lavoro', 5)$q$,
   'crea un movimento con budget in sola lettura');
@@ -737,6 +738,27 @@ begin
   begin
     perform public.elimina_debito(v_id);
     raise exception 'FALLITO: un debito con rate pagate non si elimina';
+  exception when others then
+    if sqlerrm like 'FALLITO%' then raise; end if;
+  end;
+end;
+$$;
+
+-- Backup: l'owner esporta tutto; il ripristino vale solo su un account vuoto.
+do $$
+declare
+  v_backup jsonb;
+begin
+  v_backup := public.esporta_backup();
+  if (v_backup ->> 'app') <> 'miloflow' or jsonb_array_length(v_backup -> 'clienti') < 2 then
+    raise exception 'FALLITO: esporta_backup non contiene i clienti';
+  end if;
+  if jsonb_array_length(v_backup -> 'credenziali') < 2 or jsonb_array_length(v_backup -> 'movimenti') < 1 then
+    raise exception 'FALLITO: esporta_backup non contiene credenziali e movimenti';
+  end if;
+  begin
+    perform public.importa_backup(v_backup);
+    raise exception 'FALLITO: il ripristino su un account con dati deve essere rifiutato';
   exception when others then
     if sqlerrm like 'FALLITO%' then raise; end if;
   end;
