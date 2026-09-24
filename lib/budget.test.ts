@@ -14,6 +14,8 @@ import {
   formatMeseBreve,
   generaPianoRate,
   intervalloReport,
+  leggiPeriodoReport,
+  meseFinaleReport,
   marginePerCliente,
   nomeCategoria,
   primoDelMese,
@@ -87,6 +89,23 @@ describe("mesi", () => {
     expect(intervalloReport("3mesi", "2026-01-15")).toEqual({ dal: "2025-11-01", al: "2026-01-31" });
     expect(intervalloReport("12mesi", "2026-09-24")).toEqual({ dal: "2025-10-01", al: "2026-09-30" });
     expect(intervalloReport("anno", "2026-09-24")).toEqual({ dal: "2026-01-01", al: "2026-12-31" });
+  });
+
+  it("legge il periodo personalizzato e torna al mese se non è valido", () => {
+    const oggi = "2026-09-24";
+    expect(leggiPeriodoReport({ periodo: "personalizzato", dal: "2026-02-10", al: "2026-05-03" }, oggi)).toEqual({
+      periodo: "personalizzato",
+      dal: "2026-02-10",
+      al: "2026-05-03",
+    });
+    const mese = { periodo: "mese", dal: "2026-09-01", al: "2026-09-30" };
+    expect(leggiPeriodoReport({ periodo: "personalizzato", dal: "2026-05-03", al: "2026-02-10" }, oggi)).toEqual(mese);
+    expect(leggiPeriodoReport({ periodo: "personalizzato", dal: "2026-02-30", al: "2026-05-03" }, oggi)).toEqual(mese);
+    expect(leggiPeriodoReport({ periodo: "personalizzato" }, oggi)).toEqual(mese);
+    expect(leggiPeriodoReport({ periodo: "boh" }, oggi)).toEqual(mese);
+    expect(leggiPeriodoReport({ periodo: "3mesi", dal: "2020-01-01" }, oggi)).toEqual({ periodo: "3mesi", dal: "2026-07-01", al: "2026-09-30" });
+    expect(meseFinaleReport({ periodo: "personalizzato", dal: "2025-01-01", al: "2025-03-15" }, oggi)).toBe("2025-03-01");
+    expect(meseFinaleReport({ periodo: "anno", dal: "2026-01-01", al: "2026-12-31" }, oggi)).toBe("2026-09-01");
   });
 });
 

@@ -9,9 +9,10 @@ import { EmptyState } from "@/components/empty-state";
 import { getFiltroAmbito } from "@/lib/ambito.server";
 import {
   abbonamentiAnnui,
+  fineDelMese,
   fisseVsVariabili,
-  intervalloReport,
-  isPeriodoReport,
+  leggiPeriodoReport,
+  meseFinaleReport,
   marginePerCliente,
   primoDelMese,
   riepilogoDebiti,
@@ -20,7 +21,7 @@ import {
   spesaPerMetodo,
   totaliMese,
   ultimiMesi,
-  type PeriodoReport,
+  type SceltaReport,
 } from "@/lib/budget";
 import { todayISO } from "@/lib/dates/format";
 import {
@@ -35,7 +36,7 @@ import {
   permessiBudget,
 } from "@/lib/queries/budget";
 
-export const metadata: Metadata = { title: "Budget" };
+export const metadata: Metadata = { title: "Budget & Spese" };
 
 const TABS: TabBudget[] = ["mese", "debiti", "report"];
 
@@ -45,15 +46,13 @@ export default async function Page({ searchParams }: PageProps<"/budget">) {
   const oggi = todayISO();
   const meseParam = typeof params.mese === "string" && /^\d{4}-\d{2}-\d{2}$/.test(params.mese) ? params.mese : oggi;
   const mese = primoDelMese(meseParam);
-  const periodo: PeriodoReport = isPeriodoReport(typeof params.periodo === "string" ? params.periodo : undefined)
-    ? (params.periodo as PeriodoReport)
-    : "mese";
+  const report = leggiPeriodoReport(params, oggi);
   const [filtroAmbito, permessi] = await Promise.all([getFiltroAmbito(), permessiBudget()]);
 
   if (!permessi.lettura) {
     return (
       <>
-        <BudgetHeader tab={tab} mese={mese} filtroAmbito={filtroAmbito} periodo={periodo} />
+        <BudgetHeader tab={tab} mese={mese} filtroAmbito={filtroAmbito} report={report} />
         <EmptyState icon={Wallet} title="Budget non disponibile" description="Serve il permesso «budget»: chiedilo all'owner." />
       </>
     );
@@ -61,10 +60,10 @@ export default async function Page({ searchParams }: PageProps<"/budget">) {
 
   return (
     <>
-      <BudgetHeader tab={tab} mese={mese} filtroAmbito={filtroAmbito} periodo={periodo} />
+      <BudgetHeader tab={tab} mese={mese} filtroAmbito={filtroAmbito} report={report} />
       {tab === "mese" && <TabMese mese={mese} filtroAmbito={filtroAmbito} oggi={oggi} scrittura={permessi.scrittura} owner={permessi.owner} />}
       {tab === "debiti" && <TabDebiti filtroAmbito={filtroAmbito} oggi={oggi} scrittura={permessi.scrittura} />}
-      {tab === "report" && <TabReport periodo={periodo} filtroAmbito={filtroAmbito} oggi={oggi} />}
+      {tab === "report" && <TabReport report={report} filtroAmbito={filtroAmbito} oggi={oggi} />}
     </>
   );
 }
@@ -115,19 +114,19 @@ async function TabDebiti({
 }
 
 async function TabReport({
-  periodo,
+  report,
   filtroAmbito,
   oggi,
 }: {
-  periodo: PeriodoReport;
+  report: SceltaReport;
   filtroAmbito: Awaited<ReturnType<typeof getFiltroAmbito>>;
   oggi: string;
 }) {
-  const { dal, al } = intervalloReport(periodo, oggi);
-  const mesi = ultimiMesi(primoDelMese(oggi), 12);
+  const { dal, al } = report;
+  const mesi = ultimiMesi(meseFinaleReport(report, oggi), 12);
   const [movimenti, dodiciMesi, categorie, metodi, servizi, rivendite, debiti] = await Promise.all([
     leggiMovimentiPeriodo(dal, al, filtroAmbito),
-    leggiMovimentiPeriodo(mesi[0], al, filtroAmbito),
+    leggiMovimentiPeriodo(mesi[0], fineDelMese(mesi[11]), filtroAmbito),
     leggiCategorie(),
     leggiMetodi(),
     leggiAbbonamenti(filtroAmbito),
@@ -136,7 +135,7 @@ async function TabReport({
   ]);
   return (
     <ReportView
-      periodo={periodo}
+      periodo={report.periodo}
       intervallo={{ dal, al }}
       filtroAmbito={filtroAmbito}
       perCategoria={spesaPerCategoria(movimenti, categorie)}

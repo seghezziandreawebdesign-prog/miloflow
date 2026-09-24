@@ -17,6 +17,6 @@ export const NAVIGAZIONE: VoceNavigazione[] = [
   { href: "/calendario", label: "Calendario", icon: CalendarDays },
   { href: "/clienti", label: "Clienti", icon: Building2 },
   { href: "/servizi", label: "Servizi & Scadenze", icon: RefreshCw },
-  { href: "/budget", label: "Budget", icon: Wallet },
+  { href: "/budget", label: "Budget & Spese", icon: Wallet },
   { href: "/impostazioni", label: "Impostazioni", icon: Settings },
 ];

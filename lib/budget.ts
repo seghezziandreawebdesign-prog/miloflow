@@ -545,6 +545,7 @@ export const PERIODI_REPORT = [
   { value: "3mesi", label: "Ultimi 3 mesi" },
   { value: "12mesi", label: "Ultimi 12 mesi" },
   { value: "anno", label: "Quest'anno" },
+  { value: "personalizzato", label: "Personalizzato" },
 ] as const;
 export type PeriodoReport = (typeof PERIODI_REPORT)[number]["value"];
 
@@ -552,8 +553,15 @@ export function isPeriodoReport(v: string | undefined): v is PeriodoReport {
   return PERIODI_REPORT.some((p) => p.value === v);
 }
 
-/** Estremi ("yyyy-MM-dd", inclusi) del periodo rispetto a oggi. */
-export function intervalloReport(periodo: PeriodoReport, oggi: string): { dal: string; al: string } {
+/** Vero per una data di calendario esistente in formato "yyyy-MM-dd". */
+export function isDataISO(v: unknown): v is string {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(`${v}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+}
+
+/** Estremi ("yyyy-MM-dd", inclusi) di un periodo predefinito rispetto a oggi. */
+export function intervalloReport(periodo: Exclude<PeriodoReport, "personalizzato">, oggi: string): { dal: string; al: string } {
   const mese = primoDelMese(oggi);
   switch (periodo) {
     case "mese":
@@ -565,4 +573,28 @@ export function intervalloReport(periodo: PeriodoReport, oggi: string): { dal: s
     case "anno":
       return { dal: `${oggi.slice(0, 4)}-01-01`, al: `${oggi.slice(0, 4)}-12-31` };
   }
+}
+
+export type SceltaReport = { periodo: PeriodoReport; dal: string; al: string };
+
+/**
+ * Periodo del report dai parametri dell'URL. "personalizzato" vuole `dal` e
+ * `al` validi e in ordine; altrimenti si torna a "Questo mese".
+ */
+export function leggiPeriodoReport(
+  params: { periodo?: unknown; dal?: unknown; al?: unknown },
+  oggi: string,
+): SceltaReport {
+  const periodo = typeof params.periodo === "string" && isPeriodoReport(params.periodo) ? params.periodo : "mese";
+  if (periodo === "personalizzato") {
+    const { dal, al } = params;
+    if (isDataISO(dal) && isDataISO(al) && dal <= al) return { periodo, dal, al };
+    return { periodo: "mese", ...intervalloReport("mese", oggi) };
+  }
+  return { periodo, ...intervalloReport(periodo, oggi) };
+}
+
+/** Mese finale del grafico dei 12 mesi: quello di `al` per un intervallo scelto, altrimenti il mese corrente. */
+export function meseFinaleReport(scelta: SceltaReport, oggi: string): string {
+  return primoDelMese(scelta.periodo === "personalizzato" ? scelta.al : oggi);
 }

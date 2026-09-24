@@ -68,7 +68,7 @@ Pulsante **+** sempre visibile nell'header con menu: Nuova task, Nuova spesa, Nu
 Palette comandi **⌘K / Ctrl+K** (shadcn Command) che cerca tra clienti, servizi, task, progetti ed eventi e permette di aprirli nel pannello. Include anche comandi rapidi ("Nuova task", "Vai al calendario").
 
 ### 3.5 Layout
-Stile pulito alla Apple: font di sistema, sfondo grigio chiarissimo, superfici bianche, un solo accento blu, filtri a chip. Sidebar a sinistra: **Oggi, Task, Calendario, Clienti, Servizi & Scadenze, Budget, Impostazioni**. Su mobile il menu si apre dal pulsante in alto a destra, il pulsante **+** è fisso in basso a destra e le liste si adattano a card. Solo tema chiaro. L'app deve essere installabile come **PWA** (manifest + icone) a partire dalla fase 6.
+Stile pulito alla Apple: font di sistema, sfondo grigio chiarissimo, superfici bianche, un solo accento blu, filtri a chip. Sidebar a sinistra: **Oggi, Task, Calendario, Clienti, Servizi & Scadenze, Budget & Spese, Impostazioni**. Su mobile il menu si apre dal pulsante in alto a destra, il pulsante **+** è fisso in basso a destra e le liste si adattano a card. Solo tema chiaro. L'app deve essere installabile come **PWA** (manifest + icone) a partire dalla fase 6.
 
 ### 3.6 Stati vuoti e feedback
 Ogni lista vuota ha uno stato vuoto con un'azione chiara ("Aggiungi il primo servizio"). Ogni azione mostra un toast di conferma; le azioni distruttive chiedono conferma. Preferire l'archiviazione alla cancellazione.

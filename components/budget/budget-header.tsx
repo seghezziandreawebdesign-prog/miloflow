@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AmbitoBadge } from "@/components/ambito-badge";
+import { DatePicker } from "@/components/date-picker";
 import { PageHeader } from "@/components/page-header";
 import { Segmented } from "@/components/segmented";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { FiltroAmbito } from "@/lib/ambito";
-import { aggiungiMesi, formatMese, PERIODI_REPORT, primoDelMese, type PeriodoReport } from "@/lib/budget";
+import { aggiungiMesi, formatMese, PERIODI_REPORT, primoDelMese, type SceltaReport } from "@/lib/budget";
 import { capitalize, todayISO } from "@/lib/dates/format";
 import { cn } from "@/lib/utils";
 
@@ -30,21 +31,27 @@ export function hrefBudget(tab: TabBudget, extra: Record<string, string> = {}) {
 export function BudgetHeader({
   tab,
   mese,
-  periodo,
+  report,
   filtroAmbito,
 }: {
   tab: TabBudget;
   mese: string;
-  periodo: PeriodoReport;
+  report: SceltaReport;
   filtroAmbito: FiltroAmbito;
 }) {
   const router = useRouter();
   const meseCorrente = primoDelMese(todayISO());
+  const parametriReport = (r: SceltaReport): Record<string, string> =>
+    r.periodo === "personalizzato" ? { periodo: r.periodo, dal: r.dal, al: r.al } : { periodo: r.periodo };
+  // Un estremo che scavalca l'altro lo trascina con sé.
+  function scegliIntervallo(dal: string, al: string) {
+    router.push(hrefBudget("report", { periodo: "personalizzato", dal, al }));
+  }
 
   return (
     <div className="mb-4 space-y-3">
       <PageHeader
-        title="Budget"
+        title="Budget & Spese"
         description={
           <>
             Spese, previsti, debiti e report. Ambito: <AmbitoBadge ambito={filtroAmbito} className="align-middle" />
@@ -54,7 +61,7 @@ export function BudgetHeader({
           <Segmented
             label="Sezione"
             value={tab}
-            onChange={(t) => router.push(hrefBudget(t, t === "mese" ? { mese } : t === "report" ? { periodo } : {}))}
+            onChange={(t) => router.push(hrefBudget(t, t === "mese" ? { mese } : t === "report" ? parametriReport(report) : {}))}
             opzioni={TABS}
             className="[&>p]:sr-only"
           />
@@ -81,19 +88,43 @@ export function BudgetHeader({
         </div>
       )}
       {tab === "report" && (
-        <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-0.5 scrollbar-none sm:mx-0 sm:px-0">
-          {PERIODI_REPORT.map((p) => (
-            <Link
-              key={p.value}
-              href={hrefBudget("report", { periodo: p.value })}
-              className={cn(
-                "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[13px] whitespace-nowrap ring-1 ring-inset transition-colors",
-                periodo === p.value ? "bg-primary-soft font-medium text-primary ring-primary/15" : "bg-card ring-black/8 hover:bg-muted",
-              )}
-            >
-              {p.label}
-            </Link>
-          ))}
+        <div className="space-y-3">
+          <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-0.5 scrollbar-none sm:mx-0 sm:px-0">
+            {PERIODI_REPORT.map((p) => (
+              <Link
+                key={p.value}
+                href={hrefBudget(
+                  "report",
+                  // "Personalizzato" parte dall'intervallo che stai guardando.
+                  p.value === "personalizzato" ? { periodo: p.value, dal: report.dal, al: report.al } : { periodo: p.value },
+                )}
+                className={cn(
+                  "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[13px] whitespace-nowrap ring-1 ring-inset transition-colors",
+                  report.periodo === p.value ? "bg-primary-soft font-medium text-primary ring-primary/15" : "bg-card ring-black/8 hover:bg-muted",
+                )}
+              >
+                {p.label}
+              </Link>
+            ))}
+          </div>
+          {report.periodo === "personalizzato" && (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Dal</span>
+              <DatePicker
+                size="sm"
+                value={report.dal}
+                onChange={(dal) => dal && scegliIntervallo(dal, dal > report.al ? dal : report.al)}
+                className="w-36"
+              />
+              <span className="text-muted-foreground">al</span>
+              <DatePicker
+                size="sm"
+                value={report.al}
+                onChange={(al) => al && scegliIntervallo(al < report.dal ? al : report.dal, al)}
+                className="w-36"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
