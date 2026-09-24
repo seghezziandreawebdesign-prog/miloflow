@@ -4,7 +4,7 @@ type Enums = Database["public"]["Enums"];
 export type Frequenza = Enums["frequenza_servizio"];
 export type StatoServizio = Enums["stato_servizio"];
 export type ChiPaga = Enums["chi_paga"];
-export type StatoScadenza = "scaduto" | "urgente" | "in_scadenza" | "ok";
+export type StatoScadenza = "scaduto" | "urgente" | "in_scadenza" | "ok" | "senza_scadenza";
 
 export const FREQUENZE: { value: Frequenza; label: string; mesi: number | null }[] = [
   { value: "mensile", label: "Mensile", mesi: 1 },
@@ -31,6 +31,7 @@ export const STATI_SCADENZA: Record<StatoScadenza, { label: string; className: s
   urgente: { label: "Urgente", className: "bg-orange-50 text-orange-700 ring-orange-600/20", dot: "bg-scadenza-urgente" },
   in_scadenza: { label: "In scadenza", className: "bg-yellow-50 text-yellow-800 ring-yellow-600/25", dot: "bg-scadenza-in-scadenza" },
   ok: { label: "Ok", className: "bg-emerald-50 text-emerald-700 ring-emerald-600/20", dot: "bg-scadenza-ok" },
+  senza_scadenza: { label: "Senza scadenza", className: "bg-muted text-muted-foreground ring-black/8", dot: "bg-muted-foreground/50" },
 };
 
 export function frequenza(value: Frequenza) {

@@ -300,7 +300,8 @@ select public._test_conta('select 1 from public.v_servizi where costo is null', 
 select public._test_conta('select 1 from public.servizi_economico', 0, 'costi senza permesso budget');
 select public._test_conta('select 1 from public.servizi_clienti_economico', 0, 'prezzi di rivendita senza permesso budget');
 select public._test_conta('select 1 from public.credenziali', 0, 'credenziali senza permesso');
-select public._test_conta('select 1 from public.tipi_servizio', 8, 'tipi di servizio');
+-- 8 del seed iniziale + "Accesso" (migration servizi_senza_scadenza).
+select public._test_conta('select 1 from public.tipi_servizio', 9, 'tipi di servizio');
 select public._test_conta('select 1 from public.progetti', 1, 'progetti visibili (solo P1)');
 select public._test_conta('select 1 from public.task', 2, 'task visibili (T1 con A, T2 assegnata)');
 select public._test_conta('select 1 from public.eventi', 1, 'eventi visibili (solo E1)');

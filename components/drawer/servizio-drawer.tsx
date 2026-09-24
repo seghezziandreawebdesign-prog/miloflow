@@ -169,14 +169,16 @@ export function ServizioDrawer({ id }: { id: string }) {
           ) : (
             <span className="rounded-full bg-muted px-2 py-0.5 text-xs capitalize">{s.stato}</span>
           )}
-          <span>
-            {freq.value === "una_tantum" ? "Scadenza" : "Prossima scadenza"} {formatDate(s.prossima_scadenza ?? "")}
-          </span>
+          {s.prossima_scadenza && (
+            <span>
+              {freq.value === "una_tantum" ? "Scadenza" : "Prossima scadenza"} {formatDate(s.prossima_scadenza)}
+            </span>
+          )}
         </PannelloDescription>
       </PannelloHeader>
 
       <div className="flex flex-wrap gap-2 px-4 sm:px-5">
-        {freq.mesi && (
+        {freq.mesi && s.prossima_scadenza && (
           <Button onClick={() => setRinnovaOpen(true)}>
             <RefreshCw />
             Segna come rinnovato
@@ -201,7 +203,7 @@ export function ServizioDrawer({ id }: { id: string }) {
             <MoreHorizontal />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            {clienti.length > 0 && (
+            {clienti.length > 0 && s.prossima_scadenza && (
               <DropdownMenuItem onClick={() => setAvvisaOpen(true)}>
                 <Mail />
                 Avvisa cliente
@@ -270,16 +272,20 @@ export function ServizioDrawer({ id }: { id: string }) {
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
           {puoBudget && (
             <Dato label="Costo">
-              {s.costo === null ? "—" : `${formatCurrency(s.costo)} · ${freq.label.toLowerCase()}`}
-              {s.costo !== null && freq.mesi && freq.mesi !== 12 && (
+              {s.costo === null ? "—" : s.prossima_scadenza ? `${formatCurrency(s.costo)} · ${freq.label.toLowerCase()}` : formatCurrency(s.costo)}
+              {s.costo !== null && s.prossima_scadenza && freq.mesi && freq.mesi !== 12 && (
                 <span className="block text-xs text-muted-foreground">{formatCurrency(costoAnnuo(s.costo, freq.value))} l&apos;anno</span>
               )}
             </Dato>
           )}
-          {!puoBudget && <Dato label="Frequenza">{freq.label}</Dato>}
+          {!puoBudget && <Dato label="Frequenza">{s.prossima_scadenza ? freq.label : "—"}</Dato>}
           <Dato label="Chi paga">{CHI_PAGA.find((c) => c.value === s.chi_paga)?.label ?? "—"}</Dato>
-          <Dato label="Rinnovo automatico">{s.rinnovo_automatico ? "Sì" : "No"}</Dato>
-          <Dato label="Preavviso">{s.preavviso_effettivo} giorni</Dato>
+          {s.prossima_scadenza && (
+            <>
+              <Dato label="Rinnovo automatico">{s.rinnovo_automatico ? "Sì" : "No"}</Dato>
+              <Dato label="Preavviso">{s.preavviso_effettivo} giorni</Dato>
+            </>
+          )}
           <Dato label="Fornitore">{s.fornitore ?? "—"}</Dato>
           {puoBudget && s.chi_paga === "io" && (
             <Dato label="Metodo di pagamento">

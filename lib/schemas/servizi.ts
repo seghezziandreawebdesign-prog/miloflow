@@ -13,7 +13,9 @@ export const servizioSchema = z.object({
   nome: testo.min(1, "Inserisci il nome"),
   costo: importo,
   frequenza: z.enum(["mensile", "trimestrale", "semestrale", "annuale", "biennale", "una_tantum"]),
-  prossima_scadenza: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Scegli la data di scadenza"),
+  // Un accesso (email, account…) non scade: la data resta vuota.
+  senza_scadenza: z.boolean(),
+  prossima_scadenza: z.string().regex(/^(\d{4}-\d{2}-\d{2})?$/, "Scegli la data di scadenza"),
   clienti: z.array(z.object({ cliente_id: z.uuid(), prezzo_rivendita: importo })).max(50),
   ambito: z.enum(["lavoro", "personale"]),
   tipo_id: z.union([z.uuid(), z.literal("")]),
@@ -27,6 +29,15 @@ export const servizioSchema = z.object({
   username: testo,
   stato: z.enum(["attivo", "disdetto", "archiviato"]),
   note: testo,
+}).check((ctx) => {
+  if (!ctx.value.senza_scadenza && !/^\d{4}-\d{2}-\d{2}$/.test(ctx.value.prossima_scadenza)) {
+    ctx.issues.push({
+      code: "custom",
+      message: "Scegli la data di scadenza",
+      path: ["prossima_scadenza"],
+      input: ctx.value.prossima_scadenza,
+    });
+  }
 });
 
 export type ServizioFormValues = z.infer<typeof servizioSchema>;
@@ -36,6 +47,7 @@ export function servizioVuoto(ambito: "lavoro" | "personale", scadenza: string):
     nome: "",
     costo: "",
     frequenza: "annuale",
+    senza_scadenza: false,
     prossima_scadenza: scadenza,
     clienti: [],
     ambito,
@@ -66,8 +78,9 @@ export function servizioToRpc(v: ServizioFormValues) {
       nome: v.nome,
       tipo_id: v.tipo_id,
       fornitore: v.fornitore,
-      frequenza: v.frequenza,
-      prossima_scadenza: v.prossima_scadenza,
+      // Senza scadenza la frequenza non ha significato: si salva "una_tantum".
+      frequenza: v.senza_scadenza ? "una_tantum" : v.frequenza,
+      prossima_scadenza: v.senza_scadenza ? "" : v.prossima_scadenza,
       rinnovo_automatico: v.rinnovo_automatico,
       chi_paga: v.chi_paga,
       preavviso_giorni: v.preavviso_giorni,

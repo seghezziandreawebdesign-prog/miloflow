@@ -60,6 +60,7 @@ export function ServizioForm({
 
   const tipoId = useWatch({ control, name: "tipo_id" });
   const frequenza = useWatch({ control, name: "frequenza" });
+  const senzaScadenza = useWatch({ control, name: "senza_scadenza" });
   const clienti = useWatch({ control, name: "clienti" });
   const costo = useWatch({ control, name: "costo" });
   const ambito = useWatch({ control, name: "ambito" });
@@ -139,39 +140,61 @@ export function ServizioForm({
               <FieldError errors={[err.costo]} />
             </Field>
           )}
-          <Field>
-            <FieldLabel>Frequenza</FieldLabel>
-            <Controller
-              control={control}
-              name="frequenza"
-              render={({ field }) => (
-                <Select items={FREQUENZE} value={field.value} onValueChange={(v) => v && field.onChange(v)}>
-                  <SelectTrigger className="w-full" aria-label="Frequenza">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FREQUENZE.map((f) => (
-                      <SelectItem key={f.value} value={f.value}>
-                        {f.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </Field>
-          <Field data-invalid={Boolean(err.prossima_scadenza) || undefined}>
-            <FieldLabel>{frequenza === "una_tantum" ? "Scadenza" : "Prossima scadenza"}</FieldLabel>
-            <Controller
-              control={control}
-              name="prossima_scadenza"
-              render={({ field }) => (
-                <DatePicker value={field.value} onChange={field.onChange} invalid={Boolean(err.prossima_scadenza)} />
-              )}
-            />
-            <FieldError errors={[err.prossima_scadenza]} />
-          </Field>
+          {!senzaScadenza && (
+            <>
+              <Field>
+                <FieldLabel>Frequenza</FieldLabel>
+                <Controller
+                  control={control}
+                  name="frequenza"
+                  render={({ field }) => (
+                    <Select items={FREQUENZE} value={field.value} onValueChange={(v) => v && field.onChange(v)}>
+                      <SelectTrigger className="w-full" aria-label="Frequenza">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FREQUENZE.map((f) => (
+                          <SelectItem key={f.value} value={f.value}>
+                            {f.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </Field>
+              <Field data-invalid={Boolean(err.prossima_scadenza) || undefined}>
+                <FieldLabel>{frequenza === "una_tantum" ? "Scadenza" : "Prossima scadenza"}</FieldLabel>
+                <Controller
+                  control={control}
+                  name="prossima_scadenza"
+                  render={({ field }) => (
+                    <DatePicker value={field.value} onChange={field.onChange} invalid={Boolean(err.prossima_scadenza)} />
+                  )}
+                />
+                <FieldError errors={[err.prossima_scadenza]} />
+              </Field>
+            </>
+          )}
         </div>
+
+        <Field orientation="horizontal">
+          <Controller
+            control={control}
+            name="senza_scadenza"
+            render={({ field }) => (
+              <Checkbox
+                id="servizio-senza-scadenza"
+                aria-label="Senza scadenza"
+                checked={field.value}
+                onCheckedChange={(v) => field.onChange(v === true)}
+              />
+            )}
+          />
+          <FieldLabel htmlFor="servizio-senza-scadenza" className="font-normal">
+            Senza scadenza (accesso, email, account…)
+          </FieldLabel>
+        </Field>
 
         <Field>
           <FieldLabel htmlFor="servizio-clienti">Clienti</FieldLabel>
@@ -352,20 +375,22 @@ export function ServizioForm({
                   )}
                 />
               </Field>
-              <Field data-invalid={Boolean(err.preavviso_giorni) || undefined}>
-                <FieldLabel htmlFor="servizio-preavviso">Preavviso (giorni)</FieldLabel>
-                <Input
-                  id="servizio-preavviso"
-                  {...register("preavviso_giorni")}
-                  inputMode="numeric"
-                  placeholder={String(tipo?.preavviso_default ?? 30)}
-                  aria-invalid={Boolean(err.preavviso_giorni) || undefined}
-                />
-                <FieldDescription>
-                  Vuoto = {tipo ? `quello del tipo (${tipo.preavviso_default} giorni)` : "30 giorni"}.
-                </FieldDescription>
-                <FieldError errors={[err.preavviso_giorni]} />
-              </Field>
+              {!senzaScadenza && (
+                <Field data-invalid={Boolean(err.preavviso_giorni) || undefined}>
+                  <FieldLabel htmlFor="servizio-preavviso">Preavviso (giorni)</FieldLabel>
+                  <Input
+                    id="servizio-preavviso"
+                    {...register("preavviso_giorni")}
+                    inputMode="numeric"
+                    placeholder={String(tipo?.preavviso_default ?? 30)}
+                    aria-invalid={Boolean(err.preavviso_giorni) || undefined}
+                  />
+                  <FieldDescription>
+                    Vuoto = {tipo ? `quello del tipo (${tipo.preavviso_default} giorni)` : "30 giorni"}.
+                  </FieldDescription>
+                  <FieldError errors={[err.preavviso_giorni]} />
+                </Field>
+              )}
               <Field>
                 <FieldLabel htmlFor="servizio-fornitore">Fornitore</FieldLabel>
                 <Input id="servizio-fornitore" {...register("fornitore")} placeholder="es. Aruba, SiteGround" />
@@ -391,23 +416,25 @@ export function ServizioForm({
                   )}
                 />
               </Field>
-              <Field orientation="horizontal" className="self-end pb-2">
-                <Controller
-                  control={control}
-                  name="rinnovo_automatico"
-                  render={({ field }) => (
-                    <Checkbox
-                      id="servizio-auto"
-                      aria-label="Rinnovo automatico"
-                      checked={field.value}
-                      onCheckedChange={(v) => field.onChange(v === true)}
-                    />
-                  )}
-                />
-                <FieldLabel htmlFor="servizio-auto" className="font-normal">
-                  Rinnovo automatico
-                </FieldLabel>
-              </Field>
+              {!senzaScadenza && (
+                <Field orientation="horizontal" className="self-end pb-2">
+                  <Controller
+                    control={control}
+                    name="rinnovo_automatico"
+                    render={({ field }) => (
+                      <Checkbox
+                        id="servizio-auto"
+                        aria-label="Rinnovo automatico"
+                        checked={field.value}
+                        onCheckedChange={(v) => field.onChange(v === true)}
+                      />
+                    )}
+                  />
+                  <FieldLabel htmlFor="servizio-auto" className="font-normal">
+                    Rinnovo automatico
+                  </FieldLabel>
+                </Field>
+              )}
             </div>
 
             {mostraEconomico && clientiField.fields.length > 0 && (

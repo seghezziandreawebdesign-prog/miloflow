@@ -1252,7 +1252,7 @@ export type Database = {
           nome: string
           note: string | null
           preavviso_giorni: number | null
-          prossima_scadenza: string
+          prossima_scadenza: string | null
           rinnovo_automatico: boolean
           stato: Database["public"]["Enums"]["stato_servizio"]
           tipo_id: string | null
@@ -1271,7 +1271,7 @@ export type Database = {
           nome: string
           note?: string | null
           preavviso_giorni?: number | null
-          prossima_scadenza: string
+          prossima_scadenza?: string | null
           rinnovo_automatico?: boolean
           stato?: Database["public"]["Enums"]["stato_servizio"]
           tipo_id?: string | null
@@ -1290,7 +1290,7 @@ export type Database = {
           nome?: string
           note?: string | null
           preavviso_giorni?: number | null
-          prossima_scadenza?: string
+          prossima_scadenza?: string | null
           rinnovo_automatico?: boolean
           stato?: Database["public"]["Enums"]["stato_servizio"]
           tipo_id?: string | null
