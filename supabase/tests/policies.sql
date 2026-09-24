@@ -265,6 +265,12 @@ select public._test_rifiutato(
   $q$insert into public.eventi (ambito, titolo, inizio, cliente_id)
      values ('lavoro', 'X', now(), '10000000-0000-0000-0000-00000000000a')$q$,
   'crea un evento con calendario in sola lettura');
+select public._test_conta('select 1 from public.v_clienti where servizi_attivi = 1', 1,
+  'v_clienti conta solo i servizi visibili');
+select public._test_rifiutato(
+  $q$select public.imposta_contatto_principale(
+       (select id from public.clienti_contatti where nome = 'Contatto A'))$q$,
+  'cambia il contatto principale con clienti in sola lettura');
 
 reset role;
 

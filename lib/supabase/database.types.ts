@@ -45,6 +45,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "accessi_clienti_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "v_clienti"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "accessi_clienti_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -270,6 +277,13 @@ export type Database = {
             referencedRelation: "clienti"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "clienti_contatti_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "v_clienti"
+            referencedColumns: ["id"]
+          },
         ]
       }
       clienti_diario: {
@@ -306,6 +320,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clienti_diario_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "v_clienti"
             referencedColumns: ["id"]
           },
         ]
@@ -347,6 +368,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clienti_link_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "v_clienti"
             referencedColumns: ["id"]
           },
         ]
@@ -400,6 +428,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credenziali_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "v_clienti"
             referencedColumns: ["id"]
           },
           {
@@ -572,6 +607,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eventi_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "v_clienti"
             referencedColumns: ["id"]
           },
           {
@@ -776,6 +818,13 @@ export type Database = {
             referencedRelation: "clienti"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "progetti_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "v_clienti"
+            referencedColumns: ["id"]
+          },
         ]
       }
       servizi: {
@@ -877,6 +926,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servizi_clienti_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "v_clienti"
             referencedColumns: ["id"]
           },
           {
@@ -1129,6 +1185,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "task_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "v_clienti"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "task_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
@@ -1205,6 +1268,93 @@ export type Database = {
         }
         Relationships: []
       }
+      v_clienti: {
+        Row: {
+          cap: string | null
+          citta: string | null
+          codice_fiscale: string | null
+          codice_sdi: string | null
+          colore: string | null
+          created_at: string | null
+          created_by: string | null
+          email: string | null
+          id: string | null
+          indirizzo: string | null
+          logo_path: string | null
+          nazione: string | null
+          nome_breve: string | null
+          note: string | null
+          pec: string | null
+          piva: string | null
+          provincia: string | null
+          ragione_sociale: string | null
+          servizi_attivi: number | null
+          sito: string | null
+          stato: Database["public"]["Enums"]["stato_cliente"] | null
+          tags: string[] | null
+          task_aperte: number | null
+          telefono: string | null
+          tipo: Database["public"]["Enums"]["tipo_cliente"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          cap?: string | null
+          citta?: string | null
+          codice_fiscale?: string | null
+          codice_sdi?: string | null
+          colore?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          id?: string | null
+          indirizzo?: string | null
+          logo_path?: string | null
+          nazione?: string | null
+          nome_breve?: string | null
+          note?: string | null
+          pec?: string | null
+          piva?: string | null
+          provincia?: string | null
+          ragione_sociale?: string | null
+          servizi_attivi?: never
+          sito?: string | null
+          stato?: Database["public"]["Enums"]["stato_cliente"] | null
+          tags?: string[] | null
+          task_aperte?: never
+          telefono?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_cliente"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          cap?: string | null
+          citta?: string | null
+          codice_fiscale?: string | null
+          codice_sdi?: string | null
+          colore?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          id?: string | null
+          indirizzo?: string | null
+          logo_path?: string | null
+          nazione?: string | null
+          nome_breve?: string | null
+          note?: string | null
+          pec?: string | null
+          piva?: string | null
+          provincia?: string | null
+          ragione_sociale?: string | null
+          servizi_attivi?: never
+          sito?: string | null
+          stato?: Database["public"]["Enums"]["stato_cliente"] | null
+          tags?: string[] | null
+          task_aperte?: never
+          telefono?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_cliente"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       v_servizi: {
         Row: {
           ambito: Database["public"]["Enums"]["ambito"] | null
@@ -1253,6 +1403,10 @@ export type Database = {
       }
     }
     Functions: {
+      imposta_contatto_principale: {
+        Args: { p_contatto_id: string }
+        Returns: undefined
+      }
       is_owner: { Args: never; Returns: boolean }
       oggi: { Args: never; Returns: string }
       puo: {
