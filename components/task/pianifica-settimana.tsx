@@ -150,7 +150,7 @@ export function PianificaSettimana({ tasks }: { tasks: TaskLista[] }) {
 
       <DragOverlay dropAnimation={null}>
         {trascinata && (
-          <div className="rounded-lg bg-background shadow-lg ring-1 ring-foreground/10">
+          <div className="rounded-lg bg-background shadow-lg ring-1 ring-black/8">
             <TaskRow task={trascinata} opzioni={{ senzaData: true }} />
           </div>
         )}
@@ -180,7 +180,7 @@ function ZonaRilascio({
       ref={setNodeRef}
       aria-label={titolo}
       className={cn(
-        "min-h-14 space-y-1 rounded-xl p-2 ring-1 ring-foreground/10 transition-colors",
+        "min-h-14 space-y-1 rounded-xl p-2 ring-1 ring-black/8 transition-colors",
         evidenza === "oggi" && "ring-primary/40",
         evidenza === "passato" && "opacity-70",
         isOver && "bg-primary/5 ring-2 ring-primary",

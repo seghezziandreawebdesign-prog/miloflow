@@ -146,7 +146,7 @@ export function CredenzialiSection({ proprietario, username }: { proprietario: P
           </button>
         </p>
       ) : (
-        <ul className="divide-y rounded-md ring-1 ring-foreground/10">
+        <ul className="divide-y rounded-md ring-1 ring-black/8">
           {credenziali.map((c) => (
             <li key={c.id} className="flex items-center gap-2 px-2.5 py-2 text-sm">
               <KeyRound className="size-3.5 shrink-0 text-muted-foreground" />

@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BarraFiltri } from "@/components/filtri/barra-filtri";
+import { FiltroChip } from "@/components/filtri/filtro-chip";
 import type { FiltroAmbito } from "@/lib/ambito";
 import { todayISO } from "@/lib/dates/format";
 import { addDays } from "@/lib/dates/giorni";
@@ -41,7 +42,7 @@ export function Board({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
       value: progetto,
       set: setProgetto,
       items: [
-        { value: TUTTI, label: "Ogni progetto" },
+        { value: TUTTI, label: "Tutti" },
         { value: "nessuno", label: "Senza progetto" },
         ...(opzioni?.progetti ?? []).map((p) => ({ value: p.id, label: p.nome })),
       ],
@@ -51,7 +52,7 @@ export function Board({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
       value: cliente,
       set: setCliente,
       items: [
-        { value: TUTTI, label: "Ogni cliente" },
+        { value: TUTTI, label: "Tutti" },
         { value: "nessuno", label: "Senza cliente" },
         ...(opzioni?.clienti ?? []).map((c) => ({ value: c.id, label: c.nome })),
       ],
@@ -60,25 +61,23 @@ export function Board({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <BarraFiltri
+        azzera={
+          progetto !== TUTTI || cliente !== TUTTI
+            ? () => {
+                setProgetto(TUTTI);
+                setCliente(TUTTI);
+              }
+            : null
+        }
+      >
         {filtri.map((f) => (
-          <Select key={f.label} items={f.items} value={f.value} onValueChange={(v) => v && f.set(v)}>
-            <SelectTrigger aria-label={f.label} className="max-w-56">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {f.items.map((i) => (
-                <SelectItem key={i.value} value={i.value}>
-                  {i.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FiltroChip key={f.label} label={f.label} value={f.value} onChange={f.set} opzioni={f.items} />
         ))}
-        <p className="text-xs text-muted-foreground">
-          Trascina una task per cambiarne lo stato. In «Fatto» restano le completate degli ultimi {GIORNI_FATTE} giorni.
-        </p>
-      </div>
+      </BarraFiltri>
+      <p className="text-xs text-muted-foreground">
+        Trascina una task per cambiarne lo stato. In «Fatto» restano le completate degli ultimi {GIORNI_FATTE} giorni.
+      </p>
       {isPending ? <ListaSkeleton /> : <Kanban tasks={tasks} opzioniRiga={{}} />}
     </div>
   );

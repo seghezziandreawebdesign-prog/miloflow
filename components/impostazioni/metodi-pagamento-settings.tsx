@@ -68,7 +68,7 @@ export function MetodiPagamentoSettings({ metodi }: { metodi: MetodoPagamento[] 
         </CardAction>
       </CardHeader>
       <CardContent className="space-y-3">
-        <ul className="divide-y rounded-md ring-1 ring-foreground/10">
+        <ul className="divide-y rounded-md ring-1 ring-black/8">
           {visibili.map((m) => {
             const Tipo = tipoMetodo(m.tipo).icon;
             return (

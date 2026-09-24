@@ -7,12 +7,12 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, Search } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useApriEntita } from "@/components/drawer/use-apri-entita";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BarraFiltri, CampoRicerca } from "@/components/filtri/barra-filtri";
+import { FiltroChip } from "@/components/filtri/filtro-chip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { FiltroAmbito } from "@/lib/ambito";
 import { formatDate, todayISO } from "@/lib/dates/format";
@@ -46,20 +46,23 @@ type Filtri = {
 
 const TUTTI = "tutti";
 
+const FILTRI_INIZIALI: Filtri = {
+  testo: "",
+  stato: "aperte",
+  priorita: TUTTI,
+  ambito: TUTTI,
+  cliente: TUTTI,
+  progetto: TUTTI,
+  assegnata: TUTTI,
+};
+
 export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
   const { data, isPending } = useTaskArchivio(filtroAmbito);
   const { data: opzioni } = useOpzioniTask();
   const apri = useApriEntita();
-  const [filtri, setFiltri] = useState<Filtri>({
-    testo: "",
-    stato: "aperte",
-    priorita: TUTTI,
-    ambito: TUTTI,
-    cliente: TUTTI,
-    progetto: TUTTI,
-    assegnata: TUTTI,
-  });
+  const [filtri, setFiltri] = useState<Filtri>(FILTRI_INIZIALI);
   const set = (patch: Partial<Filtri>) => setFiltri((f) => ({ ...f, ...patch }));
+  const filtriAttivi = (Object.keys(FILTRI_INIZIALI) as (keyof Filtri)[]).some((k) => filtri[k] !== FILTRI_INIZIALI[k]);
   const oggi = todayISO();
   const multiUtente = (opzioni?.utenti.length ?? 0) > 1;
 
@@ -163,21 +166,22 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
 
   const table = useTable({ features, columns, data: filtrate });
 
-  const selettori: { key: keyof Filtri; label: string; items: { value: string; label: string }[] }[] = [
+  const selettori: { key: keyof Filtri; label: string; items: { value: string; label: string }[]; neutro?: string }[] = [
     {
       key: "stato",
       label: "Stato",
+      neutro: "aperte",
       items: [
         { value: "aperte", label: "Da completare" },
         ...STATI_TASK.map((s) => ({ value: s.value, label: s.label })),
-        { value: TUTTI, label: "Tutti gli stati" },
+        { value: TUTTI, label: "Tutti" },
       ],
     },
     {
       key: "priorita",
       label: "Priorità",
       items: [
-        { value: TUTTI, label: "Ogni priorità" },
+        { value: TUTTI, label: "Tutte" },
         ...PRIORITA.map((p) => ({ value: String(p.value), label: p.label })),
         { value: "nessuna", label: "Senza priorità" },
       ],
@@ -188,7 +192,7 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
             key: "ambito" as const,
             label: "Ambito",
             items: [
-              { value: TUTTI, label: "Lavoro e personale" },
+              { value: TUTTI, label: "Entrambi" },
               { value: "lavoro", label: "Lavoro" },
               { value: "personale", label: "Personale" },
             ],
@@ -199,7 +203,7 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
       key: "progetto",
       label: "Progetto",
       items: [
-        { value: TUTTI, label: "Ogni progetto" },
+        { value: TUTTI, label: "Tutti" },
         { value: "nessuno", label: "Senza progetto" },
         ...(opzioni?.progetti ?? []).map((p) => ({ value: p.id, label: p.nome })),
       ],
@@ -208,7 +212,7 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
       key: "cliente",
       label: "Cliente",
       items: [
-        { value: TUTTI, label: "Ogni cliente" },
+        { value: TUTTI, label: "Tutti" },
         { value: "nessuno", label: "Senza cliente" },
         ...(opzioni?.clienti ?? []).map((c) => ({ value: c.id, label: c.nome })),
       ],
@@ -230,32 +234,14 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full sm:w-64">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={filtri.testo}
-            onChange={(e) => set({ testo: e.target.value })}
-            placeholder="Cerca nelle task…"
-            aria-label="Cerca nelle task"
-            className="pl-8"
-          />
-        </div>
+      <BarraFiltri
+        ricerca={<CampoRicerca value={filtri.testo} onChange={(v) => set({ testo: v })} placeholder="Cerca nelle task…" label="Cerca nelle task" />}
+        azzera={filtriAttivi ? () => setFiltri(FILTRI_INIZIALI) : null}
+      >
         {selettori.map((s) => (
-          <Select key={s.key} items={s.items} value={filtri[s.key]} onValueChange={(v) => v && set({ [s.key]: v })}>
-            <SelectTrigger aria-label={s.label} className="max-w-52">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {s.items.map((i) => (
-                <SelectItem key={i.value} value={i.value}>
-                  {i.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FiltroChip key={s.key} label={s.label} value={filtri[s.key]} onChange={(v) => set({ [s.key]: v })} opzioni={s.items} neutro={s.neutro} />
         ))}
-      </div>
+      </BarraFiltri>
 
       {isPending ? (
         <ListaSkeleton />
@@ -264,7 +250,7 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
       ) : (
         <>
           <ListaTask tasks={table.getRowModel().rows.map((r) => r.original)} className="md:hidden" />
-          <div className="hidden overflow-hidden rounded-xl ring-1 ring-foreground/10 md:block">
+          <div className="hidden overflow-hidden rounded-xl ring-1 ring-black/8 md:block">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((hg) => (

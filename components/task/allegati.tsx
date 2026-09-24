@@ -190,7 +190,7 @@ export function AllegatiTask({ stato }: { stato: ReturnType<typeof useAllegatiTa
       {immagini.length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {immagini.map((a) => (
-            <div key={a.percorso} className="group relative aspect-square overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10">
+            <div key={a.percorso} className="group relative aspect-square overflow-hidden rounded-lg bg-muted ring-1 ring-black/8">
               {a.url && (
                 <button type="button" onClick={() => setAnteprima(a)} className="size-full" aria-label={`Apri ${a.nome}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- URL firmato temporaneo, fuori dall'ottimizzatore */}
@@ -211,7 +211,7 @@ export function AllegatiTask({ stato }: { stato: ReturnType<typeof useAllegatiTa
       )}
 
       {altri.length > 0 && (
-        <ul className="divide-y rounded-lg ring-1 ring-foreground/10">
+        <ul className="divide-y rounded-lg ring-1 ring-black/8">
           {altri.map((a) => (
             <li key={a.percorso} className="flex items-center gap-2 px-3 py-2 text-sm">
               <FileText className="size-4 shrink-0 text-muted-foreground" />
@@ -347,7 +347,7 @@ export function AllegatiInAttesa({
             <li
               key={`${f.name}-${i}`}
               className={cn(
-                "flex items-center gap-2 rounded-lg py-1 pr-1 pl-1 text-xs ring-1 ring-foreground/10",
+                "flex items-center gap-2 rounded-lg py-1 pr-1 pl-1 text-xs ring-1 ring-black/8",
                 !anteprime.get(f) && "pl-2",
               )}
             >

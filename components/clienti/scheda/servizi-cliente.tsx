@@ -92,7 +92,7 @@ export function ServiziCliente({
         </Button>
       </div>
 
-      <ul className="divide-y overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
+      <ul className="divide-y overflow-hidden rounded-xl bg-card ring-1 ring-black/8">
         {servizi.map((s) => {
           const prezzo = s.clienti.find((c) => c.id === clienteId)?.prezzo_rivendita ?? null;
           return (

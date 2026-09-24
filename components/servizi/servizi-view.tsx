@@ -1,15 +1,16 @@
 "use client";
 
-import { CalendarRange, List, Plus, RefreshCw, Search } from "lucide-react";
+import { CalendarRange, List, Plus, RefreshCw } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { useApriEntita } from "@/components/drawer/use-apri-entita";
 import { EmptyState } from "@/components/empty-state";
+import { BarraFiltri, CampoRicerca } from "@/components/filtri/barra-filtri";
+import { FiltroChip } from "@/components/filtri/filtro-chip";
+import { Segmented } from "@/components/segmented";
 import { TipoIcona } from "@/components/tipo-icona";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ambitoDiDefault, type FiltroAmbito } from "@/lib/ambito";
 import { capitalize, formatCurrency, formatDate, todayISO } from "@/lib/dates/format";
 import { etichettaMetodo } from "@/lib/metodi-pagamento";
@@ -30,10 +31,10 @@ const FILTRI_STATO = [
   { value: "attivo", label: "Attivi" },
   { value: "disdetto", label: "Disdetti" },
   { value: "archiviato", label: "Archiviati" },
-  { value: "tutti", label: "Tutti gli stati" },
+  { value: "tutti", label: "Tutti" },
 ];
 const FILTRI_CHI_PAGA = [
-  { value: "tutti", label: "Chiunque paghi" },
+  { value: "tutti", label: "Chiunque" },
   { value: "io", label: "Pago io" },
   { value: "cliente", label: "Paga il cliente" },
 ];
@@ -107,6 +108,8 @@ export function ServiziView({
     });
   }, [servizi, query, scadenza, stato, tipo, cliente, chiPaga]);
 
+  const filtriAttivi = stato !== "attivo" || tipo !== "tutti" || cliente !== "tutti" || chiPaga !== "tutti" || query !== "";
+
   const dialog = (
     <ServizioDialog
       open={creaAperto}
@@ -137,87 +140,69 @@ export function ServiziView({
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <Contatore
-          label="Scaduti"
-          valore={conteggi.scaduti}
-          attivo={scadenza === "scaduti"}
-          colore="text-red-700"
-          onClick={() => setScadenza(scadenza === "scaduti" ? "tutti" : "scaduti")}
-        />
-        <Contatore
-          label="Entro 7 giorni"
-          valore={conteggi["7"]}
-          attivo={scadenza === "7"}
-          colore="text-orange-700"
-          onClick={() => setScadenza(scadenza === "7" ? "tutti" : "7")}
-        />
-        <Contatore
-          label="Entro 30 giorni"
-          valore={conteggi["30"]}
-          attivo={scadenza === "30"}
-          colore="text-yellow-700"
-          onClick={() => setScadenza(scadenza === "30" ? "tutti" : "30")}
-        />
-      </div>
+      <Segmented
+        label=""
+        size="lg"
+        value={scadenza}
+        onChange={setScadenza}
+        opzioni={[
+          { value: "tutti", label: "Attivi", conteggio: attivi.length },
+          { value: "scaduti", label: "Scaduti", conteggio: conteggi.scaduti, tono: "text-red-600" },
+          { value: "7", label: "Entro 7 giorni", conteggio: conteggi["7"], tono: "text-orange-600" },
+          { value: "30", label: "Entro 30 giorni", conteggio: conteggi["30"], tono: "text-yellow-700" },
+        ]}
+        className="max-w-2xl"
+      />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-48 flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cerca per nome, fornitore, cliente…"
-            className="pl-8"
-            aria-label="Cerca servizi"
-          />
-        </div>
-        <Filtro label="Stato" value={stato} onChange={setStato} opzioni={FILTRI_STATO} disabled={scadenza !== "tutti"} />
+      <BarraFiltri
+        ricerca={
+          <CampoRicerca value={query} onChange={setQuery} placeholder="Cerca per nome, fornitore, cliente…" label="Cerca servizi" />
+        }
+        destra={
+          <>
+            <Segmented
+              label="Vista"
+              value={vista}
+              onChange={setVista}
+              soloIcone="mobile"
+              opzioni={[
+                { value: "lista", label: "Lista", icon: List },
+                { value: "mese", label: "Per mese", icon: CalendarRange },
+              ]}
+              className="[&>p]:sr-only"
+            />
+            <Button className="hidden rounded-full sm:inline-flex" onClick={() => setCreaAperto(true)}>
+              <Plus />
+              Nuovo servizio
+            </Button>
+          </>
+        }
+        azzera={
+          filtriAttivi
+            ? () => {
+                setStato("attivo");
+                setTipo("tutti");
+                setCliente("tutti");
+                setChiPaga("tutti");
+                setQuery("");
+              }
+            : null
+        }
+      >
+        <FiltroChip label="Stato" value={stato} onChange={setStato} opzioni={FILTRI_STATO} disabled={scadenza !== "tutti"} />
         {tipi.length > 0 && (
-          <Filtro label="Tipo" value={tipo} onChange={setTipo} opzioni={[{ value: "tutti", label: "Tutti i tipi" }, ...tipi]} />
+          <FiltroChip label="Tipo" value={tipo} onChange={setTipo} opzioni={[{ value: "tutti", label: "Tutti" }, ...tipi]} />
         )}
         {clienti.length > 0 && (
-          <Filtro
-            label="Cliente"
-            value={cliente}
-            onChange={setCliente}
-            opzioni={[{ value: "tutti", label: "Tutti i clienti" }, ...clienti]}
-          />
+          <FiltroChip label="Cliente" value={cliente} onChange={setCliente} opzioni={[{ value: "tutti", label: "Tutti" }, ...clienti]} />
         )}
-        <Filtro label="Chi paga" value={chiPaga} onChange={setChiPaga} opzioni={FILTRI_CHI_PAGA} />
-        <div className="inline-flex rounded-lg bg-muted p-0.5" role="radiogroup" aria-label="Vista">
-          {(
-            [
-              ["lista", List, "Lista"],
-              ["mese", CalendarRange, "Per mese"],
-            ] as const
-          ).map(([v, Icon, label]) => (
-            <button
-              key={v}
-              type="button"
-              role="radio"
-              aria-checked={vista === v}
-              onClick={() => setVista(v)}
-              className={cn(
-                "flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground",
-                vista === v && "bg-background text-foreground shadow-sm",
-              )}
-            >
-              <Icon className="size-4" />
-              <span className="hidden sm:inline">{label}</span>
-            </button>
-          ))}
-        </div>
-        <Button onClick={() => setCreaAperto(true)}>
-          <Plus />
-          Nuovo servizio
-        </Button>
-      </div>
+        <FiltroChip label="Chi paga" value={chiPaga} onChange={setChiPaga} opzioni={FILTRI_CHI_PAGA} />
+      </BarraFiltri>
 
       {filtrati.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">Nessun servizio corrisponde ai filtri.</p>
       ) : vista === "lista" ? (
-        <ul className="divide-y overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
+        <ul className="divide-y overflow-hidden rounded-xl bg-card ring-1 ring-black/8">
           {filtrati.map((s) => (
             <li key={s.id}>
               <RigaServizio servizio={s} mostraCosti={mostraCosti} onOpen={() => apri({ tipo: "servizio", id: s.id })} />
@@ -229,66 +214,6 @@ export function ServiziView({
       )}
       {dialog}
     </div>
-  );
-}
-
-function Contatore({
-  label,
-  valore,
-  attivo,
-  colore,
-  onClick,
-}: {
-  label: string;
-  valore: number;
-  attivo: boolean;
-  colore: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={attivo}
-      onClick={onClick}
-      className={cn(
-        "rounded-xl bg-card p-3 text-left ring-1 ring-foreground/10 transition-shadow hover:shadow-md sm:p-4",
-        attivo && "ring-2 ring-foreground",
-      )}
-    >
-      <p className={cn("text-2xl font-semibold tabular-nums sm:text-3xl", valore > 0 ? colore : "text-muted-foreground")}>
-        {valore}
-      </p>
-      <p className="text-xs text-muted-foreground sm:text-sm">{label}</p>
-    </button>
-  );
-}
-
-function Filtro({
-  label,
-  value,
-  onChange,
-  opzioni,
-  disabled,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  opzioni: { value: string; label: string }[];
-  disabled?: boolean;
-}) {
-  return (
-    <Select items={opzioni} value={value} onValueChange={(v) => v && onChange(v)} disabled={disabled}>
-      <SelectTrigger className="w-auto min-w-36" aria-label={label}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {opzioni.map((o) => (
-          <SelectItem key={o.value} value={o.value}>
-            {o.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
   );
 }
 
@@ -398,7 +323,7 @@ function VistaPerMese({
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       {mesi.map(({ mese, voci, aCarico, clienti }) => (
-        <section key={mese} className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+        <section key={mese} className="rounded-xl bg-card p-4 ring-1 ring-black/8">
           <header className="mb-2 flex items-baseline justify-between gap-2">
             <h3 className="font-medium">{capitalize(formatterMese.format(new Date(`${mese}-01T12:00:00Z`)))}</h3>
             {mostraCosti && (

@@ -38,7 +38,7 @@ export function DiarioCliente({ clienteId, note }: { clienteId: string; note: No
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <form onSubmit={aggiungi} className="space-y-2 rounded-xl bg-card p-3 ring-1 ring-foreground/10">
+      <form onSubmit={aggiungi} className="space-y-2 rounded-xl bg-card p-3 ring-1 ring-black/8">
         <Textarea
           value={testo}
           onChange={(e) => setTesto(e.target.value)}

@@ -80,7 +80,7 @@ export function SchedaCliente({
 
         <TabsContent value="panoramica" className="pt-4">
           <PanoramicaCliente scheda={scheda} />
-          <div className="mt-4 rounded-xl bg-card p-4 ring-1 ring-foreground/10 lg:max-w-[calc(100%-23rem)]">
+          <div className="mt-4 rounded-xl bg-card p-4 ring-1 ring-black/8 lg:max-w-[calc(100%-23rem)]">
             <CredenzialiSection proprietario={{ cliente_id: scheda.cliente.id }} />
           </div>
         </TabsContent>

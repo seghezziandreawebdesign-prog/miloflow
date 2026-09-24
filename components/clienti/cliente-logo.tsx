@@ -46,7 +46,7 @@ export function ClienteLogo({
   if (src) {
     const isFavicon = src !== logoUrl;
     return (
-      <span className={cn(box, "bg-background ring-1 ring-foreground/10")}>
+      <span className={cn(box, "bg-background ring-1 ring-black/8")}>
         {/* eslint-disable-next-line @next/next/no-img-element -- URL firmati e favicon esterne */}
         <img
           src={src}

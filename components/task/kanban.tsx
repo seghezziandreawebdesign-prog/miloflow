@@ -165,7 +165,7 @@ export function Kanban({
         </div>
         <DragOverlay dropAnimation={null}>
           {taskAttiva && (
-            <div className="rounded-lg bg-background shadow-lg ring-1 ring-foreground/10">
+            <div className="rounded-lg bg-background shadow-lg ring-1 ring-black/8">
               <TaskRow task={taskAttiva} opzioni={opzioniRiga} />
             </div>
           )}
@@ -235,7 +235,7 @@ function Scheda({ task, opzioniRiga }: { task: TaskLista; opzioniRiga: OpzioniRi
       {...attributes}
       {...listeners}
       className={cn(
-        "cursor-grab touch-manipulation rounded-lg bg-background ring-1 ring-foreground/10 active:cursor-grabbing",
+        "cursor-grab touch-manipulation rounded-lg bg-background ring-1 ring-black/8 active:cursor-grabbing",
         isDragging && "opacity-40",
       )}
     >

@@ -55,7 +55,8 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
+          // In alto anche su mobile, così la tastiera non la copre.
+          "overflow-hidden rounded-xl! p-0 max-sm:inset-x-3 max-sm:top-[max(0.75rem,env(safe-area-inset-top))] max-sm:bottom-auto max-sm:w-auto max-sm:max-h-[70svh] sm:top-1/3 sm:translate-y-0",
           className
         )}
         showCloseButton={showCloseButton}

@@ -16,15 +16,15 @@ export function Blocco({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl p-4 ring-1 ring-foreground/10">
+    <section className="rounded-2xl bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8">
       <div className="mb-3 flex items-start gap-2">
-        {Icona && <Icona className="mt-0.5 size-4 text-muted-foreground" />}
+        {Icona && <Icona className="mt-0.5 size-4 text-primary" />}
         <div className="min-w-0 flex-1">
           <h2 className="font-semibold">{titolo}</h2>
           {descrizione && <p className="text-xs text-muted-foreground">{descrizione}</p>}
         </div>
         {link && (
-          <Link href={link.href} className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <Link href={link.href} className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline">
             {link.label}
             <ArrowRight className="size-3" />
           </Link>

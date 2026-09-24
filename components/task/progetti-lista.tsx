@@ -92,7 +92,7 @@ export function ProgettoCard({ progetto: p, senzaCliente }: { progetto: Progetto
   return (
     <Link
       href={`/task/progetti/${p.id}`}
-      className="flex flex-col gap-3 rounded-xl p-4 ring-1 ring-foreground/10 transition-colors hover:bg-muted/40"
+      className="flex flex-col gap-3 rounded-xl p-4 ring-1 ring-black/8 transition-colors hover:bg-muted/40"
     >
       <div className="flex items-start gap-2">
         <span className="mt-1.5 size-2.5 shrink-0 rounded-full" style={{ backgroundColor: p.colore ?? "var(--muted-foreground)" }} />

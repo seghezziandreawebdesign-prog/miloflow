@@ -7,15 +7,16 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, Building2, LayoutGrid, Plus, Rows3, Search } from "lucide-react";
+import { ArrowUpDown, Building2, LayoutGrid, Plus, Rows3 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/empty-state";
+import { BarraFiltri, CampoRicerca } from "@/components/filtri/barra-filtri";
+import { FiltroChip } from "@/components/filtri/filtro-chip";
+import { Segmented } from "@/components/segmented";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { nomeCliente, STATI_CLIENTE, type StatoCliente } from "@/lib/clienti";
 import type { ClienteLista } from "@/lib/queries/clienti";
@@ -31,7 +32,7 @@ const VISTA_KEY = "clienti.vista";
 
 // Filtro di default: tutti tranne gli archiviati.
 const FILTRI_STATO = [
-  { value: "correnti", label: "Tutti tranne archiviati" },
+  { value: "correnti", label: "Non archiviati" },
   ...STATI_CLIENTE.map((s) => ({ value: s.value, label: s.label })),
   { value: "tutti", label: "Tutti" },
 ];
@@ -152,75 +153,49 @@ export function ClientiView({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-48 flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cerca per nome, P.IVA, email, città…"
-            className="pl-8"
-            aria-label="Cerca clienti"
+      <BarraFiltri
+        ricerca={<CampoRicerca value={query} onChange={setQuery} placeholder="Cerca per nome, P.IVA, email, città…" label="Cerca clienti" />}
+        destra={
+          <>
+            <Segmented
+              label="Vista"
+              value={vista}
+              onChange={cambiaVista}
+              soloIcone="mobile"
+              opzioni={[
+                { value: "tabella", label: "Tabella", icon: Rows3 },
+                { value: "card", label: "Card", icon: LayoutGrid },
+              ]}
+              className="hidden md:block [&>p]:sr-only"
+            />
+            {puoCreare && (
+              <Button className="hidden rounded-full sm:inline-flex" onClick={() => setCreaAperto(true)}>
+                <Plus />
+                Nuovo cliente
+              </Button>
+            )}
+          </>
+        }
+        azzera={
+          stato !== "correnti" || tag !== null || query !== ""
+            ? () => {
+                setStato("correnti");
+                setTag(null);
+                setQuery("");
+              }
+            : null
+        }
+      >
+        <FiltroChip label="Stato" value={stato} onChange={setStato} opzioni={FILTRI_STATO} />
+        {tags.length > 0 && (
+          <FiltroChip
+            label="Tag"
+            value={tag ?? ""}
+            onChange={(v) => setTag(v || null)}
+            opzioni={[{ value: "", label: "Tutti" }, ...tags.map((t) => ({ value: t, label: t }))]}
           />
-        </div>
-        <Select items={FILTRI_STATO} value={stato} onValueChange={(v) => v && setStato(v)}>
-          <SelectTrigger className="w-52" aria-label="Filtra per stato">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {FILTRI_STATO.map((f) => (
-              <SelectItem key={f.value} value={f.value}>
-                {f.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="hidden rounded-lg bg-muted p-0.5 md:inline-flex" role="radiogroup" aria-label="Vista">
-          {(
-            [
-              ["tabella", Rows3, "Tabella"],
-              ["card", LayoutGrid, "Card"],
-            ] as const
-          ).map(([v, Icon, label]) => (
-            <button
-              key={v}
-              type="button"
-              role="radio"
-              aria-checked={vista === v}
-              aria-label={label}
-              onClick={() => cambiaVista(v)}
-              className={cn("rounded-md p-1.5 text-muted-foreground", vista === v && "bg-background text-foreground shadow-sm")}
-            >
-              <Icon className="size-4" />
-            </button>
-          ))}
-        </div>
-        {puoCreare && (
-          <Button onClick={() => setCreaAperto(true)}>
-            <Plus />
-            Nuovo cliente
-          </Button>
         )}
-      </div>
-
-      {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5" aria-label="Filtra per tag">
-          {tags.map((t) => (
-            <button
-              key={t}
-              type="button"
-              aria-pressed={tag === t}
-              onClick={() => setTag(tag === t ? null : t)}
-              className={cn(
-                "rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-muted",
-                tag === t && "border-foreground bg-foreground text-background hover:bg-foreground",
-              )}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      )}
+      </BarraFiltri>
 
       {filtrati.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">Nessun cliente corrisponde ai filtri.</p>
@@ -233,7 +208,7 @@ export function ClientiView({
             ))}
           </div>
           {vista === "tabella" && (
-            <div className="hidden overflow-hidden rounded-xl ring-1 ring-foreground/10 md:block">
+            <div className="hidden overflow-hidden rounded-xl ring-1 ring-black/8 md:block">
               <Table>
                 <TableHeader>
                   {table.getHeaderGroups().map((hg) => (
@@ -298,7 +273,7 @@ function ClienteCard({ cliente }: { cliente: ClienteLista }) {
   return (
     <Link
       href={`/clienti/${cliente.id}`}
-      className="flex flex-col gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10 transition-shadow hover:shadow-md"
+      className="flex flex-col gap-3 rounded-xl bg-card p-4 ring-1 ring-black/8 transition-shadow hover:shadow-md"
     >
       <div className="flex items-center gap-3">
         <ClienteLogo nome={nome} colore={cliente.colore} logoUrl={cliente.logo_url} sito={cliente.sito} size="lg" />
