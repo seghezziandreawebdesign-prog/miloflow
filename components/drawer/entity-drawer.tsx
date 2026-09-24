@@ -5,6 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { APRI_PARAM, ETICHETTE_ENTITA, parseApri, type RiferimentoEntita } from "@/lib/entita";
 
+import { ClienteDrawer } from "./cliente-drawer";
+
 // Pannello laterale unico. Si apre da qualsiasi pagina con ?apri=<tipo>:<id>
 // e smista al contenuto giusto in base al tipo.
 export function EntityDrawer() {
@@ -31,8 +33,9 @@ export function EntityDrawer() {
 
 function EntityContent({ riferimento }: { riferimento: RiferimentoEntita }) {
   switch (riferimento.tipo) {
-    // I contenuti veri arrivano con le fasi successive (servizio e cliente in fase 2, ecc.).
     case "cliente":
+      return <ClienteDrawer id={riferimento.id} />;
+    // Gli altri contenuti arrivano con le fasi successive.
     case "servizio":
     case "task":
     case "progetto":

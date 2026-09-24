@@ -1,27 +1,30 @@
-import { Building2 } from "lucide-react";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { AmbitoBadge } from "@/components/ambito-badge";
-import { EmptyState } from "@/components/empty-state";
+import { ClientiView } from "@/components/clienti/clienti-view";
 import { PageHeader } from "@/components/page-header";
 import { getFiltroAmbito } from "@/lib/ambito.server";
+import { listClienti } from "@/lib/queries/clienti";
 
 export const metadata: Metadata = { title: "Clienti" };
 
-export default async function Page() {
-  const filtroAmbito = await getFiltroAmbito();
+export default async function ClientiPage() {
+  const [clienti, filtroAmbito] = await Promise.all([listClienti(), getFiltroAmbito()]);
+  const tags = [...new Set(clienti.flatMap((c) => c.tags ?? []))].sort((a, b) => a.localeCompare(b, "it"));
 
   return (
     <>
       <PageHeader
         title="Clienti"
         description={
-          <>
-            Ambito: <AmbitoBadge ambito={filtroAmbito} className="align-middle" />
-          </>
+          filtroAmbito === "personale"
+            ? "I clienti fanno sempre parte dell'ambito lavoro."
+            : `${clienti.length} ${clienti.length === 1 ? "cliente" : "clienti"}`
         }
       />
-      <EmptyState icon={Building2} title="Nessun cliente" description="Aggiungi il primo cliente partendo dalla partita IVA (fase 2)." />
+      <Suspense>
+        <ClientiView clienti={clienti} tags={tags} />
+      </Suspense>
     </>
   );
 }
