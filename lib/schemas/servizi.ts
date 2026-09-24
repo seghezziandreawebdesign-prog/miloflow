@@ -21,6 +21,7 @@ export const servizioSchema = z.object({
   rinnovo_automatico: z.boolean(),
   chi_paga: z.enum(["io", "cliente"]),
   metodo_pagamento_id: z.union([z.uuid(), z.literal("")]),
+  categoria_spesa_id: z.union([z.uuid(), z.literal("")]),
   preavviso_giorni: testo.refine((v) => v === "" || (/^\d+$/.test(v) && Number(v) <= 365), "Da 0 a 365 giorni"),
   url_pannello: testo.refine((v) => v === "" || /^(https?:\/\/)?[^\s.]+\.[^\s]+$/i.test(v), "Indirizzo non valido"),
   username: testo,
@@ -43,6 +44,7 @@ export function servizioVuoto(ambito: "lavoro" | "personale", scadenza: string):
     rinnovo_automatico: false,
     chi_paga: "io",
     metodo_pagamento_id: "",
+    categoria_spesa_id: "",
     preavviso_giorni: "",
     url_pannello: "",
     username: "",
@@ -78,6 +80,7 @@ export function servizioToRpc(v: ServizioFormValues) {
       costo: numero(v.costo),
       valuta: "EUR",
       metodo_pagamento_id: v.chi_paga === "io" ? v.metodo_pagamento_id : "",
+      categoria_spesa_id: v.categoria_spesa_id,
     },
     p_clienti: v.clienti.map((c) => ({ cliente_id: c.cliente_id, prezzo_rivendita: numero(c.prezzo_rivendita) })),
   };

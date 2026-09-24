@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { saveCredenziale } from "@/lib/actions/credenziali";
 import { saveServizio } from "@/lib/actions/servizi";
+import { categorieScegliibili } from "@/lib/budget";
 import { formatCurrency } from "@/lib/dates/format";
 import { etichettaMetodo, tipoMetodo } from "@/lib/metodi-pagamento";
 import { servizioSchema, type ServizioFormValues } from "@/lib/schemas/servizi";
@@ -61,6 +62,7 @@ export function ServizioForm({
   const frequenza = useWatch({ control, name: "frequenza" });
   const clienti = useWatch({ control, name: "clienti" });
   const costo = useWatch({ control, name: "costo" });
+  const ambito = useWatch({ control, name: "ambito" });
   const chiPaga = useWatch({ control, name: "chi_paga" });
   const vault = useVault();
   // La password non entra nel form inviato al server: si cifra qui e si salva a parte.
@@ -235,6 +237,39 @@ export function ServizioForm({
             </Field>
           )}
         </div>
+        {mostraEconomico && chiPaga === "io" && (
+          <Field>
+            <FieldLabel>Categoria di spesa</FieldLabel>
+            <Controller
+              control={control}
+              name="categoria_spesa_id"
+              render={({ field }) => {
+                const items = [
+                  { value: "", label: "Nessuna categoria" },
+                  ...categorieScegliibili(opzioni.categorie, ambito).flatMap((r) => [
+                    { value: r.padre.id, label: r.padre.nome },
+                    ...r.figlie.map((f) => ({ value: f.id, label: `${r.padre.nome} › ${f.nome}` })),
+                  ]),
+                ];
+                return (
+                  <Select items={items} value={field.value} onValueChange={(v) => field.onChange(v ?? "")}>
+                    <SelectTrigger className="w-full" aria-label="Categoria di spesa">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {items.map((i) => (
+                        <SelectItem key={i.value} value={i.value}>
+                          {i.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                );
+              }}
+            />
+            <FieldDescription>I rinnovi e i previsti nel budget finiscono in questa categoria.</FieldDescription>
+          </Field>
+        )}
       </FieldGroup>
 
       <fieldset className="space-y-3 rounded-lg border p-3">

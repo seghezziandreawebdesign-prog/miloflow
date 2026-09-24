@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { NuovaSpesaProvider } from "@/components/budget/nuova-spesa";
 import { VaultProvider } from "@/components/credenziali/vault-provider";
 import { EntityDrawer } from "@/components/drawer/entity-drawer";
 import { AppHeader } from "@/components/layout/app-header";
@@ -19,6 +20,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <VaultProvider>
       <NuovaTaskProvider filtroAmbito={filtroAmbito}>
+        <NuovaSpesaProvider filtroAmbito={filtroAmbito}>
         <CommandPaletteProvider filtroAmbito={filtroAmbito}>
           <div className="flex min-h-svh">
             <aside className="sticky top-0 hidden h-svh w-56 shrink-0 flex-col gap-5 border-r border-sidebar-border bg-sidebar px-3 pt-4 pb-3 lg:flex">
@@ -54,6 +56,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <EntityDrawer />
           </Suspense>
         </CommandPaletteProvider>
+        </NuovaSpesaProvider>
       </NuovaTaskProvider>
     </VaultProvider>
   );

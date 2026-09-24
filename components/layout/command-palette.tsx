@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, CalendarDays, FolderKanban, ListChecks, Loader2, RefreshCw, type LucideIcon } from "lucide-react";
+import { Building2, CalendarDays, FolderKanban, Landmark, ListChecks, Loader2, ReceiptEuro, RefreshCw, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -29,6 +29,8 @@ const GRUPPI: { tipo: TipoEntita; titolo: string; icona: LucideIcon }[] = [
   { tipo: "cliente", titolo: "Clienti", icona: Building2 },
   { tipo: "servizio", titolo: "Servizi", icona: RefreshCw },
   { tipo: "evento", titolo: "Eventi", icona: CalendarDays },
+  { tipo: "movimento", titolo: "Movimenti", icona: ReceiptEuro },
+  { tipo: "debito", titolo: "Debiti", icona: Landmark },
 ];
 
 type PaletteContext = { open: () => void };
@@ -91,7 +93,7 @@ export function CommandPaletteProvider({
           if (!open) setTesto("");
         }}
         title="Cerca e comandi"
-        description="Cerca task, progetti, clienti, servizi ed eventi, oppure avvia un comando"
+        description="Cerca task, progetti, clienti, servizi, eventi, spese e debiti, oppure avvia un comando"
       >
         <Command>
           <CommandInput

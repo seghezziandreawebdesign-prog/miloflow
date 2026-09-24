@@ -20,3 +20,17 @@ export function useApriEntita() {
     [router, pathname, searchParams],
   );
 }
+
+/** Chiude il pannello togliendo ?apri= dall'URL corrente. */
+export function useChiudiEntita() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  return useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(APRI_PARAM);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [router, pathname, searchParams]);
+}

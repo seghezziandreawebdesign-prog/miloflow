@@ -5,6 +5,7 @@ import { Suspense } from "react";
 
 import { AmbitoBadge } from "@/components/ambito-badge";
 import { Blocco } from "@/components/oggi/blocco";
+import { BloccoBudgetMese, BloccoPrevisti } from "@/components/oggi/blocchi-budget";
 import { BloccoDaSollecitare, BloccoTaskOggi } from "@/components/oggi/blocchi-task";
 import { PageHeader } from "@/components/page-header";
 import { StatoScadenzaBadge } from "@/components/servizi/stato-scadenza-badge";
@@ -12,16 +13,17 @@ import { TipoIcona } from "@/components/tipo-icona";
 import { getFiltroAmbito } from "@/lib/ambito.server";
 import { capitalize, formatDate, formatLongDate, todayISO } from "@/lib/dates/format";
 import { formatApri } from "@/lib/entita";
+import { primoDelMese, totaliMese } from "@/lib/budget";
+import { leggiBudgetMese, leggiCategorie, leggiMovimentiMese, permessiBudget, prossimiPrevisti } from "@/lib/queries/budget";
 import { eventiDiOggi, serviziInScadenza, type EventoDiOggi, type ServizioInScadenza } from "@/lib/queries/oggi";
 import type { StatoScadenza } from "@/lib/servizi";
 
 export const metadata: Metadata = { title: "Oggi" };
 
-// I blocchi di budget, rate e spese previste arrivano con la fase 5.
 export default async function Page() {
   const filtroAmbito = await getFiltroAmbito();
   const oggi = todayISO();
-  const [eventi, servizi] = await Promise.all([eventiDiOggi(oggi, filtroAmbito), serviziInScadenza(oggi, filtroAmbito)]);
+  const [eventi, servizi, permessi] = await Promise.all([eventiDiOggi(oggi, filtroAmbito), serviziInScadenza(oggi, filtroAmbito), permessiBudget()]);
 
   return (
     <>
@@ -42,11 +44,33 @@ export default async function Page() {
         <div className="space-y-4 lg:col-span-2">
           <BloccoEventi eventi={eventi} />
           <BloccoServizi servizi={servizi} />
+          {permessi.lettura && (
+            <Suspense>
+              <BlocchiBudget oggi={oggi} filtroAmbito={filtroAmbito} />
+            </Suspense>
+          )}
           <Suspense>
             <BloccoDaSollecitare filtroAmbito={filtroAmbito} />
           </Suspense>
         </div>
       </div>
+    </>
+  );
+}
+
+/** Budget del mese e previsti dei prossimi 7 giorni: solo con il permesso budget. */
+async function BlocchiBudget({ oggi, filtroAmbito }: { oggi: string; filtroAmbito: Awaited<ReturnType<typeof getFiltroAmbito>> }) {
+  const mese = primoDelMese(oggi);
+  const [movimenti, categorie, budgetMensili, previsti] = await Promise.all([
+    leggiMovimentiMese(mese, filtroAmbito),
+    leggiCategorie(),
+    leggiBudgetMese(mese),
+    prossimiPrevisti(oggi, filtroAmbito),
+  ]);
+  return (
+    <>
+      <BloccoBudgetMese totali={totaliMese(movimenti, categorie, budgetMensili, filtroAmbito)} mese={mese} />
+      <BloccoPrevisti previsti={previsti} oggi={oggi} />
     </>
   );
 }

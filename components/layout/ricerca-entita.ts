@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import type { FiltroAmbito } from "@/lib/ambito";
 import { nomeCliente } from "@/lib/clienti";
+import { formatCurrency, formatDate } from "@/lib/dates/format";
 import type { TipoEntita } from "@/lib/entita";
 import { createClient } from "@/lib/supabase/client";
 
@@ -32,7 +33,7 @@ async function cerca(testo: string, ambito: FiltroAmbito): Promise<RisultatoRice
   const soloAmbito = <Q extends { eq: (c: "ambito", v: "lavoro" | "personale") => Q }>(query: Q) =>
     ambito === "tutto" ? query : query.eq("ambito", ambito);
 
-  const [clienti, progetti, task, servizi, eventi] = await Promise.all([
+  const [clienti, progetti, task, servizi, eventi, movimenti, debiti] = await Promise.all([
     // I clienti sono sempre di lavoro.
     ambito === "personale"
       ? Promise.resolve({ data: [] })
@@ -57,6 +58,14 @@ async function cerca(testo: string, ambito: FiltroAmbito): Promise<RisultatoRice
     soloAmbito(supabase.from("eventi").select("id, titolo, inizio"))
       .ilike("titolo", like)
       .order("inizio", { ascending: false })
+      .limit(PER_TIPO),
+    soloAmbito(supabase.from("v_movimenti").select("id, descrizione, data, importo, stato, categoria_nome"))
+      .or(`descrizione.ilike.${q},categoria_nome.ilike.${q}`)
+      .order("data", { ascending: false })
+      .limit(PER_TIPO),
+    soloAmbito(supabase.from("debiti").select("id, creditore, descrizione, importo_totale"))
+      .or(`creditore.ilike.${q},descrizione.ilike.${q}`)
+      .order("created_at", { ascending: false })
       .limit(PER_TIPO),
   ]);
 
@@ -98,6 +107,20 @@ async function cerca(testo: string, ambito: FiltroAmbito): Promise<RisultatoRice
       id: e.id,
       titolo: e.titolo,
       dettaglio: new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", dateStyle: "short" }).format(new Date(e.inizio)),
+      secondario: false,
+    })),
+    ...(movimenti.data ?? []).map((m) => ({
+      tipo: "movimento" as const,
+      id: m.id!,
+      titolo: m.descrizione || m.categoria_nome || "Movimento",
+      dettaglio: `${formatDate(m.data!)} · ${formatCurrency(m.importo ?? 0)}`,
+      secondario: m.stato === "previsto",
+    })),
+    ...(debiti.data ?? []).map((d) => ({
+      tipo: "debito" as const,
+      id: d.id,
+      titolo: d.creditore,
+      dettaglio: d.descrizione ?? formatCurrency(d.importo_totale),
       secondario: false,
     })),
   ];

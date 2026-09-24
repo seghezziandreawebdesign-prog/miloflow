@@ -5,11 +5,12 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
-import { APRI_PARAM, ETICHETTE_ENTITA, parseApri, type RiferimentoEntita } from "@/lib/entita";
+import { APRI_PARAM, parseApri, type RiferimentoEntita } from "@/lib/entita";
 
 import { ClienteDrawer } from "./cliente-drawer";
+import { DebitoDrawer } from "./debito-drawer";
 import { EventoDrawer } from "./evento-drawer";
-import { PannelloDescription, PannelloHeader, PannelloTitle } from "./pannello";
+import { MovimentoDrawer } from "./movimento-drawer";
 import { ProgettoDrawer } from "./progetto-drawer";
 import { ServizioDrawer } from "./servizio-drawer";
 import { TaskDrawer } from "./task-drawer";
@@ -69,21 +70,9 @@ function EntityContent({ riferimento }: { riferimento: RiferimentoEntita }) {
       return <ProgettoDrawer key={riferimento.id} id={riferimento.id} />;
     case "evento":
       return <EventoDrawer key={riferimento.id} id={riferimento.id} />;
-    // Gli altri contenuti arrivano con la fase 5.
     case "movimento":
+      return <MovimentoDrawer key={riferimento.id} id={riferimento.id} />;
     case "debito":
-      return <Segnaposto riferimento={riferimento} />;
+      return <DebitoDrawer key={riferimento.id} id={riferimento.id} />;
   }
-}
-
-function Segnaposto({ riferimento }: { riferimento: RiferimentoEntita }) {
-  return (
-    <PannelloHeader className="pr-12">
-      <PannelloTitle>{ETICHETTE_ENTITA[riferimento.tipo]}</PannelloTitle>
-      <PannelloDescription>
-        Il dettaglio di questo elemento sarà disponibile nelle prossime fasi.
-      </PannelloDescription>
-      <p className="mt-4 font-mono text-xs break-all text-muted-foreground">{riferimento.id}</p>
-    </PannelloHeader>
-  );
 }

@@ -82,7 +82,7 @@ export function RinnovaDialog({
               )}
             </div>
             <FieldDescription>
-              La scadenza avanza di un periodo e il rinnovo resta nello storico. Il collegamento con il budget arriva con la fase 5.
+              La scadenza avanza di un periodo e il rinnovo resta nello storico. Se paghi tu, il movimento del mese nel budget diventa pagato con questo importo.
             </FieldDescription>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>

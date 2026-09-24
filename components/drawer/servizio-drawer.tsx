@@ -46,6 +46,8 @@ import { formatCurrency, formatDate } from "@/lib/dates/format";
 import { APRI_PARAM, formatApri } from "@/lib/entita";
 import { CHI_PAGA, costoAnnuo, frequenza, type StatoScadenza } from "@/lib/servizi";
 import { createClient } from "@/lib/supabase/client";
+
+import { useApriEntita } from "./use-apri-entita";
 import { cn } from "@/lib/utils";
 
 async function carica(id: string) {
@@ -57,7 +59,7 @@ async function carica(id: string) {
       .select("cliente_id, clienti(id, nome_breve, ragione_sociale, logo_path, colore, sito)")
       .eq("servizio_id", id),
     supabase.from("servizi_clienti_economico").select("cliente_id, prezzo_rivendita").eq("servizio_id", id),
-    supabase.from("servizi_rinnovi").select("id, data, importo").eq("servizio_id", id).order("data", { ascending: false }).limit(20),
+    supabase.from("servizi_rinnovi").select("id, data, importo, movimento_id").eq("servizio_id", id).order("data", { ascending: false }).limit(20),
     supabase.rpc("puo", { p_sezione: "budget" }),
     supabase.rpc("is_owner"),
   ]);
@@ -97,6 +99,7 @@ export function ServizioDrawer({ id }: { id: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { data, isPending, isError } = useQuery({ queryKey: ["servizio", id], queryFn: () => carica(id) });
+  const apri = useApriEntita();
   const [editOpen, setEditOpen] = useState(false);
   const [rinnovaOpen, setRinnovaOpen] = useState(false);
   const [avvisaOpen, setAvvisaOpen] = useState(false);
@@ -335,9 +338,16 @@ export function ServizioDrawer({ id }: { id: string }) {
             ) : (
               <ul className="divide-y text-sm">
                 {rinnovi.map((r) => (
-                  <li key={r.id} className="flex justify-between py-1.5">
+                  <li key={r.id} className="flex items-center justify-between gap-2 py-1.5">
                     <span>{formatDate(r.data)}</span>
-                    <span className="tabular-nums">{r.importo === null ? "—" : formatCurrency(r.importo)}</span>
+                    <span className="flex items-center gap-2">
+                      {r.movimento_id && (
+                        <button type="button" className="text-xs text-primary hover:underline" onClick={() => apri({ tipo: "movimento", id: r.movimento_id! })}>
+                          nel budget
+                        </button>
+                      )}
+                      <span className="tabular-nums">{r.importo === null ? "—" : formatCurrency(r.importo)}</span>
+                    </span>
                   </li>
                 ))}
               </ul>

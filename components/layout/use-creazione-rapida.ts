@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { useNuovaSpesa } from "@/components/budget/nuova-spesa";
 import { useNuovaTask, useNuovoEvento, useNuovoProgetto } from "@/components/task/nuova-task";
 import type { AzioneCreazione } from "@/lib/creazione-rapida";
 
@@ -13,6 +14,7 @@ export function useCreazioneRapida() {
   const nuovaTask = useNuovaTask();
   const nuovoProgetto = useNuovoProgetto();
   const nuovoEvento = useNuovoEvento();
+  const nuovaSpesa = useNuovaSpesa();
 
   return (azione: AzioneCreazione) => {
     switch (azione.id) {
@@ -24,6 +26,9 @@ export function useCreazioneRapida() {
         return;
       case "evento":
         nuovoEvento();
+        return;
+      case "spesa":
+        nuovaSpesa();
         return;
       case "cliente":
         router.push("/clienti?nuovo=1");
