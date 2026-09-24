@@ -265,6 +265,10 @@ select public._test_rifiutato(
   $q$insert into public.eventi (ambito, titolo, inizio, cliente_id)
      values ('lavoro', 'X', now(), '10000000-0000-0000-0000-00000000000a')$q$,
   'crea un evento con calendario in sola lettura');
+select public._test_rifiutato(
+  $q$select public.rinnova_servizio('20000000-0000-0000-0000-000000000001', null, 10)$q$,
+  'rinnova un servizio con permesso di sola lettura');
+select public._test_conta('select 1 from public.impostazioni_notifiche', 0, 'impostazioni notifiche solo owner');
 select public._test_conta('select 1 from public.v_clienti where servizi_attivi = 1', 1,
   'v_clienti conta solo i servizi visibili');
 select public._test_rifiutato(
@@ -321,6 +325,70 @@ select public._test_righe(
 insert into public.permessi (user_id, sezione, livello)
   values ('00000000-0000-0000-0000-00000000000c', 'servizi', 'scrittura')
   on conflict (user_id, sezione) do update set livello = excluded.livello;
+
+-- Rinnovo: la scadenza avanza per frequenza, rispettando la fine mese.
+insert into public.servizi (id, nome, frequenza, prossima_scadenza) values
+  ('20000000-0000-0000-0000-000000000011', 'Mensile fine mese', 'mensile', '2027-01-31'),
+  ('20000000-0000-0000-0000-000000000012', 'Biennale bisestile', 'biennale', '2028-02-29'),
+  ('20000000-0000-0000-0000-000000000013', 'Una tantum', 'una_tantum', '2027-05-10'),
+  ('20000000-0000-0000-0000-000000000014', 'Trimestrale', 'trimestrale', '2026-11-30');
+do $$
+begin
+  if public.rinnova_servizio('20000000-0000-0000-0000-000000000011', '2027-01-30', 9.99) <> '2027-02-28' then
+    raise exception 'FALLITO: mensile 31/01 → 28/02';
+  end if;
+  if public.rinnova_servizio('20000000-0000-0000-0000-000000000012', null, null) <> '2030-02-28' then
+    raise exception 'FALLITO: biennale 29/02/2028 → 28/02/2030';
+  end if;
+  if public.rinnova_servizio('20000000-0000-0000-0000-000000000014', null, 30) <> '2027-02-28' then
+    raise exception 'FALLITO: trimestrale 30/11 → 28/02';
+  end if;
+end;
+$$;
+select public._test_conta(
+  $q$select 1 from public.servizi_rinnovi where servizio_id = '20000000-0000-0000-0000-000000000011'
+     and data = '2027-01-30' and importo = 9.99$q$,
+  1, 'owner: il rinnovo scrive lo storico');
+select public._test_rifiutato(
+  $q$select public.rinnova_servizio('20000000-0000-0000-0000-000000000013', null, 1)$q$,
+  'rinnova un servizio una tantum');
+select public._test_conta('select 1 from public.impostazioni_notifiche', 1, 'owner: impostazioni notifiche');
+
+-- Salvataggio atomico di un servizio con clienti e prezzi.
+do $$
+declare
+  v_id uuid;
+begin
+  v_id := public.salva_servizio(
+    null,
+    '{"ambito":"lavoro","nome":"Hosting condiviso","frequenza":"annuale","prossima_scadenza":"2027-03-01","chi_paga":"io"}',
+    '{"costo":"120.00","metodo_pagamento":"Revolut *4417"}',
+    '[{"cliente_id":"10000000-0000-0000-0000-00000000000a","prezzo_rivendita":"80"},
+      {"cliente_id":"10000000-0000-0000-0000-00000000000b","prezzo_rivendita":""}]'
+  );
+  if (select count(*) from public.servizi_clienti where servizio_id = v_id) <> 2
+     or (select costo from public.servizi_economico where servizio_id = v_id) <> 120
+     or (select count(*) from public.servizi_clienti_economico where servizio_id = v_id) <> 1 then
+    raise exception 'FALLITO: salva_servizio in creazione';
+  end if;
+
+  perform public.salva_servizio(
+    v_id,
+    '{"ambito":"lavoro","nome":"Hosting condiviso","frequenza":"annuale","prossima_scadenza":"2027-03-01","chi_paga":"io"}',
+    '{"costo":"130"}',
+    '[{"cliente_id":"10000000-0000-0000-0000-00000000000b","prezzo_rivendita":"90"}]'
+  );
+  if (select count(*) from public.servizi_clienti where servizio_id = v_id) <> 1
+     or (select costo from public.servizi_economico where servizio_id = v_id) <> 130
+     or (select prezzo_rivendita from public.servizi_clienti_economico where servizio_id = v_id) <> 90 then
+    raise exception 'FALLITO: salva_servizio in modifica';
+  end if;
+end;
+$$;
+select public._test_rifiutato(
+  $q$select public.salva_servizio(null, '{"ambito":"lavoro","nome":"X","frequenza":"annuale","prossima_scadenza":"2027-01-01","chi_paga":"io"}',
+     '{"metodo_pagamento":"4111 1111 1111 1111"}', null)$q$,
+  'salva un numero di carta completo come metodo di pagamento');
 
 reset role;
 

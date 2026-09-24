@@ -98,6 +98,42 @@ export type Database = {
           },
         ]
       }
+      cassaforte: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          iterazioni: number
+          iv: string
+          salt: string
+          singleton: boolean
+          updated_at: string
+          verifica_cifrata: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          iterazioni: number
+          iv: string
+          salt: string
+          singleton?: boolean
+          updated_at?: string
+          verifica_cifrata: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          iterazioni?: number
+          iv?: string
+          salt?: string
+          singleton?: boolean
+          updated_at?: string
+          verifica_cifrata?: string
+        }
+        Relationships: []
+      }
       categorie: {
         Row: {
           ambito: Database["public"]["Enums"]["ambito_categoria"]
@@ -624,6 +660,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      impostazioni_notifiche: {
+        Row: {
+          attivo: boolean
+          created_at: string
+          created_by: string | null
+          email: string | null
+          giorni_anticipo: number
+          id: string
+          orario: string
+          singleton: boolean
+          ultimo_invio: string | null
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          giorni_anticipo?: number
+          id?: string
+          orario?: string
+          singleton?: boolean
+          ultimo_invio?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          giorni_anticipo?: number
+          id?: string
+          orario?: string
+          singleton?: boolean
+          ultimo_invio?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       movimenti: {
         Row: {
@@ -1403,11 +1478,19 @@ export type Database = {
       }
     }
     Functions: {
+      cambia_cassaforte: {
+        Args: { p_credenziali: Json; p_parametri: Json }
+        Returns: undefined
+      }
       imposta_contatto_principale: {
         Args: { p_contatto_id: string }
         Returns: undefined
       }
       is_owner: { Args: never; Returns: boolean }
+      mesi_frequenza: {
+        Args: { p_frequenza: Database["public"]["Enums"]["frequenza_servizio"] }
+        Returns: number
+      }
       oggi: { Args: never; Returns: string }
       puo: {
         Args: {
@@ -1415,6 +1498,26 @@ export type Database = {
           p_sezione: Database["public"]["Enums"]["sezione_permesso"]
         }
         Returns: boolean
+      }
+      rinnova_servizio: {
+        Args: { p_data: string; p_importo: number; p_servizio_id: string }
+        Returns: string
+      }
+      salva_servizio: {
+        Args: {
+          p_clienti: Json
+          p_economico: Json
+          p_id: string
+          p_servizio: Json
+        }
+        Returns: string
+      }
+      scadenza_successiva: {
+        Args: {
+          p_data: string
+          p_frequenza: Database["public"]["Enums"]["frequenza_servizio"]
+        }
+        Returns: string
       }
       storage_accesso: {
         Args: {
