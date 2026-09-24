@@ -1,11 +1,11 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { FolderPlus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { TaskFormValues } from "@/lib/schemas/task";
 
-import { useNuovaTask } from "./nuova-task";
+import { useNuovaTask, useNuovoProgetto } from "./nuova-task";
 
 /** Pulsante "Nuova task" con eventuali valori già impostati dal contesto. */
 export function PulsanteNuovaTask({
@@ -22,6 +22,17 @@ export function PulsanteNuovaTask({
     <Button variant={variant} onClick={() => nuovaTask(valori)}>
       <Plus />
       {label}
+    </Button>
+  );
+}
+
+/** Pulsante "Nuovo progetto". */
+export function PulsanteNuovoProgetto({ clienteId, variant = "outline" }: { clienteId?: string; variant?: "default" | "outline" }) {
+  const nuovoProgetto = useNuovoProgetto();
+  return (
+    <Button variant={variant} onClick={() => nuovoProgetto({ cliente_id: clienteId })}>
+      <FolderPlus />
+      Nuovo progetto
     </Button>
   );
 }

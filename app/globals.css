@@ -118,3 +118,58 @@
     @apply font-sans;
   }
 }
+/* Testo formattato delle descrizioni (editor Tiptap e visualizzazione). */
+@layer components {
+  .editor-testo {
+    @apply text-sm leading-relaxed;
+  }
+  .editor-testo > * + * {
+    @apply mt-2;
+  }
+  .editor-testo h2 {
+    @apply text-base font-semibold;
+  }
+  .editor-testo h3 {
+    @apply text-sm font-semibold;
+  }
+  .editor-testo ul:not([data-type="taskList"]) {
+    @apply list-disc pl-5;
+  }
+  .editor-testo ol {
+    @apply list-decimal pl-5;
+  }
+  .editor-testo li > p {
+    @apply my-0;
+  }
+  .editor-testo ul[data-type="taskList"] {
+    @apply pl-0.5;
+  }
+  .editor-testo ul[data-type="taskList"] li {
+    @apply flex items-start gap-2;
+  }
+  .editor-testo ul[data-type="taskList"] li > label {
+    @apply mt-[3px] shrink-0 select-none;
+  }
+  .editor-testo ul[data-type="taskList"] li > div {
+    @apply min-w-0 flex-1;
+  }
+  .editor-testo ul[data-type="taskList"] li[data-checked="true"] > div {
+    @apply text-muted-foreground line-through;
+  }
+  .editor-testo input[type="checkbox"] {
+    @apply size-3.5 accent-primary;
+  }
+  .editor-testo blockquote {
+    @apply border-l-2 pl-3 text-muted-foreground;
+  }
+  .editor-testo code {
+    @apply rounded bg-muted px-1 py-0.5 font-mono text-[0.85em];
+  }
+  .editor-testo a {
+    @apply text-primary underline underline-offset-2;
+  }
+  .editor-testo p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    @apply pointer-events-none float-left h-0 text-muted-foreground;
+  }
+}

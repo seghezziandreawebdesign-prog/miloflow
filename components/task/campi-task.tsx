@@ -3,12 +3,14 @@
 import { useState } from "react";
 
 import { DatePicker } from "@/components/date-picker";
+import { EditorTesto } from "@/components/editor-testo";
 import { SceltaPicker } from "@/components/scelta-picker";
 import { Segmented } from "@/components/segmented";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { TaskFormValues } from "@/lib/schemas/task";
+import { STATI_TASK, type StatoTask } from "@/lib/task";
 
 import type { OpzioniTask } from "./dati";
 import { RicorrenzaPicker } from "./ricorrenza-picker";
@@ -36,13 +38,12 @@ type Valori = Pick<
   | "cliente_id"
   | "assegnata_a"
   | "ambito"
-  | "note"
 >;
 
 /**
- * Campi di dettaglio di una task, controllati. Ogni modifica chiama onChange
- * con i soli campi cambiati; i testi al termine della scrittura (blur).
- * Usati dal dialog di creazione e, con salvataggio immediato, dal pannello.
+ * Campi della sezione "Dettagli" di una task, controllati. Ogni modifica
+ * chiama onChange con i soli campi cambiati; i testi al termine della
+ * scrittura (blur). Usati dal dialog di creazione e dal pannello.
  */
 export function CampiTask({
   valori,
@@ -70,29 +71,6 @@ export function CampiTask({
         onChange={(v) => onChange({ priorita: v })}
         opzioni={PRIORITA_OPZIONI}
       />
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field>
-          <FieldLabel htmlFor={`${idPrefix}-pianificata`}>Quando la faccio</FieldLabel>
-          <DatePicker
-            id={`${idPrefix}-pianificata`}
-            value={valori.data_pianificata}
-            onChange={(v) => onChange({ data_pianificata: v })}
-            placeholder="Nessuna data"
-            clearable
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor={`${idPrefix}-scadenza`}>Scadenza</FieldLabel>
-          <DatePicker
-            id={`${idPrefix}-scadenza`}
-            value={valori.scadenza}
-            onChange={(v) => onChange({ scadenza: v })}
-            placeholder="Nessuna scadenza"
-            clearable
-          />
-        </Field>
-      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         {!sottotask && (
@@ -184,17 +162,89 @@ export function CampiTask({
           </div>
         )}
       </div>
+    </div>
+  );
+}
 
+const STATI_OPZIONI = STATI_TASK.map((s) => ({ value: s.value, label: s.label }));
+
+/**
+ * Campi in primo piano: descrizione, stato, inizio e scadenza.
+ * `onStato` permette al pannello di intercettare "In attesa" e "Fatto".
+ */
+export function CampiPrincipali({
+  valori,
+  onChange,
+  onStato,
+  aggiornaSubito = false,
+  dateDalTesto = {},
+  idPrefix = "task",
+}: {
+  valori: Pick<TaskFormValues, "note" | "stato" | "in_attesa_di" | "data_pianificata" | "scadenza">;
+  onChange: (patch: Partial<TaskFormValues>) => void;
+  onStato?: (stato: StatoTask) => void;
+  /** Date riconosciute nel titolo: hanno la precedenza e bloccano il campo. */
+  dateDalTesto?: { data_pianificata?: boolean; scadenza?: boolean };
+  /** Nel dialog di creazione la descrizione si aggiorna a ogni tasto. */
+  aggiornaSubito?: boolean;
+  idPrefix?: string;
+}) {
+  return (
+    <div className="space-y-4">
       <Field>
-        <FieldLabel htmlFor={`${idPrefix}-note`}>Note</FieldLabel>
-        <TestoAlBlur
-          id={`${idPrefix}-note`}
+        <FieldLabel htmlFor={`${idPrefix}-descrizione`}>Descrizione</FieldLabel>
+        <EditorTesto
+          id={`${idPrefix}-descrizione`}
           value={valori.note}
-          onCommit={(v) => onChange({ note: v })}
-          multiline
-          placeholder="Dettagli, link, appunti…"
+          onChange={(note) => onChange({ note })}
+          aggiornaSubito={aggiornaSubito}
         />
       </Field>
+
+      <Segmented
+        label="Stato"
+        value={valori.stato}
+        opzioni={STATI_OPZIONI}
+        onChange={(stato) => (onStato ? onStato(stato) : onChange({ stato }))}
+      />
+      {aggiornaSubito && valori.stato === "in_attesa" && (
+        <Field>
+          <FieldLabel htmlFor={`${idPrefix}-attesa`}>In attesa di</FieldLabel>
+          <TestoAlBlur
+            id={`${idPrefix}-attesa`}
+            value={valori.in_attesa_di}
+            onCommit={(v) => onChange({ in_attesa_di: v })}
+            placeholder="es. risposta del cliente"
+          />
+        </Field>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field>
+          <FieldLabel htmlFor={`${idPrefix}-pianificata`}>Inizio</FieldLabel>
+          <DatePicker
+            id={`${idPrefix}-pianificata`}
+            value={valori.data_pianificata}
+            onChange={(v) => onChange({ data_pianificata: v })}
+            placeholder="Nessuna data"
+            clearable
+            disabled={dateDalTesto.data_pianificata}
+          />
+          {dateDalTesto.data_pianificata && <FieldDescription>Presa dal titolo.</FieldDescription>}
+        </Field>
+        <Field>
+          <FieldLabel htmlFor={`${idPrefix}-scadenza`}>Scadenza</FieldLabel>
+          <DatePicker
+            id={`${idPrefix}-scadenza`}
+            value={valori.scadenza}
+            onChange={(v) => onChange({ scadenza: v })}
+            placeholder="Nessuna scadenza"
+            clearable
+            disabled={dateDalTesto.scadenza}
+          />
+          {dateDalTesto.scadenza && <FieldDescription>Presa dal titolo.</FieldDescription>}
+        </Field>
+      </div>
     </div>
   );
 }

@@ -1,20 +1,21 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { CornerLeftUp, FolderKanban, Hourglass, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
+import { Building2, ChevronDown, CornerLeftUp, FolderKanban, Hourglass, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { Segmented } from "@/components/segmented";
 import { AggiuntaRapida } from "@/components/task/aggiunta-rapida";
-import { CampiTask, TestoAlBlur } from "@/components/task/campi-task";
+import { AllegatiTask, useAllegatiTask, useRicezioneFile } from "@/components/task/allegati";
+import { CampiPrincipali, CampiTask, TestoAlBlur } from "@/components/task/campi-task";
 import { invalidaTask, useAggiornaTask, useOpzioniTask, useTaskDettaglio, type TaskLista } from "@/components/task/dati";
 import { InAttesaDialog } from "@/components/task/in-attesa-dialog";
-import { TaskCheckbox } from "@/components/task/task-checkbox";
+import { TaskCheckbox, useCompletaConConferma } from "@/components/task/task-checkbox";
 import { TaskRow } from "@/components/task/task-row";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,16 +28,10 @@ import { deleteTask } from "@/lib/actions/task";
 import { formatDate, todayISO } from "@/lib/dates/format";
 import { APRI_PARAM } from "@/lib/entita";
 import { taskToDb, type TaskFormValues } from "@/lib/schemas/task";
-import { giorniInAttesa, statoTask } from "@/lib/task";
+import { giorniInAttesa } from "@/lib/task";
 import { cn } from "@/lib/utils";
 
 import { useApriEntita } from "./use-apri-entita";
-
-const STATI_APERTI = [
-  { value: "da_fare", label: "Da fare" },
-  { value: "in_corso", label: "In corso" },
-  { value: "in_attesa", label: "In attesa" },
-] as const;
 
 /** Valori del form a partire dalla riga del database. */
 function valoriForm(t: TaskLista): TaskFormValues {
@@ -70,6 +65,10 @@ export function TaskDrawer({ id }: { id: string }) {
   const searchParams = useSearchParams();
   const [attesaOpen, setAttesaOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [dettagliAperti, setDettagliAperti] = useState(false);
+  const allegati = useAllegatiTask(id);
+  const ricezione = useRicezioneFile(allegati.carica);
+  const spunta = useCompletaConConferma();
 
   if (isPending) {
     return (
@@ -107,7 +106,10 @@ export function TaskDrawer({ id }: { id: string }) {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
+    <div
+      className={cn("flex h-full flex-col overflow-y-auto", ricezione.trascinando && "bg-primary/5 ring-2 ring-primary ring-inset")}
+      {...ricezione.props}
+    >
       <SheetHeader className="gap-3 pr-12">
         {task.genitore && (
           <button
@@ -132,10 +134,7 @@ export function TaskDrawer({ id }: { id: string }) {
             )}
           />
         </div>
-        <SheetDescription className="flex flex-wrap items-center gap-2 text-xs">
-          <span className={cn("rounded-full px-2 py-0.5 ring-1 ring-inset", statoTask(task.stato).className)}>
-            {statoTask(task.stato).label}
-          </span>
+        <SheetDescription className="flex flex-wrap items-center gap-2 text-xs empty:hidden">
           {task.ambito === "personale" && (
             <span className="rounded-full bg-ambito-personale-soft px-2 py-0.5 text-ambito-personale">Personale</span>
           )}
@@ -144,18 +143,41 @@ export function TaskDrawer({ id }: { id: string }) {
       </SheetHeader>
 
       <div className="space-y-6 px-4 pb-6">
-        {!fatta && (
-          <Segmented
-            label="Stato"
-            value={task.stato as (typeof STATI_APERTI)[number]["value"]}
-            opzioni={STATI_APERTI}
-            onChange={(stato) => {
-              if (stato === task.stato) return;
+        {(task.progetti || task.cliente_nome || task.servizi) && (
+          <div className="-mt-2 flex flex-wrap gap-2 text-xs">
+            {task.progetti && (
+              <Collegamento icona={FolderKanban} onClick={() => apri({ tipo: "progetto", id: task.progetti!.id })}>
+                {task.progetti.nome}
+              </Collegamento>
+            )}
+            {task.cliente_id && task.cliente_nome && (
+              <Collegamento icona={Building2} onClick={() => apri({ tipo: "cliente", id: task.cliente_id! })}>
+                {task.cliente_nome}
+              </Collegamento>
+            )}
+            {task.servizi && (
+              <Collegamento icona={RefreshCw} onClick={() => apri({ tipo: "servizio", id: task.servizi!.id })}>
+                {task.servizi.nome}
+              </Collegamento>
+            )}
+          </div>
+        )}
+
+        <CampiPrincipali
+          valori={valori}
+          onChange={salva}
+          onStato={(stato) => {
+            if (stato === task.stato) return;
+            if (stato === "fatto") spunta.completa(task);
+            else if (task.stato === "fatto") {
+              // Riaprendo si passa dallo stato scelto; "in attesa" chiede di cosa.
               if (stato === "in_attesa") setAttesaOpen(true);
               else salva({ stato });
-            }}
-          />
-        )}
+            } else if (stato === "in_attesa") setAttesaOpen(true);
+            else salva({ stato });
+          }}
+          idPrefix={`task-${id}`}
+        />
 
         {task.stato === "in_attesa" && (
           <div className="flex items-start gap-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
@@ -173,37 +195,7 @@ export function TaskDrawer({ id }: { id: string }) {
           </div>
         )}
 
-        {task.servizi && (
-          <button
-            type="button"
-            onClick={() => apri({ tipo: "servizio", id: task.servizi!.id })}
-            className="flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm hover:bg-muted/60"
-          >
-            <RefreshCw className="size-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Servizio</span>
-            <span className="truncate font-medium">{task.servizi.nome}</span>
-          </button>
-        )}
-        {task.progetti && (
-          <button
-            type="button"
-            onClick={() => apri({ tipo: "progetto", id: task.progetti!.id })}
-            className="flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm hover:bg-muted/60"
-          >
-            <FolderKanban className="size-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Progetto</span>
-            <span className="truncate font-medium">{task.progetti.nome}</span>
-            {task.cliente_nome && <span className="ml-auto truncate text-xs text-muted-foreground">{task.cliente_nome}</span>}
-          </button>
-        )}
-
-        <CampiTask
-          valori={valori}
-          onChange={salva}
-          opzioni={opzioni}
-          sottotask={isSottotask}
-          idPrefix={`task-${id}`}
-        />
+        <AllegatiTask stato={allegati} />
 
         {!isSottotask && (
           <section className="space-y-2">
@@ -229,6 +221,24 @@ export function TaskDrawer({ id }: { id: string }) {
           </section>
         )}
 
+        <Collapsible open={dettagliAperti} onOpenChange={setDettagliAperti} className="border-t pt-3">
+          <CollapsibleTrigger
+            render={<Button type="button" variant="ghost" size="sm" className="-ml-2 text-muted-foreground" />}
+          >
+            <ChevronDown className={cn("transition-transform", dettagliAperti && "rotate-180")} />
+            Dettagli
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3">
+            <CampiTask
+              valori={valori}
+              onChange={salva}
+              opzioni={opzioni}
+              sottotask={isSottotask}
+              idPrefix={`task-${id}`}
+            />
+          </CollapsibleContent>
+        </Collapsible>
+
         <div className="flex items-center justify-between border-t pt-4 text-xs text-muted-foreground">
           <span>Creata il {formatDate(task.created_at)}</span>
           <DropdownMenu>
@@ -245,6 +255,7 @@ export function TaskDrawer({ id }: { id: string }) {
         </div>
       </div>
 
+      {spunta.dialog}
       <InAttesaDialog
         open={attesaOpen}
         onOpenChange={setAttesaOpen}
@@ -273,5 +284,26 @@ export function TaskDrawer({ id }: { id: string }) {
         }}
       />
     </div>
+  );
+}
+
+function Collegamento({
+  icona: Icona,
+  onClick,
+  children,
+}: {
+  icona: typeof FolderKanban;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+    >
+      <Icona className="size-3 shrink-0" />
+      <span className="truncate">{children}</span>
+    </button>
   );
 }

@@ -1,11 +1,12 @@
 "use client";
 
-import { CalendarDays, CornerDownRight, Flag, FolderKanban, Hourglass, ListChecks, Repeat, Building2 } from "lucide-react";
+import { Building2, CalendarDays, CornerDownRight, Flag, FolderKanban, Hourglass, ListChecks, Repeat, Text } from "lucide-react";
 
 import { useApriEntita } from "@/components/drawer/use-apri-entita";
 import { formatGiornoRelativo, todayISO } from "@/lib/dates/format";
 import { descriviRicorrenza } from "@/lib/dates/ricorrenza";
 import { giorniInAttesa, GIORNI_SOLLECITO } from "@/lib/task";
+import { testoSemplice } from "@/lib/testo-ricco";
 import { cn } from "@/lib/utils";
 
 import type { TaskLista } from "./dati";
@@ -99,6 +100,14 @@ export function TaskMeta({ task, opzioni = {} }: { task: TaskLista; opzioni?: Op
       >
         <Flag className="size-3" />
         entro {formatGiornoRelativo(task.scadenza, oggi).toLowerCase()}
+      </span>,
+    );
+  }
+  if (task.note && testoSemplice(task.note)) {
+    voci.push(
+      <span key="note" className="inline-flex items-center" title="Ha una descrizione">
+        <Text className="size-3" />
+        <span className="sr-only">Ha una descrizione</span>
       </span>,
     );
   }

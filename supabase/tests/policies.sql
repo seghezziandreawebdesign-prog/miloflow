@@ -226,6 +226,9 @@ select public._test_rifiutato(
   $q$insert into public.task (ambito, titolo, assegnata_a)
      values ('lavoro', 'X', '00000000-0000-0000-0000-00000000000c')$q$,
   'il collaboratore senza permesso task crea una task');
+select public._test_conta(
+  $q$select 1 where public.storage_accesso('allegati', 'task/40000000-0000-0000-0000-000000000002/x.png', 'lettura')$q$,
+  0, 'il collaboratore senza permesso task legge gli allegati');
 
 reset role;
 
@@ -291,6 +294,19 @@ select public._test_rifiutato(
 select public._test_rifiutato(
   $q$select public.completa_task('40000000-0000-0000-0000-000000000005')$q$,
   'completa una task di un cliente non suo');
+-- Allegati delle task (bucket allegati, cartella task/<id>): valgono le policy della task.
+select public._test_conta(
+  $q$select 1 where public.storage_accesso('allegati', 'task/40000000-0000-0000-0000-000000000001/x.png', 'scrittura')$q$,
+  1, 'carica un allegato su una task del proprio cliente');
+select public._test_conta(
+  $q$select 1 where public.storage_accesso('allegati', 'task/40000000-0000-0000-0000-000000000005/x.png', 'lettura')$q$,
+  0, 'legge gli allegati di una task di un cliente non suo');
+select public._test_conta(
+  $q$select 1 where public.storage_accesso('allegati', 'task/40000000-0000-0000-0000-000000000004/x.png', 'lettura')$q$,
+  0, 'legge gli allegati di una task personale');
+select public._test_conta(
+  $q$select 1 where public.storage_accesso('allegati', 'task/non-un-uuid/x.png', 'lettura')$q$,
+  0, 'percorso di allegato non valido');
 select public.completa_task('40000000-0000-0000-0000-000000000001');
 select public._test_conta(
   $q$select 1 from public.task where id = '40000000-0000-0000-0000-000000000001' and stato = 'fatto'$q$,

@@ -32,6 +32,7 @@ export function DatePicker({
   placeholder = "Scegli una data",
   clearable = false,
   size,
+  disabled,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -42,6 +43,7 @@ export function DatePicker({
   /** Mostra "Rimuovi data", che imposta il valore a "". */
   clearable?: boolean;
   size?: "sm" | "default";
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const selected = fromISODate(value);
@@ -54,6 +56,7 @@ export function DatePicker({
             id={id}
             variant="outline"
             size={size}
+            disabled={disabled}
             aria-invalid={invalid || undefined}
             className={cn("justify-start font-normal", !selected && "text-muted-foreground", className)}
           />

@@ -11,6 +11,7 @@ import { addDays } from "@/lib/dates/giorni";
 import { confrontaTask, giornoTask, isInbox, prossimiGiorni, taskDiOggi } from "@/lib/task";
 
 import { AggiuntaRapida } from "./aggiunta-rapida";
+import { Board } from "./board";
 import { useTaskAperte, type TaskLista } from "./dati";
 import { GruppoTask, ListaSkeleton, ListaTask } from "./liste";
 import { useNuovaTask } from "./nuova-task";
@@ -22,6 +23,7 @@ export const VISTE = [
   { value: "inbox", label: "Inbox" },
   { value: "oggi", label: "Oggi" },
   { value: "settimana", label: "Prossimi 7 giorni" },
+  { value: "board", label: "Board" },
   { value: "progetti", label: "Progetti" },
   { value: "attesa", label: "In attesa" },
   { value: "tutte", label: "Tutte" },
@@ -74,6 +76,8 @@ export function TaskView({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
           <ProgettiLista filtroAmbito={filtroAmbito} />
         ) : vista === "tutte" ? (
           <TutteTabella filtroAmbito={filtroAmbito} />
+        ) : vista === "board" ? (
+          <Board filtroAmbito={filtroAmbito} />
         ) : isPending ? (
           <ListaSkeleton />
         ) : vista === "inbox" ? (
@@ -101,7 +105,7 @@ function VistaInbox({ tasks, filtroAmbito }: { tasks: TaskLista[]; filtroAmbito:
         <EmptyState
           icon={Inbox}
           title="Inbox vuota"
-          description="Qui finiscono le task senza data, senza scadenza e senza progetto."
+          description="Qui finiscono le task senza data di inizio, senza scadenza e senza progetto."
         />
       ) : (
         <ListaTask tasks={inbox} />
@@ -121,7 +125,7 @@ export function VistaOggi({ tasks, filtroAmbito }: { tasks: TaskLista[]; filtroA
         placeholder="Aggiungi una task per oggi"
       />
       {inRitardo.length === 0 && perOggi.length === 0 ? (
-        <EmptyState icon={Sun} title="Niente per oggi" description="Nessuna task pianificata o in scadenza oggi." />
+        <EmptyState icon={Sun} title="Niente per oggi" description="Nessuna task che inizia o scade oggi." />
       ) : (
         <>
           {inRitardo.length > 0 && (

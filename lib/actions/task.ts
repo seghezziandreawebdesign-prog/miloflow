@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { BUCKET_ALLEGATI } from "@/lib/allegati";
 import { todayISO } from "@/lib/dates/format";
 import { prossimeDateTask } from "@/lib/dates/ricorrenza";
 import { progettoSchema, progettoToDb, taskPatchSchema, taskSchema, taskToDb } from "@/lib/schemas/task";
@@ -146,10 +147,24 @@ export async function riordinaTask(id: string, input: unknown): Promise<ActionRe
   return { ok: true };
 }
 
-/** Eliminazione definitiva, sottotask comprese (on delete cascade). */
+/**
+ * Eliminazione definitiva, sottotask comprese (on delete cascade), con i loro
+ * allegati. I file si tolgono prima: le policy dello Storage richiedono che la
+ * task esista ancora.
+ */
 export async function deleteTask(id: string): Promise<ActionResult> {
   if (!idSchema.safeParse(id).success) return NESSUN_PERMESSO;
   const supabase = await createClient();
+  const { data: sottotask } = await supabase.from("task").select("id").eq("parent_id", id);
+  const storage = supabase.storage.from(BUCKET_ALLEGATI);
+  for (const taskId of [id, ...(sottotask ?? []).map((s) => s.id)]) {
+    const { data: file } = await storage.list(`task/${taskId}`, { limit: 1000 });
+    const percorsi = (file ?? []).filter((f) => f.id).map((f) => `task/${taskId}/${f.name}`);
+    if (percorsi.length > 0) {
+      const { error } = await storage.remove(percorsi);
+      if (error) return { ok: false, error: "Non riesco a eliminare gli allegati: la task non è stata eliminata" };
+    }
+  }
   const { data, error } = await supabase.from("task").delete().eq("id", id).select("id");
   if (error) return { ok: false, error: dbErrorMessage(error, "Eliminazione non riuscita") };
   if (data.length === 0) return NESSUN_PERMESSO;

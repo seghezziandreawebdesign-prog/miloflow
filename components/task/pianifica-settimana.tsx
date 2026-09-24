@@ -28,9 +28,9 @@ import { TaskRow } from "./task-row";
 const DA_PIANIFICARE = "da-pianificare";
 
 /**
- * A sinistra le task senza data pianificata (e quelle rimaste indietro), a
+ * A sinistra le task senza data di inizio (e quelle rimaste indietro), a
  * destra i giorni della settimana: trascinando una task su un giorno se ne
- * imposta la data pianificata; riportandola a sinistra la si toglie.
+ * imposta la data di inizio (data_pianificata); riportandola a sinistra la si toglie.
  */
 export function PianificaSettimana({ tasks }: { tasks: TaskLista[] }) {
   const oggi = todayISO();
@@ -84,7 +84,7 @@ export function PianificaSettimana({ tasks }: { tasks: TaskLista[] }) {
           <ZonaRilascio
             id={DA_PIANIFICARE}
             titolo="Da pianificare"
-            descrizione="Senza data pianificata. Trascina qui una task per togliere la data."
+            descrizione="Senza data di inizio. Trascina qui una task per togliere la data."
             conteggio={senzaData.length}
           >
             {senzaData.length === 0 ? (

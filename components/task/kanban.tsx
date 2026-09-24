@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { useRiordinaTask, type TaskLista } from "./dati";
 import { InAttesaDialog } from "./in-attesa-dialog";
 import { useCompletaConConferma } from "./task-checkbox";
-import { TaskRow } from "./task-row";
+import { TaskRow, type OpzioniRiga } from "./task-row";
 
 type Colonne = Record<StatoTask, string[]>;
 
@@ -41,7 +41,13 @@ function costruisci(tasks: TaskLista[]): Colonne {
  * Kanban per stato con drag & drop. Spostare in "In attesa" chiede di cosa;
  * in "Fatto" completa la task (con la domanda sulle sottotask aperte).
  */
-export function Kanban({ tasks }: { tasks: TaskLista[] }) {
+export function Kanban({
+  tasks,
+  opzioniRiga = { senzaProgetto: true, senzaCliente: true },
+}: {
+  tasks: TaskLista[];
+  opzioniRiga?: OpzioniRiga;
+}) {
   const [colonne, setColonne] = useState<Colonne>(() => costruisci(tasks));
   const [origine, setOrigine] = useState(tasks);
   const [attiva, setAttiva] = useState<string | null>(null);
@@ -146,14 +152,21 @@ export function Kanban({ tasks }: { tasks: TaskLista[] }) {
         <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
           <div className="grid min-w-[56rem] grid-cols-4 gap-3">
             {STATI_TASK.map((s) => (
-              <Colonna key={s.value} stato={s.value} titolo={s.label} ids={colonne[s.value]} perId={perId} />
+              <Colonna
+                key={s.value}
+                stato={s.value}
+                titolo={s.label}
+                ids={colonne[s.value]}
+                perId={perId}
+                opzioniRiga={opzioniRiga}
+              />
             ))}
           </div>
         </div>
         <DragOverlay dropAnimation={null}>
           {taskAttiva && (
             <div className="rounded-lg bg-background shadow-lg ring-1 ring-foreground/10">
-              <TaskRow task={taskAttiva} opzioni={{ senzaProgetto: true, senzaCliente: true }} />
+              <TaskRow task={taskAttiva} opzioni={opzioniRiga} />
             </div>
           )}
         </DragOverlay>
@@ -184,11 +197,13 @@ function Colonna({
   titolo,
   ids,
   perId,
+  opzioniRiga,
 }: {
   stato: StatoTask;
   titolo: string;
   ids: string[];
   perId: Map<string, TaskLista>;
+  opzioniRiga: OpzioniRiga;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stato });
   return (
@@ -204,14 +219,14 @@ function Colonna({
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         {ids.map((id) => {
           const task = perId.get(id);
-          return task ? <Scheda key={id} task={task} /> : null;
+          return task ? <Scheda key={id} task={task} opzioniRiga={opzioniRiga} /> : null;
         })}
       </SortableContext>
     </section>
   );
 }
 
-function Scheda({ task }: { task: TaskLista }) {
+function Scheda({ task, opzioniRiga }: { task: TaskLista; opzioniRiga: OpzioniRiga }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
   return (
     <div
@@ -224,7 +239,7 @@ function Scheda({ task }: { task: TaskLista }) {
         isDragging && "opacity-40",
       )}
     >
-      <TaskRow task={task} opzioni={{ senzaProgetto: true, senzaCliente: true }} />
+      <TaskRow task={task} opzioni={opzioniRiga} />
     </div>
   );
 }

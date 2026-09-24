@@ -18,6 +18,7 @@ import type { FiltroAmbito } from "@/lib/ambito";
 import { formatDate, todayISO } from "@/lib/dates/format";
 import { normalizza } from "@/lib/parsing/task-rapida";
 import { PRIORITA, priorita, statoTask, STATI_TASK } from "@/lib/task";
+import { testoSemplice } from "@/lib/testo-ricco";
 import { cn } from "@/lib/utils";
 
 import { useOpzioniTask, useTaskArchivio, type TaskLista } from "./dati";
@@ -73,7 +74,7 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
       if (filtri.cliente !== TUTTI && (t.cliente_id ?? "nessuno") !== filtri.cliente) return false;
       if (filtri.progetto !== TUTTI && (t.progetto_id ?? "nessuno") !== filtri.progetto) return false;
       if (filtri.assegnata !== TUTTI && (t.assegnata_a ?? "nessuno") !== filtri.assegnata) return false;
-      if (q && !normalizza(`${t.titolo} ${t.note ?? ""}`).includes(q)) return false;
+      if (q && !normalizza(`${t.titolo} ${testoSemplice(t.note)}`).includes(q)) return false;
       return true;
     });
   }, [data, filtri]);
@@ -111,7 +112,7 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
           sortFn: (a, b) => (a.original.priorita ?? 4) - (b.original.priorita ?? 4),
         }),
         col.accessor("data_pianificata", {
-          header: "Quando",
+          header: "Inizio",
           cell: ({ row, getValue }) => {
             const v = getValue();
             const ritardo = v && row.original.stato !== "fatto" && v < oggi;
