@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { DatePicker } from "@/components/date-picker";
-import { EditorTesto } from "@/components/editor-testo";
+import { EditorTesto } from "@/components/editor-testo-lazy";
 import { SceltaPicker } from "@/components/scelta-picker";
 import { Segmented } from "@/components/segmented";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";

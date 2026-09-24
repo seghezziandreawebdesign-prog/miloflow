@@ -7,7 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { EditorTesto } from "@/components/editor-testo";
+import { EditorTesto } from "@/components/editor-testo-lazy";
 import { AggiuntaRapida } from "@/components/task/aggiunta-rapida";
 import { AllegatiTask, useAllegatiTask, useRicezioneFile } from "@/components/task/allegati";
 import { CampiPrincipali, CampiTask, TestoAlBlur } from "@/components/task/campi-task";
