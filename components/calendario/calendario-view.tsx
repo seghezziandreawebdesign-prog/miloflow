@@ -75,7 +75,9 @@ export function CalendarioView({ filtroAmbito, impostazioni }: { filtroAmbito: F
     const scelta = stretto && impostazioni.vista_default !== "lista" ? "giorno" : impostazioni.vista_default;
     return VISTE_CALENDARIO.find((v) => v.value === scelta)?.fc ?? "timeGridWeek";
   });
-  const [vista, setVista] = useState<VistaCalendario>(() => vistaDaFullCalendar(vistaIniziale));
+  // Parte dalla preferenza salvata, uguale sul server e nel browser: la vista vera
+  // arriva da datesSet, così su telefono il selettore passa a "Giorno" dopo l'idratazione.
+  const [vista, setVista] = useState<VistaCalendario>(impostazioni.vista_default);
 
   const eventi = useMemo(
     () => (data && intervallo ? eventiPerCalendario(data, attivi, intervallo.dal, intervallo.al) : []),
@@ -151,7 +153,7 @@ export function CalendarioView({ filtroAmbito, impostazioni }: { filtroAmbito: F
               Oggi
             </Button>
           </div>
-          <h2 className="min-w-0 flex-1 truncate text-[17px] font-semibold tracking-tight first-letter:uppercase sm:text-lg">
+          <h2 className="min-w-0 flex-auto whitespace-nowrap text-[17px] font-semibold tracking-tight first-letter:uppercase sm:text-lg">
             {titolo}
             {isFetching && <Loader2 className="ml-2 inline size-3.5 animate-spin text-muted-foreground" />}
           </h2>
