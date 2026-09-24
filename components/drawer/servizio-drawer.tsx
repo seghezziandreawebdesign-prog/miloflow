@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 import { ClienteLogo } from "@/components/clienti/cliente-logo";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { AVVISO_ELIMINA_SERVIZIO } from "@/components/servizi/elimina-servizio";
 import { CredenzialiSection } from "@/components/credenziali/credenziali-section";
 import { AvvisaClienteDialog } from "@/components/servizi/avvisa-cliente-dialog";
 import { RinnovaDialog } from "@/components/servizi/rinnova-dialog";
@@ -385,7 +386,7 @@ export function ServizioDrawer({ id }: { id: string }) {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title={`Eliminare "${s.nome}"?`}
-        description="Verranno eliminati anche credenziali e storico dei rinnovi. Se non ti serve più, puoi disdirlo o archiviarlo."
+        description={AVVISO_ELIMINA_SERVIZIO}
         onConfirm={async () => {
           const result = await deleteServizio(id);
           if (!result.ok) {

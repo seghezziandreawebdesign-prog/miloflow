@@ -23,6 +23,7 @@ import { Calendar } from "@/components/ui/calendar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -80,6 +81,8 @@ export function AzioniMultipleTask() {
       return;
     }
     toast.success(`${messaggio}: ${result.data.aggiornate === 1 ? "1 task" : `${result.data.aggiornate} task`}`);
+    // Dopo la modifica le task possono uscire dalla vista: la selezione si chiude.
+    selezione!.setAttiva(false);
     dopo();
   }
 
@@ -118,12 +121,14 @@ export function AzioniMultipleTask() {
             <span className="max-sm:sr-only">Inizio</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="center" className="w-48">
-            <DropdownMenuLabel>Data di inizio</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => modifica({ data_pianificata: oggi }, "Iniziano oggi")}>Oggi</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => modifica({ data_pianificata: addDays(oggi, 1) }, "Iniziano domani")}>Domani</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setDataOpen(true)}>Scegli una data…</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => modifica({ data_pianificata: "" }, "Data tolta")}>Togli la data</DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Data di inizio</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => modifica({ data_pianificata: oggi }, "Iniziano oggi")}>Oggi</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => modifica({ data_pianificata: addDays(oggi, 1) }, "Iniziano domani")}>Domani</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDataOpen(true)}>Scegli una data…</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => modifica({ data_pianificata: "" }, "Data tolta")}>Togli la data</DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
         <DropdownMenu>
@@ -132,14 +137,16 @@ export function AzioniMultipleTask() {
             <span className="max-sm:sr-only">Priorità</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="center" className="w-44">
-            <DropdownMenuLabel>Priorità</DropdownMenuLabel>
-            {PRIORITA.map((p) => (
-              <DropdownMenuItem key={p.value} onClick={() => modifica({ priorita: String(p.value) as "1" | "2" | "3" }, "Priorità cambiata")}>
-                <Flag className={p.className} />
-                {p.label}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuItem onClick={() => modifica({ priorita: "" }, "Priorità tolta")}>Nessuna</DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Priorità</DropdownMenuLabel>
+              {PRIORITA.map((p) => (
+                <DropdownMenuItem key={p.value} onClick={() => modifica({ priorita: String(p.value) as "1" | "2" | "3" }, "Priorità cambiata")}>
+                  <Flag className={p.className} />
+                  {p.label}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuItem onClick={() => modifica({ priorita: "" }, "Priorità tolta")}>Nessuna</DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -149,10 +156,12 @@ export function AzioniMultipleTask() {
             <span className="max-sm:sr-only">Stato</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="center" className="w-44">
-            <DropdownMenuLabel>Stato</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => modifica({ stato: "da_fare" }, "Stato cambiato")}>Da fare</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => modifica({ stato: "in_corso" }, "Stato cambiato")}>In corso</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setAttesaOpen(true)}>In attesa…</DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Stato</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => modifica({ stato: "da_fare" }, "Stato cambiato")}>Da fare</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => modifica({ stato: "in_corso" }, "Stato cambiato")}>In corso</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setAttesaOpen(true)}>In attesa…</DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -162,14 +171,16 @@ export function AzioniMultipleTask() {
             <span className="max-sm:sr-only">Progetto</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="center" className="max-h-80 w-56">
-            <DropdownMenuLabel>Sposta nel progetto</DropdownMenuLabel>
-            {(opzioni?.progetti ?? []).map((p) => (
-              <DropdownMenuItem key={p.id} onClick={() => modifica({ progetto_id: p.id }, `Spostate in «${p.nome}»`)}>
-                <span className="truncate">{p.nome}</span>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => modifica({ progetto_id: "" }, "Tolte dal progetto")}>Nessun progetto</DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Sposta nel progetto</DropdownMenuLabel>
+              {(opzioni?.progetti ?? []).map((p) => (
+                <DropdownMenuItem key={p.id} onClick={() => modifica({ progetto_id: p.id }, `Spostate in «${p.nome}»`)}>
+                  <span className="truncate">{p.nome}</span>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => modifica({ progetto_id: "" }, "Tolte dal progetto")}>Nessun progetto</DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
 

@@ -290,7 +290,7 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
                     key={row.id}
                     {...(selezione ? attributiSelezione(row.original.id) : {})}
                     data-state={selezione?.selezionate.has(row.original.id) ? "selected" : undefined}
-                    className="group cursor-pointer"
+                    className={cn("group cursor-pointer", selezione?.attiva && "select-none")}
                     onClick={(e) =>
                       selezione?.attiva
                         ? selezione.toggle(row.original.id, { intervallo: e.shiftKey })

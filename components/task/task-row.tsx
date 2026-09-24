@@ -65,6 +65,7 @@ export function TaskRow({
       }}
       className={cn(
         "group flex cursor-pointer items-start gap-3 rounded-lg border-l-[3px] border-l-transparent px-2 py-2 outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50",
+        selezionando && "select-none",
         selezionata && "bg-primary-soft hover:bg-primary-soft",
         className,
       )}

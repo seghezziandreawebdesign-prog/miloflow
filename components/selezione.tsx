@@ -56,11 +56,12 @@ export function SelezioneProvider({ children, className }: { children: React.Rea
   const toggle = useCallback(
     (id: string, { intervallo = false }: { intervallo?: boolean } = {}) => {
       setAttivaStato(true);
+      // L'ordine si legge adesso: l'aggiornamento dello stato gira più tardi.
+      const ids = intervallo && ultima.current ? visibili() : [];
+      const da = ids.indexOf(ultima.current ?? "");
+      const a = ids.indexOf(id);
       setSelezionate((prima) => {
         const dopo = new Set(prima);
-        const ids = intervallo && ultima.current ? visibili() : [];
-        const da = ids.indexOf(ultima.current ?? "");
-        const a = ids.indexOf(id);
         if (da >= 0 && a >= 0) {
           for (const x of ids.slice(Math.min(da, a), Math.max(da, a) + 1)) dopo.add(x);
         } else if (dopo.has(id)) dopo.delete(id);
@@ -97,7 +98,8 @@ export function SelezioneProvider({ children, className }: { children: React.Rea
 
   return (
     <SelezioneContext.Provider value={valore}>
-      <div ref={contenitore} className={className}>
+      {/* Spazio in fondo, così la barra fissa non copre le ultime righe. */}
+      <div ref={contenitore} className={cn(className, attiva && "pb-32 sm:pb-20")}>
         {children}
       </div>
     </SelezioneContext.Provider>
@@ -176,25 +178,35 @@ export function BarraSelezione({ children }: { children: React.ReactNode }) {
     <div
       role="toolbar"
       aria-label="Azioni sulla selezione"
+      data-barra-selezione=""
       className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:left-56"
     >
-      <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl bg-card p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] ring-1 ring-black/10 scrollbar-none">
-        <Button variant="ghost" size="icon-sm" aria-label="Chiudi la selezione" onClick={() => selezione.setAttiva(false)}>
-          <X />
-        </Button>
-        <span className="px-1 text-sm font-medium whitespace-nowrap tabular-nums">
-          {n === 0 ? "Nessuna" : n === 1 ? "1 selezionata" : `${n} selezionate`}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-primary"
-          onClick={() => (tutte ? selezione.svuota() : selezione.selezionaTutte())}
+      {/* Su mobile due righe: conteggio sopra, azioni sotto a tutta larghezza. */}
+      <div className="flex w-full flex-col gap-1 rounded-2xl bg-card p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] ring-1 ring-black/10 sm:w-auto sm:max-w-full sm:flex-row sm:items-center">
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon-sm" aria-label="Chiudi la selezione" onClick={() => selezione.setAttiva(false)}>
+            <X />
+          </Button>
+          <span className="px-1 text-sm font-medium whitespace-nowrap tabular-nums">
+            {n === 0 ? "Nessuna" : n === 1 ? "1 selezionata" : `${n} selezionate`}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto text-primary sm:ml-0"
+            onClick={() => (tutte ? selezione.svuota() : selezione.selezionaTutte())}
+          >
+            {tutte ? "Nessuna" : "Tutte"}
+          </Button>
+        </div>
+        <span className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" />
+        <div
+          className={cn(
+            "flex items-center justify-between gap-1 border-t pt-1 sm:justify-start sm:border-t-0 sm:pt-0",
+            n === 0 && "pointer-events-none opacity-40",
+          )}
+          aria-disabled={n === 0}
         >
-          {tutte ? "Nessuna" : "Tutte"}
-        </Button>
-        <span className="mx-1 h-5 w-px shrink-0 bg-border" />
-        <div className={cn("flex items-center gap-1", n === 0 && "pointer-events-none opacity-40")} aria-disabled={n === 0}>
           {children}
         </div>
       </div>

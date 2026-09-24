@@ -54,6 +54,33 @@ export async function rinnovaServizio(id: string, input: unknown): Promise<Actio
 }
 
 const statoSchema = z.enum(["attivo", "disdetto", "archiviato"]);
+/** Selezione multipla: al massimo 200 servizi per volta. */
+const idsSchema = z.array(z.uuid()).min(1).max(200);
+
+/** Stesso stato (attivo, disdetto, archiviato) su tutti i servizi selezionati. */
+export async function setStatoServizi(ids: unknown, stato: string): Promise<ActionResult<{ aggiornati: number }>> {
+  const parsedIds = idsSchema.safeParse(ids);
+  const parsedStato = statoSchema.safeParse(stato);
+  if (!parsedIds.success || !parsedStato.success) return NESSUN_PERMESSO;
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("servizi").update({ stato: parsedStato.data }).in("id", parsedIds.data).select("id");
+  if (error) return { ok: false, error: dbErrorMessage(error) };
+  if (data.length === 0) return NESSUN_PERMESSO;
+  revalida();
+  return { ok: true, data: { aggiornati: data.length } };
+}
+
+/** Elimina i servizi selezionati, con credenziali e storico dei rinnovi. */
+export async function deleteServizi(ids: unknown): Promise<ActionResult<{ eliminati: number }>> {
+  const parsed = idsSchema.safeParse(ids);
+  if (!parsed.success) return NESSUN_PERMESSO;
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("servizi").delete().in("id", parsed.data).select("id");
+  if (error) return { ok: false, error: dbErrorMessage(error, "Eliminazione non riuscita") };
+  if (data.length === 0) return NESSUN_PERMESSO;
+  revalida();
+  return { ok: true, data: { eliminati: data.length } };
+}
 
 export async function setStatoServizio(id: string, stato: string): Promise<ActionResult> {
   const parsedStato = statoSchema.safeParse(stato);

@@ -44,7 +44,7 @@ export function QuickCreate() {
 /** Pulsante + fisso in basso a destra (mobile), con lo stesso menu. */
 export function QuickCreateFab() {
   return (
-    <div className="fixed right-4 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-30 lg:hidden">
+    <div className="fixed right-4 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-30 lg:hidden [body:has([data-barra-selezione])_&]:hidden">
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
