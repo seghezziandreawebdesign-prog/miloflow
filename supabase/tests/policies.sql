@@ -139,8 +139,12 @@ insert into public.movimenti (ambito, importo, descrizione, stato) values
   ('personale', 20, 'M personale', 'previsto');
 
 -- Salvadanai: uno di lavoro con piano mensile, uno personale (risparmio).
+-- Il piano esiste da due mesi: ha il previsto anche nel mese corrente.
+insert into public.salvadanai (id, ambito, tipo, nome, importo_mensile, giorno_mensile, created_at) values
+  ('70000000-0000-0000-0000-000000000001', 'lavoro', 'investimento', 'SV lavoro', 50, 1, now() - interval '2 months');
+-- Piano creato oggi con un giorno già passato: nessun previsto arretrato.
 insert into public.salvadanai (id, ambito, tipo, nome, importo_mensile, giorno_mensile) values
-  ('70000000-0000-0000-0000-000000000001', 'lavoro', 'investimento', 'SV lavoro', 50, 1);
+  ('70000000-0000-0000-0000-000000000003', 'lavoro', 'risparmio', 'SV nuovo', 10, 1);
 insert into public.salvadanai (id, ambito, tipo, nome, obiettivo) values
   ('70000000-0000-0000-0000-000000000002', 'personale', 'risparmio', 'SV personale', 3000);
 insert into public.salvadanai_prelievi (salvadanaio_id, importo) values
@@ -416,8 +420,8 @@ select public._test_conta($q$select 1 from public.debiti_rate r join public.debi
 select public._test_rifiutato(
   $q$insert into public.movimenti (ambito, importo) values ('lavoro', 5)$q$,
   'crea un movimento con budget in sola lettura');
-select public._test_conta($q$select 1 from public.salvadanai where nome like 'SV %'$q$, 1, 'salvadanai: solo quello di lavoro');
-select public._test_conta($q$select 1 from public.v_salvadanai where nome like 'SV %'$q$, 1, 'v_salvadanai: solo quello di lavoro');
+select public._test_conta($q$select 1 from public.salvadanai where nome like 'SV %'$q$, 2, 'salvadanai: solo quelli di lavoro');
+select public._test_conta($q$select 1 from public.v_salvadanai where nome like 'SV %'$q$, 2, 'v_salvadanai: solo quelli di lavoro');
 select public._test_conta(
   $q$select 1 from public.salvadanai_prelievi where salvadanaio_id in ('70000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002')$q$,
   1, 'prelievi: solo del salvadanaio di lavoro');
@@ -789,6 +793,10 @@ begin
   if (select count(*) from public.movimenti where salvadanaio_id = v_sv and stato = 'previsto'
       and periodo in (v_mese, (v_mese + interval '1 month')::date)) <> 2 then
     raise exception 'FALLITO: il piano deve avere il previsto del mese corrente e del successivo';
+  end if;
+  if exists (select 1 from public.movimenti where salvadanaio_id = '70000000-0000-0000-0000-000000000003'
+             and data < public.oggi() and public.oggi() > v_mese) then
+    raise exception 'FALLITO: un piano nuovo non deve avere previsti prima della creazione';
   end if;
   select id into v_prev from public.movimenti where salvadanaio_id = v_sv and periodo = v_mese;
   if (select data from public.movimenti where id = v_prev) <> v_mese or (select importo from public.movimenti where id = v_prev) <> 50 then
