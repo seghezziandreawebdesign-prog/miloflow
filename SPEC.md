@@ -211,13 +211,15 @@ Tutto rispetta lo switch di ambito. Ogni elemento si apre nel pannello laterale.
 - Completando una task con sottotask aperte, chiedi se completare anche quelle.
 
 ### 6.5 Calendario
-- FullCalendar con viste mese, settimana, giorno, lista. Settimana da lunedì, orari 24h, locale italiano.
+- FullCalendar con viste giorno, settimana, mese, lista. Settimana da lunedì, orari 24h, locale italiano. Su desktop si parte dalla vista scelta in Impostazioni (default settimana), su mobile dal giorno.
 - Legge da `v_calendario` solo per il range visibile. Le ricorrenze (RRULE) si espandono lato client per il range visibile.
-- **Filtri a pulsante**: Task, Deadline, Scadenze servizi, Eventi, Rate, Spese previste. Più lo switch di ambito globale. Stato dei filtri salvato.
-- Ogni tipo ha un'icona; il colore dipende dall'ambito (con variazione di tonalità per tipo).
+- Le task hanno un orario di inizio facoltativo (`ora_inizio`) e la durata: con l'orario stanno nella fascia oraria, senza stanno nella riga "tutto il giorno".
+- **Colonna sinistra sempre visibile** (su mobile una riga di chip) con gli interruttori: Task, Scadenze task, Scadenze servizi, Eventi, Rate, Spese previste. Più lo switch di ambito globale. Stato dei filtri salvato nel browser.
+- Il colore dipende dall'ambito (blu lavoro, viola personale) con una variazione per tipo; il bordo è il colore del progetto.
 - Click su un elemento: apre il pannello dell'entità originale.
-- Drag & drop: consentito su task (cambia `data_pianificata`) ed eventi (cambia orari). **Non** consentito su scadenze servizi, rate e movimenti (si modificano solo dalla loro scheda).
-- Click su uno spazio vuoto: crea un evento o una task in quella data.
+- Drag & drop e ridimensionamento: consentiti su task (cambiano `data_pianificata`, `ora_inizio` e `durata_min`) ed eventi (cambiano orari). **Non** consentiti su scadenze servizi, rate e movimenti (si modificano solo dalla loro scheda). Le occorrenze di un evento ricorrente non si trascinano.
+- Click o selezione su uno spazio vuoto: un dialog chiede se creare una task, un evento o un servizio con data e ora già impostate.
+- **Impostazioni → Calendario**: tacche da 15, 30 o 60 minuti, ore di inizio e fine della giornata, vista di partenza (tabella `impostazioni_calendario`, una riga per utente).
 - **Feed ICS** (fase 4): una Edge Function che restituisce un file `.ics` con scadenze, task pianificate ed eventi, protetta da un token segreto nell'URL, rigenerabile dalle Impostazioni. Nelle impostazioni si sceglie cosa includere e quale ambito.
 
 ### 6.6 Budget & Spese
@@ -327,8 +329,8 @@ Ogni fase si chiude solo quando i criteri di accettazione sono verificati. A fin
 **Criteri**: "Chiamare fornitore domani #onis !alta" crea la task corretta; completando una ricorrente appare la successiva; la pagina Oggi mostra correttamente i ritardi.
 
 ### Fase 4 — Calendario
-- `v_calendario`, FullCalendar con viste, filtri, colori, drag & drop consentito solo dove previsto, creazione da slot vuoto, apertura pannelli.
-- Tabella eventi con ricorrenze.
+- `v_calendario`, FullCalendar con viste, colonna dei filtri, colori, drag & drop consentito solo dove previsto, creazione da slot vuoto, apertura pannelli.
+- Orario delle task, eventi completi con ricorrenze, impostazioni del calendario (tacche, orari, vista).
 - Feed ICS con token.
 **Criteri**: sposto una task nel calendario e la data si aggiorna ovunque; non riesco a trascinare una scadenza di servizio; il feed ICS si sottoscrive da Google Calendar e Apple Calendar.
 

@@ -111,6 +111,7 @@ npm run build
 | `vies-lookup` | cerca una P.IVA su VIES | JWT di un utente loggato |
 | `digest-scadenze` | riepilogo email del mattino | segreto del cron, oppure JWT dell'owner per la prova |
 | `invia-email-cliente` | avviso di scadenza al cliente, dopo conferma | JWT dell'utente (valgono le sue policy) |
+| `calendario-ics` | feed ICS per Google e Apple Calendar | token segreto nell'URL, solo per l'owner |
 
 Per pubblicarle:
 
@@ -160,10 +161,17 @@ Nel database finiscono solo payload cifrato, IV e salt. La cassaforte si richiud
   - la data "in attesa dal" si imposta da sola.
 - **Eliminazione**. Le task si eliminano davvero, insieme alle sottotask. I progetti invece si archiviano soltanto.
 
+## Calendario
+
+- Pagina `/calendario` con FullCalendar 7 (pacchetto `@fullcalendar/react`, che contiene le viste). Le righe arrivano dalla vista `v_calendario` per l'intervallo visibile; le ricorrenze degli eventi si espandono nel browser (`lib/calendario.ts`, con test).
+- Una task con `ora_inizio` sta nella fascia oraria e dura `durata_min` (60 minuti se manca); senza orario sta in "tutto il giorno". Trascinandola cambiano data, ora e durata.
+- Le preferenze (tacche da 15/30/60 minuti, ore di inizio e fine, vista di partenza) stanno in `impostazioni_calendario`, una riga per utente creata al primo accesso dalla funzione `mie_impostazioni_calendario()`.
+- **Feed ICS**: in Impostazioni → Calendario si crea un link con un token di 64 caratteri (`rigenera_token_ics()`); la Edge Function `calendario-ics` risponde con il file `.ics`. Il feed legge con la service role, quindi è disponibile solo per l'owner. Va pubblicata con `npx supabase functions deploy calendario-ics --use-api` e usa il segreto `SITE_URL` per i link.
+
 ## Da completare nelle fasi successive
 
-- Token del feed ICS (fase 4), collegamento dei rinnovi al budget (fase 5), gestione di categorie, tipi di servizio e utenti (fasi 5 e 6).
-- Pagina Oggi: i blocchi di budget, rate e spese previste arrivano con la fase 5.
+- Collegamento dei rinnovi al budget (fase 5), gestione di categorie, tipi di servizio e utenti (fasi 5 e 6).
+- Pagina Oggi: i blocchi di budget, rate e spese previste arrivano con la fase 5. Nel calendario rate e spese previste si aprono in un pannello segnaposto fino alla fase 5.
 
 ## Struttura
 
@@ -181,6 +189,7 @@ lib/schemas             schemi zod
 lib/parsing             parser dell'aggiunta rapida delle task
 lib/dates               date, giorni e ricorrenze RRULE
 components/task         viste delle task, kanban, Pianifica settimana, aggiunta rapida
+components/calendario   FullCalendar, filtri, creazione dallo slot, form dell'evento
 supabase/migrations     schema, policy e seed
 supabase/tests          test delle policy
 ```
