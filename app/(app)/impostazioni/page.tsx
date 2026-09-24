@@ -1,27 +1,31 @@
-import { Settings } from "lucide-react";
 import type { Metadata } from "next";
 
-import { AmbitoBadge } from "@/components/ambito-badge";
-import { EmptyState } from "@/components/empty-state";
+import { CassaforteSettings } from "@/components/impostazioni/cassaforte-settings";
+import { NotificheSettings } from "@/components/impostazioni/notifiche-settings";
 import { PageHeader } from "@/components/page-header";
-import { getFiltroAmbito } from "@/lib/ambito.server";
+import { createClient } from "@/lib/supabase/server";
+import { getUtenteCorrente } from "@/lib/utente.server";
 
 export const metadata: Metadata = { title: "Impostazioni" };
 
-export default async function Page() {
-  const filtroAmbito = await getFiltroAmbito();
+export default async function ImpostazioniPage() {
+  const utente = await getUtenteCorrente();
+  const isOwner = utente.ruolo === "owner";
+  const supabase = await createClient();
+  const { data: notifiche } = isOwner
+    ? await supabase.from("impostazioni_notifiche").select("email, orario, giorni_anticipo, attivo, ultimo_invio").maybeSingle()
+    : { data: null };
 
   return (
     <>
       <PageHeader
         title="Impostazioni"
-        description={
-          <>
-            Ambito: <AmbitoBadge ambito={filtroAmbito} className="align-middle" />
-          </>
-        }
+        description="Categorie, tipi di servizio e utenti arrivano con le prossime fasi."
       />
-      <EmptyState icon={Settings} title="Impostazioni in arrivo" description="Categorie, tipi di servizio, notifiche e utenti vengono aggiunti fase per fase." />
+      <div className="max-w-3xl space-y-6">
+        <CassaforteSettings isOwner={isOwner} />
+        {isOwner && notifiche && <NotificheSettings iniziali={notifiche} emailUtente={utente.email} />}
+      </div>
     </>
   );
 }

@@ -15,6 +15,9 @@ export function useCreazioneRapida() {
       case "cliente":
         router.push("/clienti?nuovo=1");
         return;
+      case "servizio":
+        router.push("/servizi?nuovo=1");
+        return;
       default:
         toast.info(`${azione.label}: disponibile dalla fase ${azione.fase}`);
     }

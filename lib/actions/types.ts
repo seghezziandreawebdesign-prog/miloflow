@@ -20,3 +20,14 @@ export function zodFieldErrors(issues: { path: PropertyKey[]; message: string }[
   }
   return out;
 }
+
+/** Errore generico riutilizzabile in qualsiasi ActionResult. */
+export const NESSUN_PERMESSO = { ok: false, error: "Elemento non trovato o permessi insufficienti" } as const;
+
+/**
+ * I parametri delle funzioni SQL accettano null, ma i tipi generati da
+ * Supabase li dichiarano obbligatori e non nulli: questo cast lo esplicita.
+ */
+export function sqlNull<T>(value: T | null | undefined): T {
+  return (value ?? null) as T;
+}

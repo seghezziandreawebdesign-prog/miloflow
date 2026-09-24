@@ -1,15 +1,22 @@
-import { RefreshCw } from "lucide-react";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { AmbitoBadge } from "@/components/ambito-badge";
-import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { ServiziView } from "@/components/servizi/servizi-view";
 import { getFiltroAmbito } from "@/lib/ambito.server";
+import { listServizi } from "@/lib/queries/servizi";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Servizi & Scadenze" };
 
-export default async function Page() {
+export default async function ServiziPage() {
   const filtroAmbito = await getFiltroAmbito();
+  const supabase = await createClient();
+  const [servizi, budget] = await Promise.all([
+    listServizi({ ambito: filtroAmbito }),
+    supabase.rpc("puo", { p_sezione: "budget" }),
+  ]);
 
   return (
     <>
@@ -21,7 +28,9 @@ export default async function Page() {
           </>
         }
       />
-      <EmptyState icon={RefreshCw} title="Nessun servizio" description="Aggiungi il primo servizio: domini, hosting, licenze e abbonamenti (fase 2)." />
+      <Suspense>
+        <ServiziView servizi={servizi} filtroAmbito={filtroAmbito} mostraCosti={budget.data === true} />
+      </Suspense>
     </>
   );
 }

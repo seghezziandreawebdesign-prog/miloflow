@@ -104,10 +104,46 @@ npm test          # test unitari (vitest)
 npm run build
 ```
 
+## Edge Functions, segreti e cron
+
+| Funzione | Cosa fa | Autenticazione |
+| --- | --- | --- |
+| `vies-lookup` | cerca una P.IVA su VIES | JWT di un utente loggato |
+| `digest-scadenze` | riepilogo email del mattino | segreto del cron, oppure JWT dell'owner per la prova |
+| `invia-email-cliente` | avviso di scadenza al cliente, dopo conferma | JWT dell'utente (valgono le sue policy) |
+
+Per pubblicarle:
+
+```bash
+npx supabase functions deploy <nome> --use-api
+```
+
+I segreti stanno nelle impostazioni delle Edge Functions, mai nel repository:
+
+- `RESEND_API_KEY` e `RESEND_FROM`: si impostano con `./scripts/imposta-resend.sh`, che non mostra la chiave a schermo. Per scrivere ai clienti serve un dominio verificato su Resend. Con `onboarding@resend.dev` parte solo il riepilogo verso l'email del proprio account Resend.
+- `CRON_SECRET`: segreto casuale condiviso con il cron.
+- `SITE_URL`: URL dell'app, per i link nelle email.
+
+Il cron (`pg_cron` + `pg_net`) gira ogni 15 minuti e chiama `digest-scadenze`. La funzione invia una sola volta al giorno, dopo l'orario scelto in Impostazioni → Notifiche. URL e segreto il cron li legge dal Vault di Supabase (`digest_url`, `digest_secret`). Per rigenerare il segreto:
+
+```sql
+select vault.update_secret((select id from vault.secrets where name = 'digest_secret'), '<nuovo segreto>');
+```
+
+Poi si imposta lo stesso valore con `npx supabase secrets set CRON_SECRET=<nuovo segreto>`.
+
+## Cassaforte delle credenziali
+
+Una sola master password per tutta l'app, impostata dall'owner in Impostazioni. La cifratura avviene solo nel browser:
+
+- PBKDF2-SHA256 a 600.000 iterazioni produce una chiave madre, che resta solo in memoria;
+- da questa, per ogni credenziale, HKDF con il salt della credenziale produce una chiave AES-GCM a 256 bit.
+
+Nel database finiscono solo payload cifrato, IV e salt. La cassaforte si richiude al logout o dopo 15 minuti di inattività. **Se si perde la master password, le password cifrate non sono recuperabili.**
+
 ## Da completare nelle fasi successive
 
-- Cron (`pg_cron` + `pg_net`) e secret delle Edge Functions (`supabase secrets set ...`) nella fase 2, con il digest email.
-- Tabelle di impostazioni per notifiche, token del feed ICS e verifica della master password della cassaforte. Si aggiungono nelle fasi che le usano.
+- Token del feed ICS (fase 4), collegamento dei rinnovi al budget (fase 5), gestione di categorie, tipi di servizio e utenti (fasi 5 e 6).
 
 ## Struttura
 

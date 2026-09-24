@@ -1,16 +1,19 @@
 "use client";
 
-import { ArrowLeft, CalendarDays, FolderKanban, RefreshCw } from "lucide-react";
+import { ArrowLeft, CalendarDays, FolderKanban } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { EmptyState } from "@/components/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CredenzialiSection } from "@/components/credenziali/credenziali-section";
 import type { SchedaCliente as SchedaClienteData } from "@/lib/queries/clienti";
+import type { ServizioLista } from "@/lib/queries/servizi";
 
 import { DiarioCliente } from "./diario-cliente";
 import { IntestazioneCliente } from "./intestazione-cliente";
 import { PanoramicaCliente } from "./panoramica-cliente";
+import { ServiziCliente } from "./servizi-cliente";
 
 const TABS = [
   { value: "panoramica", label: "Panoramica" },
@@ -23,10 +26,14 @@ type Tab = (typeof TABS)[number]["value"];
 
 export function SchedaCliente({
   scheda,
+  servizi,
+  mostraCosti,
   tagSuggestions,
   isOwner,
 }: {
   scheda: SchedaClienteData;
+  servizi: ServizioLista[];
+  mostraCosti: boolean;
   tagSuggestions: string[];
   isOwner: boolean;
 }) {
@@ -59,6 +66,9 @@ export function SchedaCliente({
             {TABS.map((t) => (
               <TabsTrigger key={t.value} value={t.value}>
                 {t.label}
+                {t.value === "servizi" && servizi.length > 0 && (
+                  <span className="ml-1 rounded-full bg-muted px-1.5 text-xs tabular-nums">{servizi.length}</span>
+                )}
                 {t.value === "diario" && scheda.diario.length > 0 && (
                   <span className="ml-1 rounded-full bg-muted px-1.5 text-xs tabular-nums">{scheda.diario.length}</span>
                 )}
@@ -69,13 +79,12 @@ export function SchedaCliente({
 
         <TabsContent value="panoramica" className="pt-4">
           <PanoramicaCliente scheda={scheda} />
+          <div className="mt-4 rounded-xl bg-card p-4 ring-1 ring-foreground/10 lg:max-w-[calc(100%-23rem)]">
+            <CredenzialiSection proprietario={{ cliente_id: scheda.cliente.id }} />
+          </div>
         </TabsContent>
         <TabsContent value="servizi" className="pt-4">
-          <EmptyState
-            icon={RefreshCw}
-            title="Nessun servizio collegato"
-            description="I servizi collegati a questo cliente, con costi, prezzi di rivendita e scadenze, arrivano con il prossimo blocco della fase 2."
-          />
+          <ServiziCliente clienteId={scheda.cliente.id} servizi={servizi} mostraCosti={mostraCosti} />
         </TabsContent>
         <TabsContent value="progetti" className="pt-4">
           <EmptyState
