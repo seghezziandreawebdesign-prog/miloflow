@@ -141,9 +141,29 @@ Una sola master password per tutta l'app, impostata dall'owner in Impostazioni. 
 
 Nel database finiscono solo payload cifrato, IV e salt. La cassaforte si richiude al logout o dopo 15 minuti di inattività. **Se si perde la master password, le password cifrate non sono recuperabili.**
 
+## Task e progetti
+
+- **Aggiunta rapida**. È un campo unico che riconosce date, riferimenti e priorità:
+  - date: `oggi`, `domani`, `dopodomani`, `lun`…`dom`, `tra 3 giorni`, `12/10`. Una data semplice è la data pianificata; con `entro` davanti è la scadenza;
+  - riferimenti: `#cliente` o `#progetto`, con autocompletamento;
+  - priorità: `!alta` `!media` `!bassa` oppure `!1` `!2` `!3`.
+
+  Il parser è una funzione pura in `lib/parsing/task-rapida.ts`, con i suoi test.
+- **Ricorrenze**. Sono stringhe RRULE e seguono un calendario fisso: la prossima occorrenza si calcola dalla data prevista, non dal giorno in cui si completa la task. Le occorrenze già passate si saltano.
+  - Completando la task, la funzione SQL `completa_task` crea la prossima occorrenza e ricopia le sottotask come da fare. Tutto avviene in una sola transazione.
+  - Le date della nuova occorrenza le calcola il server Next con la libreria `rrule`.
+  - La ricorrenza passa alla nuova task, quindi togliere e rimettere la spunta non crea doppioni.
+- **Regole del database**, applicate da trigger:
+  - una task con cliente è sempre di lavoro;
+  - una task dentro un progetto ne eredita l'ambito e il cliente;
+  - le sottotask hanno un solo livello;
+  - la data "in attesa dal" si imposta da sola.
+- **Eliminazione**. Le task si eliminano davvero, insieme alle sottotask. I progetti invece si archiviano soltanto.
+
 ## Da completare nelle fasi successive
 
 - Token del feed ICS (fase 4), collegamento dei rinnovi al budget (fase 5), gestione di categorie, tipi di servizio e utenti (fasi 5 e 6).
+- Pagina Oggi: i blocchi di budget, rate e spese previste arrivano con la fase 5.
 
 ## Struttura
 
@@ -157,6 +177,9 @@ components/drawer       EntityDrawer: pannello laterale aperto da ?apri=<tipo>:<
 lib/supabase            client browser, server, admin e proxy di sessione
 lib/actions             Server Actions
 lib/schemas             schemi zod
+lib/parsing             parser dell'aggiunta rapida delle task
+lib/dates               date, giorni e ricorrenze RRULE
+components/task         viste delle task, kanban, Pianifica settimana, aggiunta rapida
 supabase/migrations     schema, policy e seed
 supabase/tests          test delle policy
 ```
