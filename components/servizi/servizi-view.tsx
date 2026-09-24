@@ -280,10 +280,12 @@ function RigaServizio({
           <TipoIcona nome={s.tipo_icona} className="size-4 shrink-0 text-muted-foreground" aria-label={s.tipo_nome ?? undefined} />
           <div className="min-w-0">
             <p className="truncate font-medium">{s.nome}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {s.prossima_scadenza ? formatDate(s.prossima_scadenza) : "Senza scadenza"}
-              {s.fornitore && ` · ${s.fornitore}`}
-            </p>
+            {/* Il badge dice già «Senza scadenza»: qui restano data e fornitore. */}
+            {(s.prossima_scadenza || s.fornitore) && (
+              <p className="truncate text-xs text-muted-foreground">
+                {[s.prossima_scadenza && formatDate(s.prossima_scadenza), s.fornitore].filter(Boolean).join(" · ")}
+              </p>
+            )}
           </div>
         </div>
         <div className="hidden md:block">

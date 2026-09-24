@@ -133,6 +133,18 @@ select vault.update_secret((select id from vault.secrets where name = 'digest_se
 
 Poi si imposta lo stesso valore con `npx supabase secrets set CRON_SECRET=<nuovo segreto>`.
 
+## Servizi senza scadenza (accessi)
+
+Nella pagina Servizi & Scadenze stanno anche gli **accessi**: email, account e credenziali che non sono abbonamenti. Nel form la spunta «Senza scadenza» toglie frequenza, scadenza, preavviso e rinnovo; il tipo seed «Accesso» li identifica. Un servizio senza scadenza ha il badge grigio e il contatore «Accessi» in cima alla lista, e non entra nei contatori di scadenza, nella vista per mese, nel calendario, nei previsti del budget né nel digest email. Credenziali e cassaforte funzionano come per gli altri servizi.
+
+## PWA e offline
+
+L'app è una PWA: `app/manifest.ts`, icone generate da `scripts/genera-icone-pwa.mjs` (rilanciarlo solo se cambia il logo) e service worker in `public/sw.js`, registrato solo in produzione da `components/registra-sw.tsx`.
+
+- **Installazione**: su macOS da Chrome/Edge («Installa app») o Safari (File → Aggiungi al Dock); su iPhone da Safari con Condividi → Aggiungi alla schermata Home.
+- **Offline**: il service worker salva le pagine visitate e gli asset (`miloflow-v1` in Cache Storage). Senza rete si vede l'ultima versione delle pagine già aperte, in sola lettura; le modifiche richiedono la connessione. Le rotte `/login` e `/auth` non passano mai dalla cache.
+- Cambiando la strategia della cache va alzata la versione `CACHE` in `public/sw.js`.
+
 ## Cassaforte delle credenziali
 
 Una sola master password per tutta l'app, impostata dall'owner in Impostazioni. La cifratura avviene solo nel browser:

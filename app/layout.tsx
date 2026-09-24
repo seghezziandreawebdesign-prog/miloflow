@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
 
 import { Providers } from "@/components/providers";
+import { RegistraServiceWorker } from "@/components/registra-sw";
 
 import "./globals.css";
 
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="it" className={`${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full">
         <Providers>{children}</Providers>
+        <RegistraServiceWorker />
       </body>
     </html>
   );

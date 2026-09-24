@@ -236,7 +236,9 @@ export function CampiPrincipali({
               placeholder="Nessuna data"
               clearable
               disabled={dateDalTesto.data_pianificata}
-              className="min-w-0 flex-1"
+              // Larghezza minima per la data completa: se manca spazio
+              // l'ora va a capo (flex-wrap) invece di coprirla.
+              className="min-w-[8.5rem] flex-1"
             />
             <Input
               type="time"
