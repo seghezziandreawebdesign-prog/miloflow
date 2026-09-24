@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { useApriEntita } from "@/components/drawer/use-apri-entita";
 import { BarraFiltri, CampoRicerca } from "@/components/filtri/barra-filtri";
 import { FiltroChip } from "@/components/filtri/filtro-chip";
+import { attributiSelezione, CasellaSelezione, useSelezione } from "@/components/selezione";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { FiltroAmbito } from "@/lib/ambito";
 import { formatDate, todayISO } from "@/lib/dates/format";
@@ -22,6 +23,7 @@ import { testoSemplice } from "@/lib/testo-ricco";
 import { cn } from "@/lib/utils";
 
 import { useOpzioniTask, useTaskArchivio, type TaskLista } from "./dati";
+import { EliminaTaskButton } from "./elimina-task";
 import { ListaSkeleton, ListaTask } from "./liste";
 import { TaskCheckbox } from "./task-checkbox";
 
@@ -60,6 +62,7 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
   const { data, isPending } = useTaskArchivio(filtroAmbito);
   const { data: opzioni } = useOpzioniTask();
   const apri = useApriEntita();
+  const selezione = useSelezione();
   const [filtri, setFiltri] = useState<Filtri>(FILTRI_INIZIALI);
   const set = (patch: Partial<Filtri>) => setFiltri((f) => ({ ...f, ...patch }));
   const filtriAttivi = (Object.keys(FILTRI_INIZIALI) as (keyof Filtri)[]).some((k) => filtri[k] !== FILTRI_INIZIALI[k]);
@@ -91,7 +94,7 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
           header: "Task",
           cell: ({ row }) => (
             <div className="flex items-start gap-2.5">
-              <TaskCheckbox task={row.original} className="mt-0.5" />
+              <SpuntaOSelezione task={row.original} />
               <span className={cn("min-w-0 break-words", row.original.stato === "fatto" && "text-muted-foreground line-through")}>
                 {row.original.titolo}
               </span>
@@ -159,6 +162,11 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
             return v ? <span className="whitespace-nowrap text-muted-foreground">{formatDate(v)}</span> : null;
           },
           sortFn: (a, b) => (b.original.completata_il ?? "").localeCompare(a.original.completata_il ?? ""),
+        }),
+        col.display({
+          id: "azioni",
+          header: () => <span className="sr-only">Azioni</span>,
+          cell: ({ row }) => <EliminaInTabella task={row.original} />,
         }),
       ]),
     [oggi, multiUtente, nomeUtente],
@@ -280,11 +288,20 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
                 {table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    className="cursor-pointer"
-                    onClick={() => apri({ tipo: "task", id: row.original.id })}
+                    {...(selezione ? attributiSelezione(row.original.id) : {})}
+                    data-state={selezione?.selezionate.has(row.original.id) ? "selected" : undefined}
+                    className="group cursor-pointer"
+                    onClick={(e) =>
+                      selezione?.attiva
+                        ? selezione.toggle(row.original.id, { intervallo: e.shiftKey })
+                        : apri({ tipo: "task", id: row.original.id })
+                    }
                   >
                     {row.getAllCells().map((cell) => (
-                      <TableCell key={cell.id} className={cn(cell.column.id === "titolo" && "max-w-md whitespace-normal")}>
+                      <TableCell
+                        key={cell.id}
+                        className={cn(cell.column.id === "titolo" && "max-w-md whitespace-normal", cell.column.id === "azioni" && "w-10 py-0 pr-2")}
+                      >
                         <table.FlexRender cell={cell} />
                       </TableCell>
                     ))}
@@ -301,4 +318,19 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
       )}
     </div>
   );
+}
+
+/** Nella tabella: la spunta tonda, o la casella quadrata in modalità selezione. */
+function SpuntaOSelezione({ task }: { task: TaskLista }) {
+  const selezione = useSelezione();
+  return selezione?.attiva ? (
+    <CasellaSelezione id={task.id} etichetta={task.titolo} className="mt-0.5" />
+  ) : (
+    <TaskCheckbox task={task} className="mt-0.5" />
+  );
+}
+
+function EliminaInTabella({ task }: { task: TaskLista }) {
+  const selezione = useSelezione();
+  return selezione?.attiva ? null : <EliminaTaskButton task={task} />;
 }

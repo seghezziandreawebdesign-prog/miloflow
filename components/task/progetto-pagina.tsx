@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { useApriEntita } from "@/components/drawer/use-apri-entita";
+import { PulsanteSeleziona, SelezioneProvider } from "@/components/selezione";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +14,7 @@ import { confrontaTask, statoProgetto } from "@/lib/task";
 import { cn } from "@/lib/utils";
 
 import { AggiuntaRapida } from "./aggiunta-rapida";
+import { AzioniMultipleTask } from "./azioni-multiple";
 import { useProgetto, useTaskProgetto } from "./dati";
 import { IntestazioneVista } from "./intestazione-vista";
 import { Kanban } from "./kanban";
@@ -46,7 +48,7 @@ export function ProgettoPagina({ id }: { id: string }) {
     .sort((a, b) => (b.completata_il ?? "").localeCompare(a.completata_il ?? ""));
 
   return (
-    <div className="space-y-5">
+    <SelezioneProvider key={modo} className="space-y-5">
       <IntestazioneVista
         prima={
           <Link
@@ -80,6 +82,7 @@ export function ProgettoPagina({ id }: { id: string }) {
         }
         azioni={
           <>
+            {modo === "lista" && <PulsanteSeleziona />}
             <SwitchListaBoard value={modo} onChange={setModo} />
             <Button variant="outline" size="icon" aria-label="Dettagli progetto" onClick={() => apri({ tipo: "progetto", id })}>
               <Pencil />
@@ -112,7 +115,8 @@ export function ProgettoPagina({ id }: { id: string }) {
           {fatte.length > 0 && <Completate tasks={fatte} />}
         </div>
       )}
-    </div>
+      {modo === "lista" && <AzioniMultipleTask />}
+    </SelezioneProvider>
   );
 }
 

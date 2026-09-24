@@ -4,12 +4,14 @@ import { CalendarRange, Hourglass, Inbox, Sun } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 import { EmptyState } from "@/components/empty-state";
+import { PulsanteSeleziona, SelezioneProvider } from "@/components/selezione";
 import { ambitoDiDefault, type FiltroAmbito } from "@/lib/ambito";
 import { capitalize, formatLongDate, todayISO } from "@/lib/dates/format";
 import { addDays } from "@/lib/dates/giorni";
 import { confrontaTask, giornoTask, isInbox, prossimiGiorni, taskDiOggi } from "@/lib/task";
 
 import { AggiuntaRapida } from "./aggiunta-rapida";
+import { AzioniMultipleTask } from "./azioni-multiple";
 import { useTaskAperte, type TaskLista } from "./dati";
 import { IntestazioneVista } from "./intestazione-vista";
 import { GruppoTask, ListaSkeleton, ListaTask, Superficie } from "./liste";
@@ -45,14 +47,18 @@ export function TaskView({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
         ? tutte.filter((t) => t.stato === "in_attesa").length
         : undefined;
 
+  // La selezione multipla vale per le liste, non per board, progetti e Pianifica settimana.
+  const selezionabile = vista !== "progetti" && vista !== "pianifica" && !(vista === "tutte" && modo === "board");
+
   return (
-    <div className="space-y-4">
+    <SelezioneProvider key={`${vista}-${modo}`} className="space-y-4">
       <IntestazioneVista
         titolo={VISTE.find((v) => v.value === vista)?.label ?? "Task"}
         descrizione={DESCRIZIONI[vista]}
         conteggio={conteggio}
         azioni={
           <>
+            {selezionabile && <PulsanteSeleziona />}
             {vista === "tutte" && <SwitchListaBoard value={modo} onChange={setModo} />}
             {vista !== "progetti" && (
               <div className="hidden sm:block">
@@ -80,7 +86,8 @@ export function TaskView({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
       ) : (
         <PianificaSettimana tasks={tutte} />
       )}
-    </div>
+      {selezionabile && <AzioniMultipleTask />}
+    </SelezioneProvider>
   );
 }
 

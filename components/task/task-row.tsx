@@ -3,6 +3,7 @@
 import { Building2, CalendarDays, CornerDownRight, Flag, FolderKanban, Hourglass, ListChecks, Repeat, Text } from "lucide-react";
 
 import { useApriEntita } from "@/components/drawer/use-apri-entita";
+import { attributiSelezione, CasellaSelezione, useSelezione } from "@/components/selezione";
 import { formatGiornoRelativo, todayISO } from "@/lib/dates/format";
 import { descriviRicorrenza } from "@/lib/dates/ricorrenza";
 import { giorniInAttesa, GIORNI_SOLLECITO } from "@/lib/task";
@@ -10,6 +11,7 @@ import { testoSemplice } from "@/lib/testo-ricco";
 import { cn } from "@/lib/utils";
 
 import type { TaskLista } from "./dati";
+import { EliminaTaskButton } from "./elimina-task";
 import { TaskCheckbox } from "./task-checkbox";
 
 export type OpzioniRiga = {
@@ -21,6 +23,8 @@ export type OpzioniRiga = {
   senzaData?: boolean;
   /** Niente barra colorata del progetto a sinistra (es. nelle schede della board, che hanno già il bordo). */
   senzaBarra?: boolean;
+  /** Niente cestino sulla riga. */
+  senzaElimina?: boolean;
 };
 
 export function TaskRow({
@@ -36,30 +40,47 @@ export function TaskRow({
   children?: React.ReactNode;
 }) {
   const apri = useApriEntita();
+  const selezione = useSelezione();
+  const selezionando = selezione?.attiva ?? false;
+  const selezionata = selezione?.selezionate.has(task.id) ?? false;
   const fatta = task.stato === "fatto";
   const colore = !opzioni.senzaBarra ? (task.progetti?.colore ?? null) : null;
+
+  // In modalità selezione un clic sulla riga la seleziona invece di aprirla.
+  function attiva(intervallo: boolean) {
+    if (selezionando) selezione!.toggle(task.id, { intervallo });
+    else apri({ tipo: "task", id: task.id });
+  }
 
   return (
     <div
       role="button"
       tabIndex={0}
+      {...(selezione ? attributiSelezione(task.id) : {})}
+      aria-pressed={selezionando ? selezionata : undefined}
       style={colore ? { borderLeftColor: colore } : undefined}
-      onClick={() => apri({ tipo: "task", id: task.id })}
+      onClick={(e) => attiva(e.shiftKey)}
       onKeyDown={(e) => {
-        if (e.key === "Enter" && e.target === e.currentTarget) apri({ tipo: "task", id: task.id });
+        if (e.key === "Enter" && e.target === e.currentTarget) attiva(false);
       }}
       className={cn(
         "group flex cursor-pointer items-start gap-3 rounded-lg border-l-[3px] border-l-transparent px-2 py-2 outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50",
+        selezionata && "bg-primary-soft hover:bg-primary-soft",
         className,
       )}
     >
-      <TaskCheckbox task={task} className="mt-0.5" />
+      {selezionando ? (
+        <CasellaSelezione id={task.id} etichetta={task.titolo} className="mt-0.5" />
+      ) : (
+        <TaskCheckbox task={task} className="mt-0.5" />
+      )}
       <div className="min-w-0 flex-1">
         <p className={cn("text-sm leading-5 break-words", fatta && "text-muted-foreground line-through")}>
           {task.titolo}
         </p>
         <TaskMeta task={task} opzioni={opzioni} />
       </div>
+      {!selezionando && !opzioni.senzaElimina && <EliminaTaskButton task={task} />}
       {children}
     </div>
   );

@@ -36,6 +36,14 @@ export type TaskFormValues = z.infer<typeof taskSchema>;
 export const taskPatchSchema = taskSchema.partial();
 export type TaskPatch = z.infer<typeof taskPatchSchema>;
 
+/** Modifiche rapide sulle task selezionate. Per completarle si usa completaTasks. */
+export const taskMultiplaSchema = taskSchema
+  .pick({ data_pianificata: true, priorita: true, stato: true, in_attesa_di: true, progetto_id: true })
+  .extend({ stato: z.enum(["da_fare", "in_corso", "in_attesa"]) })
+  .partial()
+  .strict();
+export type TaskMultiplaPatch = z.infer<typeof taskMultiplaSchema>;
+
 export function taskVuota(ambito: "lavoro" | "personale"): TaskFormValues {
   return {
     titolo: "",

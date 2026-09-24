@@ -6,12 +6,14 @@ import { z } from "zod";
 import { BUCKET_ALLEGATI } from "@/lib/allegati";
 import { todayISO } from "@/lib/dates/format";
 import { prossimeDateTask } from "@/lib/dates/ricorrenza";
-import { progettoSchema, progettoToDb, taskPatchSchema, taskSchema, taskToDb } from "@/lib/schemas/task";
+import { progettoSchema, progettoToDb, taskMultiplaSchema, taskPatchSchema, taskSchema, taskToDb } from "@/lib/schemas/task";
 import { createClient } from "@/lib/supabase/server";
 
 import { dbErrorMessage, NESSUN_PERMESSO, sqlNull, zodFieldErrors, type ActionResult } from "./types";
 
 const idSchema = z.uuid();
+/** Selezione multipla: al massimo 200 task per volta. */
+const idsSchema = z.array(z.uuid()).min(1).max(200);
 
 function revalida() {
   revalidatePath("/oggi");
@@ -152,24 +154,71 @@ export async function riordinaTask(id: string, input: unknown): Promise<ActionRe
  * allegati. I file si tolgono prima: le policy dello Storage richiedono che la
  * task esista ancora.
  */
-export async function deleteTask(id: string): Promise<ActionResult> {
-  if (!idSchema.safeParse(id).success) return NESSUN_PERMESSO;
+async function eliminaTask(ids: string[]): Promise<ActionResult<{ eliminate: number }>> {
   const supabase = await createClient();
-  const { data: sottotask } = await supabase.from("task").select("id").eq("parent_id", id);
+  const { data: sottotask } = await supabase.from("task").select("id").in("parent_id", ids);
   const storage = supabase.storage.from(BUCKET_ALLEGATI);
-  for (const taskId of [id, ...(sottotask ?? []).map((s) => s.id)]) {
+  for (const taskId of [...ids, ...(sottotask ?? []).map((s) => s.id)]) {
     const { data: file } = await storage.list(`task/${taskId}`, { limit: 1000 });
     const percorsi = (file ?? []).filter((f) => f.id).map((f) => `task/${taskId}/${f.name}`);
     if (percorsi.length > 0) {
       const { error } = await storage.remove(percorsi);
-      if (error) return { ok: false, error: "Non riesco a eliminare gli allegati: la task non è stata eliminata" };
+      if (error) return { ok: false, error: "Non riesco a eliminare gli allegati: nessuna task è stata eliminata" };
     }
   }
-  const { data, error } = await supabase.from("task").delete().eq("id", id).select("id");
+  const { data, error } = await supabase.from("task").delete().in("id", ids).select("id");
   if (error) return { ok: false, error: dbErrorMessage(error, "Eliminazione non riuscita") };
   if (data.length === 0) return NESSUN_PERMESSO;
   revalida();
-  return { ok: true };
+  return { ok: true, data: { eliminate: data.length } };
+}
+
+export async function deleteTask(id: string): Promise<ActionResult> {
+  if (!idSchema.safeParse(id).success) return NESSUN_PERMESSO;
+  const result = await eliminaTask([id]);
+  return result.ok ? { ok: true } : result;
+}
+
+/** Elimina le task selezionate (con sottotask e allegati). */
+export async function deleteTasks(ids: unknown): Promise<ActionResult<{ eliminate: number }>> {
+  const parsed = idsSchema.safeParse(ids);
+  if (!parsed.success) return NESSUN_PERMESSO;
+  return eliminaTask([...new Set(parsed.data)]);
+}
+
+/** Stessa modifica su tutte le task selezionate: data di inizio, priorità, stato, progetto. */
+export async function updateTasks(ids: unknown, patch: unknown): Promise<ActionResult<{ aggiornate: number }>> {
+  const parsedIds = idsSchema.safeParse(ids);
+  const parsed = taskMultiplaSchema.safeParse(patch);
+  if (!parsedIds.success || !parsed.success) return { ok: false, error: "Modifica non valida" };
+  const valori = taskToDb(parsed.data);
+  // Senza data di inizio non resta nemmeno l'orario.
+  if (parsed.data.data_pianificata === "") valori.ora_inizio = null;
+  if (Object.keys(valori).length === 0) return { ok: true, data: { aggiornate: 0 } };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("task").update(valori).in("id", parsedIds.data).select("id");
+  if (error) return { ok: false, error: erroreTask(error) };
+  if (data.length === 0) return NESSUN_PERMESSO;
+  revalida();
+  return { ok: true, data: { aggiornate: data.length } };
+}
+
+/** Completa le task selezionate una per una, così le ricorrenti creano la prossima occorrenza. */
+export async function completaTasks(
+  ids: unknown,
+  { sottotask = false }: { sottotask?: boolean } = {},
+): Promise<ActionResult<{ completate: number }>> {
+  const parsed = idsSchema.safeParse(ids);
+  if (!parsed.success) return NESSUN_PERMESSO;
+  let completate = 0;
+  for (const id of new Set(parsed.data)) {
+    const result = await completaTask(id, { sottotask });
+    if (!result.ok) {
+      return { ok: false, error: completate > 0 ? `${result.error} (completate ${completate} task prima dell'errore)` : result.error };
+    }
+    completate++;
+  }
+  return { ok: true, data: { completate } };
 }
 
 export async function saveProgetto(id: string | null, input: unknown): Promise<ActionResult<{ id: string }>> {
