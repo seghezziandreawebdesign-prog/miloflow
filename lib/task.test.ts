@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { taskSchema, taskToDb, taskVuota } from "@/lib/schemas/task";
+import { parseTaskRapida } from "@/lib/parsing/task-rapida";
+import { taskDaRapida, taskSchema, taskToDb, taskVuota } from "@/lib/schemas/task";
 
 import {
   confrontaTask,
@@ -122,5 +123,31 @@ describe("schema task", () => {
 
   it("taskToDb include solo i campi presenti", () => {
     expect(taskToDb({ data_pianificata: "" })).toEqual({ data_pianificata: null });
+  });
+});
+
+describe("taskDaRapida", () => {
+  const onis = { tipo: "cliente" as const, id: "11111111-1111-4111-8111-111111111111", nome: "Onis" };
+  const casa = {
+    tipo: "progetto" as const, id: "22222222-2222-4222-8222-222222222222", nome: "Casa", clienteId: null, ambito: "personale" as const,
+  };
+
+  it("il criterio della fase 3: «Chiamare fornitore domani #onis !alta»", () => {
+    const parsed = parseTaskRapida("Chiamare fornitore domani #onis !alta", { oggi, riferimenti: [onis] });
+    const v = taskDaRapida(parsed, { ambito: "personale" });
+    expect(v).toMatchObject({
+      titolo: "Chiamare fornitore",
+      data_pianificata: "2026-09-25",
+      priorita: "1",
+      cliente_id: onis.id,
+      ambito: "lavoro",
+    });
+    expect(taskSchema.safeParse(v).success).toBe(true);
+  });
+
+  it("il progetto porta il suo ambito; i default del contesto restano se il testo non dice altro", () => {
+    const parsed = parseTaskRapida("Pagare bolletta #casa", { oggi, riferimenti: [casa] });
+    const v = taskDaRapida(parsed, { ambito: "lavoro", servizio_id: "33333333-3333-4333-8333-333333333333", scadenza: "2026-10-01" });
+    expect(v).toMatchObject({ ambito: "personale", progetto_id: casa.id, scadenza: "2026-10-01", servizio_id: "33333333-3333-4333-8333-333333333333" });
   });
 });

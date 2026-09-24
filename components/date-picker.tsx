@@ -29,12 +29,19 @@ export function DatePicker({
   id,
   className,
   invalid,
+  placeholder = "Scegli una data",
+  clearable = false,
+  size,
 }: {
   value: string;
   onChange: (value: string) => void;
   id?: string;
   className?: string;
   invalid?: boolean;
+  placeholder?: string;
+  /** Mostra "Rimuovi data", che imposta il valore a "". */
+  clearable?: boolean;
+  size?: "sm" | "default";
 }) {
   const [open, setOpen] = useState(false);
   const selected = fromISODate(value);
@@ -46,13 +53,14 @@ export function DatePicker({
           <Button
             id={id}
             variant="outline"
+            size={size}
             aria-invalid={invalid || undefined}
             className={cn("justify-start font-normal", !selected && "text-muted-foreground", className)}
           />
         }
       >
         <CalendarIcon />
-        {selected ? formatDate(value) : "Scegli una data"}
+        {selected ? formatDate(value) : placeholder}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
@@ -66,6 +74,21 @@ export function DatePicker({
             setOpen(false);
           }}
         />
+        {clearable && selected && (
+          <div className="border-t p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+            >
+              Rimuovi data
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );

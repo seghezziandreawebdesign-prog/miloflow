@@ -70,3 +70,23 @@ export function localDateTime(value: Date | string): string {
   );
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
 }
+
+const weekdayFormatter = new Intl.DateTimeFormat("it-IT", { timeZone: "UTC", weekday: "long" });
+const dayMonthFormatter = new Intl.DateTimeFormat("it-IT", { timeZone: "UTC", day: "numeric", month: "short" });
+
+/**
+ * Giorno rispetto a oggi: "Oggi", "Domani", "Ieri", il nome del giorno entro
+ * la settimana, altrimenti "12 ott" (con l'anno se diverso da quello corrente).
+ */
+export function formatGiornoRelativo(iso: string, oggi: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const [oy, om, od] = oggi.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d, 12));
+  const diff = Math.round((date.getTime() - Date.UTC(oy, om - 1, od, 12)) / 86_400_000);
+  if (diff === 0) return "Oggi";
+  if (diff === 1) return "Domani";
+  if (diff === -1) return "Ieri";
+  if (diff > 1 && diff < 7) return capitalize(weekdayFormatter.format(date));
+  const base = dayMonthFormatter.format(date).replace(".", "");
+  return y === oy ? base : `${base} ${y}`;
+}

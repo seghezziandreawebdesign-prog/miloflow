@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { SbloccaDialog } from "@/components/credenziali/sblocca-dialog";
 import { useVault } from "@/components/credenziali/vault-provider";
 import { DatePicker } from "@/components/date-picker";
+import { Segmented } from "@/components/segmented";
 import { TipoIcona } from "@/components/tipo-icona";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -431,40 +432,6 @@ export function ServizioForm({
   );
 }
 
-function Segmented<T extends string>({
-  label,
-  value,
-  onChange,
-  opzioni,
-}: {
-  label: string;
-  value: T;
-  onChange: (value: T) => void;
-  opzioni: readonly { value: T; label: string }[];
-}) {
-  return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium">{label}</p>
-      <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg bg-muted p-0.5">
-        {opzioni.map((o) => (
-          <button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={value === o.value}
-            onClick={() => onChange(o.value)}
-            className={cn(
-              "rounded-md px-3 py-1 text-sm text-muted-foreground",
-              value === o.value && "bg-background font-medium text-foreground shadow-sm",
-            )}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /** Password del servizio, cifrata nel browser al salvataggio. Serve la cassaforte sbloccata. */
 function PasswordField({ value, onChange }: { value: string; onChange: (v: string) => void }) {

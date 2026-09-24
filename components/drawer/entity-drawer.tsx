@@ -6,7 +6,9 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { APRI_PARAM, ETICHETTE_ENTITA, parseApri, type RiferimentoEntita } from "@/lib/entita";
 
 import { ClienteDrawer } from "./cliente-drawer";
+import { ProgettoDrawer } from "./progetto-drawer";
 import { ServizioDrawer } from "./servizio-drawer";
+import { TaskDrawer } from "./task-drawer";
 
 // Pannello laterale unico. Si apre da qualsiasi pagina con ?apri=<tipo>:<id>
 // e smista al contenuto giusto in base al tipo.
@@ -38,9 +40,11 @@ function EntityContent({ riferimento }: { riferimento: RiferimentoEntita }) {
       return <ClienteDrawer id={riferimento.id} />;
     case "servizio":
       return <ServizioDrawer id={riferimento.id} />;
-    // Gli altri contenuti arrivano con le fasi successive.
     case "task":
+      return <TaskDrawer key={riferimento.id} id={riferimento.id} />;
     case "progetto":
+      return <ProgettoDrawer key={riferimento.id} id={riferimento.id} />;
+    // Gli altri contenuti arrivano con le fasi successive.
     case "evento":
     case "movimento":
     case "debito":

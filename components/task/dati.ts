@@ -277,3 +277,17 @@ export function useAggiornaTask() {
     },
   });
 }
+
+/** Una task con le sue sottotask, per il pannello. */
+export function useTaskDettaglio(id: string) {
+  return useQuery({
+    queryKey: chiaviTask.dettaglio(id),
+    queryFn: async () => {
+      const [task, sottotask] = await Promise.all([
+        leggiTask((q) => q.eq("id", id)),
+        leggiTask((q) => q.eq("parent_id", id).order("ordine").order("created_at")),
+      ]);
+      return task[0] ? { task: task[0], sottotask } : null;
+    },
+  });
+}

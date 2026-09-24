@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { isIsoDate } from "@/lib/dates/giorni";
 import { isRRuleValida } from "@/lib/dates/ricorrenza";
+import type { TaskRapida } from "@/lib/parsing/task-rapida";
 import type { Database } from "@/lib/supabase/database.types";
 
 const testo = z.string().trim();
@@ -50,6 +51,35 @@ export function taskVuota(ambito: "lavoro" | "personale"): TaskFormValues {
     parent_id: "",
     assegnata_a: "",
   };
+}
+
+export type DefaultTask = Partial<TaskFormValues> & { ambito: "lavoro" | "personale" };
+
+/**
+ * Valori di una task creata con l'aggiunta rapida:
+ * vuoti ← default del contesto ← dettagli del form ← quanto riconosciuto nel testo.
+ */
+export function taskDaRapida(
+  parsed: TaskRapida,
+  defaults: DefaultTask,
+  dettagli: Partial<TaskFormValues> = {},
+): TaskFormValues {
+  const v: TaskFormValues = { ...taskVuota(defaults.ambito), ...defaults, ...dettagli, titolo: parsed.titolo };
+  if (parsed.dataPianificata) v.data_pianificata = parsed.dataPianificata;
+  if (parsed.scadenza) v.scadenza = parsed.scadenza;
+  if (parsed.priorita) v.priorita = String(parsed.priorita) as TaskFormValues["priorita"];
+  if (parsed.cliente) {
+    v.cliente_id = parsed.cliente.id;
+    v.ambito = "lavoro";
+  }
+  if (parsed.progetto) {
+    v.progetto_id = parsed.progetto.id;
+    if (parsed.progetto.ambito) v.ambito = parsed.progetto.ambito;
+    // Il cliente di un progetto lo imposta il database.
+    if (parsed.progetto.clienteId) v.cliente_id = "";
+  }
+  if (v.cliente_id) v.ambito = "lavoro";
+  return v;
 }
 
 const nullIfEmpty = (v: string) => (v === "" ? null : v);
