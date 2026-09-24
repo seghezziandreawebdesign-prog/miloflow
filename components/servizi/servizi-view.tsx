@@ -61,11 +61,16 @@ export function ServiziView({
   const [chiPaga, setChiPaga] = useState("tutti");
   const [vista, setVista] = useLocalPreference<Vista>("servizi.vista", ["lista", "mese"], "lista");
   const creaAperto = searchParams.get("nuovo") === "1";
+  // Dal calendario: ?nuovo=1&scadenza=yyyy-MM-dd precompila la prossima scadenza.
+  const scadenzaIniziale = searchParams.get("scadenza") ?? "";
 
   function setCreaAperto(open: boolean) {
     const params = new URLSearchParams(searchParams.toString());
     if (open) params.set("nuovo", "1");
-    else params.delete("nuovo");
+    else {
+      params.delete("nuovo");
+      params.delete("scadenza");
+    }
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
@@ -114,7 +119,7 @@ export function ServiziView({
     <ServizioDialog
       open={creaAperto}
       onOpenChange={setCreaAperto}
-      defaultValues={servizioVuoto(ambitoDiDefault(filtroAmbito), "")}
+      defaultValues={servizioVuoto(ambitoDiDefault(filtroAmbito), scadenzaIniziale)}
       onSaved={(id) => apri({ tipo: "servizio", id })}
     />
   );

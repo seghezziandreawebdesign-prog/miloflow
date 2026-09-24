@@ -180,7 +180,7 @@ export function CampiPrincipali({
   dateDalTesto = {},
   idPrefix = "task",
 }: {
-  valori: Pick<TaskFormValues, "note" | "stato" | "in_attesa_di" | "data_pianificata" | "scadenza">;
+  valori: Pick<TaskFormValues, "note" | "stato" | "in_attesa_di" | "data_pianificata" | "ora_inizio" | "scadenza">;
   onChange: (patch: Partial<TaskFormValues>) => void;
   onStato?: (stato: StatoTask) => void;
   /** Date riconosciute nel titolo: hanno la precedenza e bloccano il campo. */
@@ -222,15 +222,30 @@ export function CampiPrincipali({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field>
           <FieldLabel htmlFor={`${idPrefix}-pianificata`}>Inizio</FieldLabel>
-          <DatePicker
-            id={`${idPrefix}-pianificata`}
-            value={valori.data_pianificata}
-            onChange={(v) => onChange({ data_pianificata: v })}
-            placeholder="Nessuna data"
-            clearable
-            disabled={dateDalTesto.data_pianificata}
-          />
-          {dateDalTesto.data_pianificata && <FieldDescription>Presa dal titolo.</FieldDescription>}
+          <div className="flex gap-2">
+            <DatePicker
+              id={`${idPrefix}-pianificata`}
+              value={valori.data_pianificata}
+              onChange={(v) => onChange({ data_pianificata: v, ...(v ? {} : { ora_inizio: "" }) })}
+              placeholder="Nessuna data"
+              clearable
+              disabled={dateDalTesto.data_pianificata}
+              className="min-w-0 flex-1"
+            />
+            <Input
+              type="time"
+              aria-label="Ora di inizio"
+              value={valori.ora_inizio}
+              disabled={!valori.data_pianificata}
+              onChange={(e) => onChange({ ora_inizio: e.target.value })}
+              className="w-28 shrink-0"
+            />
+          </div>
+          {dateDalTesto.data_pianificata ? (
+            <FieldDescription>Presa dal titolo.</FieldDescription>
+          ) : (
+            valori.data_pianificata && !valori.ora_inizio && <FieldDescription>Senza ora sta in «tutto il giorno».</FieldDescription>
+          )}
         </Field>
         <Field>
           <FieldLabel htmlFor={`${idPrefix}-scadenza`}>Scadenza</FieldLabel>

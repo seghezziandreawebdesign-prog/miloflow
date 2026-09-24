@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 
+import { CalendarioSettings } from "@/components/impostazioni/calendario-settings";
 import { CassaforteSettings } from "@/components/impostazioni/cassaforte-settings";
 import { MetodiPagamentoSettings } from "@/components/impostazioni/metodi-pagamento-settings";
 import { NotificheSettings } from "@/components/impostazioni/notifiche-settings";
 import { PageHeader } from "@/components/page-header";
+import { leggiImpostazioniCalendario } from "@/lib/queries/calendario";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseUrl } from "@/lib/supabase/env";
 import { getUtenteCorrente } from "@/lib/utente.server";
 
 export const metadata: Metadata = { title: "Impostazioni" };
@@ -13,7 +16,7 @@ export default async function ImpostazioniPage() {
   const utente = await getUtenteCorrente();
   const isOwner = utente.ruolo === "owner";
   const supabase = await createClient();
-  const [{ data: notifiche }, { data: metodi }, budget] = await Promise.all([
+  const [{ data: notifiche }, { data: metodi }, budget, calendario] = await Promise.all([
     isOwner
       ? supabase.from("impostazioni_notifiche").select("email, orario, giorni_anticipo, attivo, ultimo_invio").maybeSingle()
       : Promise.resolve({ data: null }),
@@ -23,15 +26,17 @@ export default async function ImpostazioniPage() {
       .order("ordine")
       .order("nome"),
     supabase.rpc("puo", { p_sezione: "budget", p_livello: "scrittura" }),
+    leggiImpostazioniCalendario(),
   ]);
 
   return (
     <>
       <PageHeader
         title="Impostazioni"
-        description="Categorie, tipi di servizio e utenti arrivano con le prossime fasi."
+        description="Calendario, cassaforte, metodi di pagamento e notifiche. Categorie, tipi di servizio e utenti arrivano con le prossime fasi."
       />
       <div className="max-w-3xl space-y-6">
+        <CalendarioSettings iniziali={calendario} urlFunzioni={`${supabaseUrl}/functions/v1`} />
         <CassaforteSettings isOwner={isOwner} />
         {budget.data === true && (
           <MetodiPagamentoSettings

@@ -8,6 +8,7 @@ import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { APRI_PARAM, ETICHETTE_ENTITA, parseApri, type RiferimentoEntita } from "@/lib/entita";
 
 import { ClienteDrawer } from "./cliente-drawer";
+import { EventoDrawer } from "./evento-drawer";
 import { PannelloDescription, PannelloHeader, PannelloTitle } from "./pannello";
 import { ProgettoDrawer } from "./progetto-drawer";
 import { ServizioDrawer } from "./servizio-drawer";
@@ -66,8 +67,9 @@ function EntityContent({ riferimento }: { riferimento: RiferimentoEntita }) {
       return <TaskDrawer key={riferimento.id} id={riferimento.id} />;
     case "progetto":
       return <ProgettoDrawer key={riferimento.id} id={riferimento.id} />;
-    // Gli altri contenuti arrivano con le fasi successive.
     case "evento":
+      return <EventoDrawer key={riferimento.id} id={riferimento.id} />;
+    // Gli altri contenuti arrivano con la fase 5.
     case "movimento":
     case "debito":
       return <Segnaposto riferimento={riferimento} />;

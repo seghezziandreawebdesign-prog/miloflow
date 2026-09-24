@@ -423,3 +423,7 @@ verify_jwt = false
 
 [functions.invia-email-cliente]
 verify_jwt = true
+
+[functions.calendario-ics]
+# Feed ICS letto da Google e Apple Calendar: si autentica con il token nell'URL.
+verify_jwt = false

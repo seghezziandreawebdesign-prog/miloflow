@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { EventoDialog } from "@/components/calendario/evento-dialog";
 import { ambitoDiDefault, type FiltroAmbito } from "@/lib/ambito";
+import { eventoVuoto, type EventoFormValues } from "@/lib/schemas/eventi";
 import { progettoVuoto, taskVuota, type TaskFormValues } from "@/lib/schemas/task";
 import { cn } from "@/lib/utils";
 
@@ -21,10 +23,12 @@ import { ProgettoDialog } from "./progetto-dialog";
 
 type Richiesta = Partial<TaskFormValues> & { apriDopo?: boolean };
 type RichiestaProgetto = { cliente_id?: string };
+type RichiestaEvento = Partial<EventoFormValues>;
 
 type ContextValue = {
   apri: (richiesta?: Richiesta) => void;
   apriProgetto: (richiesta?: RichiestaProgetto) => void;
+  apriEvento: (richiesta?: RichiestaEvento) => void;
 };
 
 const Context = createContext<ContextValue | null>(null);
@@ -45,6 +49,11 @@ export function useNuovoProgetto() {
   return useCreazione().apriProgetto;
 }
 
+/** Apre il dialog "Nuovo evento" da qualsiasi punto (menu +, ⌘K, calendario). */
+export function useNuovoEvento() {
+  return useCreazione().apriEvento;
+}
+
 export function NuovaTaskProvider({
   filtroAmbito,
   children,
@@ -56,6 +65,7 @@ export function NuovaTaskProvider({
   // Ogni apertura rimonta il dialog, così parte sempre pulito.
   const [chiave, setChiave] = useState(0);
   const [progetto, setProgetto] = useState<RichiestaProgetto | null>(null);
+  const [evento, setEvento] = useState<RichiestaEvento | null>(null);
   const router = useRouter();
   const ambito = ambitoDiDefault(filtroAmbito);
 
@@ -68,6 +78,10 @@ export function NuovaTaskProvider({
         },
         apriProgetto: (r = {}) => {
           setProgetto(r);
+          setChiave((k) => k + 1);
+        },
+        apriEvento: (r = {}) => {
+          setEvento(r);
           setChiave((k) => k + 1);
         },
       }}
@@ -88,6 +102,14 @@ export function NuovaTaskProvider({
         defaultValues={progettoVuoto(ambito, progetto?.cliente_id ?? "")}
         onSaved={(id) => router.push(`/task/progetti/${id}`)}
       />
+      {evento && (
+        <EventoDialog
+          key={`evento-${chiave}`}
+          open
+          onOpenChange={(o) => !o && setEvento(null)}
+          defaultValues={eventoVuoto(ambito, evento)}
+        />
+      )}
     </Context.Provider>
   );
 }

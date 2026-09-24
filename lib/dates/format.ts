@@ -90,3 +90,33 @@ export function formatGiornoRelativo(iso: string, oggi: string): string {
   const base = dayMonthFormatter.format(date).replace(".", "");
   return y === oy ? base : `${base} ${y}`;
 }
+
+/**
+ * Ora locale di Europe/Rome "yyyy-MM-ddTHH:mm" → istante (Date). Gestisce il
+ * cambio d'ora: l'ora inesistente di marzo scivola in avanti.
+ */
+export function fromLocalDateTime(local: string): Date {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(local);
+  if (!m) throw new Error(`Data e ora non valide: ${local}`);
+  const [y, mo, d, h, mi] = m.slice(1).map(Number);
+  const comeUtc = Date.UTC(y, mo - 1, d, h, mi);
+  // Primo tentativo con lo scarto di Roma in quel momento, poi si corregge.
+  let istante = comeUtc - scartoRoma(new Date(comeUtc));
+  const scarto = scartoRoma(new Date(istante));
+  istante = comeUtc - scarto;
+  return new Date(istante);
+}
+
+/** Scarto in millisecondi tra l'ora di Roma e UTC in un dato istante. */
+function scartoRoma(istante: Date): number {
+  const locale = localDateTime(istante);
+  const [data, ora] = locale.split("T");
+  const [y, mo, d] = data.split("-").map(Number);
+  const [h, mi] = ora.split(":").map(Number);
+  return Date.UTC(y, mo - 1, d, h, mi) - Math.floor(istante.getTime() / 60_000) * 60_000;
+}
+
+/** "HH:mm" dell'ora di Roma di un istante. */
+export function formatTime(value: Date | string): string {
+  return localDateTime(value).slice(11, 16);
+}

@@ -43,6 +43,7 @@ function valoriForm(t: TaskLista): TaskFormValues {
     in_attesa_di: t.in_attesa_di ?? "",
     priorita: t.priorita ? (String(t.priorita) as TaskFormValues["priorita"]) : "",
     data_pianificata: t.data_pianificata ?? "",
+    ora_inizio: t.ora_inizio ? t.ora_inizio.slice(0, 5) : "",
     scadenza: t.scadenza ?? "",
     durata_min: t.durata_min ? String(t.durata_min) : "",
     ricorrenza: t.ricorrenza ?? "",

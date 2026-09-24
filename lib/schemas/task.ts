@@ -8,6 +8,7 @@ import type { Database } from "@/lib/supabase/database.types";
 const testo = z.string().trim();
 const idFacoltativo = z.union([z.uuid(), z.literal("")]);
 const dataFacoltativa = z.union([z.literal(""), z.string().refine(isIsoDate, "Data non valida")]);
+export const oraFacoltativa = z.union([z.literal(""), z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Orario non valido")]);
 
 export const taskSchema = z.object({
   titolo: testo.min(1, "Scrivi il titolo").max(500, "Titolo troppo lungo"),
@@ -17,6 +18,8 @@ export const taskSchema = z.object({
   in_attesa_di: testo.max(500),
   priorita: z.enum(["", "1", "2", "3"]),
   data_pianificata: dataFacoltativa,
+  /** Orario di inizio "HH:mm"; senza, la task sta nella riga "tutto il giorno" del calendario. */
+  ora_inizio: oraFacoltativa,
   scadenza: dataFacoltativa,
   durata_min: testo.refine((v) => v === "" || (/^\d+$/.test(v) && Number(v) > 0 && Number(v) <= 100_000), "Minuti non validi"),
   ricorrenza: testo.refine((v) => v === "" || isRRuleValida(v), "Ricorrenza non valida"),
@@ -42,6 +45,7 @@ export function taskVuota(ambito: "lavoro" | "personale"): TaskFormValues {
     in_attesa_di: "",
     priorita: "",
     data_pianificata: "",
+    ora_inizio: "",
     scadenza: "",
     durata_min: "",
     ricorrenza: "",
@@ -94,6 +98,7 @@ export function taskToDb(v: TaskPatch): Database["public"]["Tables"]["task"]["Up
   if (v.in_attesa_di !== undefined) out.in_attesa_di = nullIfEmpty(v.in_attesa_di);
   if (v.priorita !== undefined) out.priorita = v.priorita === "" ? null : Number(v.priorita);
   if (v.data_pianificata !== undefined) out.data_pianificata = nullIfEmpty(v.data_pianificata);
+  if (v.ora_inizio !== undefined) out.ora_inizio = nullIfEmpty(v.ora_inizio);
   if (v.scadenza !== undefined) out.scadenza = nullIfEmpty(v.scadenza);
   if (v.durata_min !== undefined) out.durata_min = v.durata_min === "" ? null : Number(v.durata_min);
   if (v.ricorrenza !== undefined) out.ricorrenza = nullIfEmpty(v.ricorrenza);

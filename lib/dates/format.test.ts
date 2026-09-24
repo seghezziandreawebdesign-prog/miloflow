@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatCurrency, formatDate, formatGiornoRelativo, formatLongDate, todayISO } from "./format";
+import { formatCurrency, formatDate, formatGiornoRelativo, formatLongDate, fromLocalDateTime, localDateTime, todayISO } from "./format";
 
 describe("format", () => {
   it("formatta le date in dd/MM/yyyy senza slittamenti di fuso", () => {
@@ -35,5 +35,23 @@ describe("formatGiornoRelativo", () => {
     ["2027-01-05", "5 gen 2027"],
   ])("%s → %s", (iso, atteso) => {
     expect(formatGiornoRelativo(iso, oggi)).toBe(atteso);
+  });
+});
+
+describe("fromLocalDateTime", () => {
+  it("converte l'ora di Roma in istante, con ora legale e solare", () => {
+    expect(fromLocalDateTime("2026-09-24T09:30").toISOString()).toBe("2026-09-24T07:30:00.000Z");
+    expect(fromLocalDateTime("2026-01-15T09:30").toISOString()).toBe("2026-01-15T08:30:00.000Z");
+  });
+
+  it("torna indietro con localDateTime", () => {
+    for (const local of ["2026-03-29T01:30", "2026-03-29T03:30", "2026-10-25T02:30", "2026-12-31T23:59"]) {
+      expect(localDateTime(fromLocalDateTime(local))).toBe(local);
+    }
+  });
+
+  it("l'ora inesistente del cambio d'ora scivola avanti", () => {
+    // Il 29/03/2026 alle 2:00 a Roma si passa alle 3:00.
+    expect(fromLocalDateTime("2026-03-29T02:30").toISOString()).toBe("2026-03-29T01:30:00.000Z");
   });
 });

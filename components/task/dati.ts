@@ -177,6 +177,7 @@ export function useOpzioniTask() {
 export function invalidaTask(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: chiaviTask.tutte });
   void queryClient.invalidateQueries({ queryKey: chiaviProgetti.tutti });
+  void queryClient.invalidateQueries({ queryKey: ["calendario"] });
 }
 
 type ConId = { id: string };

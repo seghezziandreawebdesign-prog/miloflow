@@ -187,3 +187,38 @@
     @apply pointer-events-none float-left h-0 text-muted-foreground;
   }
 }
+
+/* FullCalendar (tema "classic"): i colori seguono i token dell'app. */
+.calendario-milo {
+  --fc-classic-primary: var(--primary);
+  --fc-classic-primary-foreground: #fff;
+  --fc-classic-event: var(--ambito-lavoro);
+  --fc-classic-highlight: color-mix(in oklch, var(--primary) 12%, transparent);
+  --fc-classic-today: color-mix(in oklch, var(--primary) 6%, transparent);
+  --fc-classic-now: var(--scadenza-scaduto);
+  --fc-classic-background: var(--card);
+  --fc-classic-faint: rgba(0, 0, 0, 0.03);
+  --fc-classic-muted: rgba(0, 0, 0, 0.06);
+  --fc-classic-strong: rgba(0, 0, 0, 0.12);
+  --fc-classic-foreground: var(--foreground);
+  --fc-classic-faint-foreground: var(--muted-foreground);
+  --fc-classic-muted-foreground: var(--muted-foreground);
+  --fc-classic-border: rgba(0, 0, 0, 0.08);
+  --fc-classic-strong-border: rgba(0, 0, 0, 0.16);
+  --fc-classic-ring-color: var(--ring);
+  font-size: 13px;
+}
+.calendario-milo .fc-milo {
+  border-left-width: 3px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.calendario-milo .fc-tipo-deadline {
+  border-style: dashed;
+}
+.calendario-milo .fc-tipo-scadenza_servizio,
+.calendario-milo .fc-tipo-rata,
+.calendario-milo .fc-tipo-movimento {
+  cursor: pointer;
+}

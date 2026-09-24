@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { useNuovaTask, useNuovoProgetto } from "@/components/task/nuova-task";
+import { useNuovaTask, useNuovoEvento, useNuovoProgetto } from "@/components/task/nuova-task";
 import type { AzioneCreazione } from "@/lib/creazione-rapida";
 
 // Punto unico da cui partono le creazioni (menu +, ⌘K). Le voci il cui form
@@ -12,6 +12,7 @@ export function useCreazioneRapida() {
   const router = useRouter();
   const nuovaTask = useNuovaTask();
   const nuovoProgetto = useNuovoProgetto();
+  const nuovoEvento = useNuovoEvento();
 
   return (azione: AzioneCreazione) => {
     switch (azione.id) {
@@ -20,6 +21,9 @@ export function useCreazioneRapida() {
         return;
       case "progetto":
         nuovoProgetto();
+        return;
+      case "evento":
+        nuovoEvento();
         return;
       case "cliente":
         router.push("/clienti?nuovo=1");
