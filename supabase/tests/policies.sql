@@ -114,12 +114,13 @@ insert into public.progetti (id, ambito, nome, cliente_id) values
   ('30000000-0000-0000-0000-000000000002', 'personale', 'P2', null);
 
 -- T1 lavoro A, T2 lavoro senza cliente assegnata a C, T3 lavoro senza cliente
--- non assegnata, T4 personale A assegnata a C, T5 lavoro B.
+-- non assegnata, T4 personale assegnata a C (una task con cliente è sempre
+-- di lavoro, quindi T4 non ne ha), T5 lavoro B.
 insert into public.task (id, ambito, titolo, cliente_id, assegnata_a, data_pianificata) values
   ('40000000-0000-0000-0000-000000000001', 'lavoro', 'T1', '10000000-0000-0000-0000-00000000000a', null, public.oggi()),
   ('40000000-0000-0000-0000-000000000002', 'lavoro', 'T2', null, '00000000-0000-0000-0000-00000000000c', public.oggi()),
   ('40000000-0000-0000-0000-000000000003', 'lavoro', 'T3', null, null, public.oggi()),
-  ('40000000-0000-0000-0000-000000000004', 'personale', 'T4', '10000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000c', public.oggi()),
+  ('40000000-0000-0000-0000-000000000004', 'personale', 'T4', null, '00000000-0000-0000-0000-00000000000c', public.oggi()),
   ('40000000-0000-0000-0000-000000000005', 'lavoro', 'T5', '10000000-0000-0000-0000-00000000000b', null, public.oggi());
 
 insert into public.eventi (id, ambito, titolo, inizio, cliente_id) values
@@ -150,6 +151,37 @@ select public._test_rifiutato(
   $q$insert into public.task (titolo, parent_id) values ('Nipote', '40000000-0000-0000-0000-000000000011')$q$,
   'sottotask di secondo livello');
 delete from public.task where id in ('40000000-0000-0000-0000-000000000010', '40000000-0000-0000-0000-000000000011');
+
+-- Una task con cliente è sempre di lavoro; quella di un progetto ne prende l'ambito.
+insert into public.task (id, ambito, titolo, cliente_id) values
+  ('40000000-0000-0000-0000-000000000012', 'personale', 'Con cliente', '10000000-0000-0000-0000-00000000000a');
+insert into public.task (id, ambito, titolo, progetto_id) values
+  ('40000000-0000-0000-0000-000000000013', 'lavoro', 'Nel progetto personale', '30000000-0000-0000-0000-000000000002');
+select public._test_conta(
+  $q$select 1 from public.task where id = '40000000-0000-0000-0000-000000000012' and ambito = 'lavoro'$q$,
+  1, 'la task con cliente diventa di lavoro');
+select public._test_conta(
+  $q$select 1 from public.task where id = '40000000-0000-0000-0000-000000000013' and ambito = 'personale'$q$,
+  1, 'la task eredita l''ambito dal progetto');
+update public.progetti set ambito = 'lavoro' where id = '30000000-0000-0000-0000-000000000002';
+select public._test_conta(
+  $q$select 1 from public.task where id = '40000000-0000-0000-0000-000000000013' and ambito = 'lavoro'$q$,
+  1, 'il cambio di ambito del progetto si propaga alle task');
+update public.progetti set ambito = 'personale' where id = '30000000-0000-0000-0000-000000000002';
+
+-- "In attesa": la data si imposta da sola e si azzera uscendo dallo stato.
+update public.task set stato = 'in_attesa', in_attesa_di = 'Preventivo'
+  where id = '40000000-0000-0000-0000-000000000012';
+select public._test_conta(
+  $q$select 1 from public.task where id = '40000000-0000-0000-0000-000000000012'
+     and in_attesa_dal = public.oggi() and in_attesa_di = 'Preventivo'$q$,
+  1, 'passando in attesa si salva la data');
+update public.task set stato = 'in_corso' where id = '40000000-0000-0000-0000-000000000012';
+select public._test_conta(
+  $q$select 1 from public.task where id = '40000000-0000-0000-0000-000000000012'
+     and in_attesa_dal is null and in_attesa_di is null$q$,
+  1, 'uscendo dall''attesa i campi si azzerano');
+delete from public.task where id in ('40000000-0000-0000-0000-000000000012', '40000000-0000-0000-0000-000000000013');
 
 -- ============================================================
 -- 1. Collaboratore senza permessi: nessuna riga da nessuna parte.
@@ -254,8 +286,20 @@ select public._test_rifiutato(
   $q$insert into public.task (ambito, titolo) values ('lavoro', 'X')$q$,
   'crea una task senza cliente non assegnata a sé');
 select public._test_rifiutato(
-  $q$update public.task set ambito = 'personale' where id = '40000000-0000-0000-0000-000000000001'$q$,
+  $q$update public.task set ambito = 'personale' where id = '40000000-0000-0000-0000-000000000002'$q$,
   'sposta una task nell''ambito personale');
+select public._test_rifiutato(
+  $q$select public.completa_task('40000000-0000-0000-0000-000000000005')$q$,
+  'completa una task di un cliente non suo');
+select public.completa_task('40000000-0000-0000-0000-000000000001');
+select public._test_conta(
+  $q$select 1 from public.task where id = '40000000-0000-0000-0000-000000000001' and stato = 'fatto'$q$,
+  1, 'completa una task del proprio cliente');
+select public._test_conta('select 1 from public.v_progetti', 1, 'v_progetti: solo P1');
+select public._test_righe(
+  $q$update public.task set stato = 'in_corso', ordine = 1
+     where id = '40000000-0000-0000-0000-000000000005'$q$,
+  0, 'riordina una task di un cliente non suo');
 select public._test_righe(
   $q$update public.clienti set note = 'x' where id = '10000000-0000-0000-0000-00000000000a'$q$,
   0, 'modifica un cliente con permesso di sola lettura');
@@ -408,6 +452,45 @@ begin
     '{"costo":"5","metodo_pagamento_id":"70000000-0000-0000-0000-000000000001"}', '[]');
   if (select metodo_pagamento_id from public.v_servizi where id = v_id) is not null then
     raise exception 'FALLITO: il metodo deve azzerarsi se paga il cliente';
+  end if;
+end;
+$$;
+
+-- Task ricorrente: completandola nasce la prossima occorrenza con le sottotask.
+insert into public.task (id, titolo, ricorrenza, data_pianificata, scadenza, priorita, cliente_id) values
+  ('40000000-0000-0000-0000-000000000020', 'Backup settimanale', 'FREQ=WEEKLY;BYDAY=MO',
+   '2027-01-04', '2027-01-05', 1, '10000000-0000-0000-0000-00000000000a');
+insert into public.task (parent_id, titolo, stato) values
+  ('40000000-0000-0000-0000-000000000020', 'Controlla log', 'fatto'),
+  ('40000000-0000-0000-0000-000000000020', 'Scarica archivio', 'da_fare');
+do $$
+declare
+  v_nuova uuid;
+begin
+  v_nuova := public.completa_task('40000000-0000-0000-0000-000000000020', true,
+    '{"data_pianificata":"2027-01-11","scadenza":"2027-01-12"}');
+  if v_nuova is null then
+    raise exception 'FALLITO: la ricorrente non ha creato la prossima occorrenza';
+  end if;
+  if not exists (select 1 from public.task where id = v_nuova and stato = 'da_fare'
+      and data_pianificata = '2027-01-11' and scadenza = '2027-01-12' and priorita = 1
+      and ricorrenza = 'FREQ=WEEKLY;BYDAY=MO' and cliente_id = '10000000-0000-0000-0000-00000000000a') then
+    raise exception 'FALLITO: la prossima occorrenza non copia i dati';
+  end if;
+  if (select count(*) from public.task where parent_id = v_nuova and stato = 'da_fare') <> 2 then
+    raise exception 'FALLITO: le sottotask non sono ricopiate come da fare';
+  end if;
+  if (select count(*) from public.task where parent_id = '40000000-0000-0000-0000-000000000020' and stato = 'fatto') <> 2 then
+    raise exception 'FALLITO: le sottotask aperte non sono state completate';
+  end if;
+  if (select ricorrenza from public.task where id = '40000000-0000-0000-0000-000000000020') is not null then
+    raise exception 'FALLITO: la ricorrenza deve passare alla nuova occorrenza';
+  end if;
+  -- Togliere e rimettere la spunta non crea doppioni.
+  update public.task set stato = 'da_fare' where id = '40000000-0000-0000-0000-000000000020';
+  if public.completa_task('40000000-0000-0000-0000-000000000020', false,
+      '{"data_pianificata":"2027-01-11"}') is not null then
+    raise exception 'FALLITO: ricompletare la task ha creato un doppione';
   end if;
 end;
 $$;

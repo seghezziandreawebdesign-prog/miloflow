@@ -659,6 +659,13 @@ export type Database = {
             referencedRelation: "progetti"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "eventi_progetto_id_fkey"
+            columns: ["progetto_id"]
+            isOneToOne: false
+            referencedRelation: "v_progetti"
+            referencedColumns: ["id"]
+          },
         ]
       }
       impostazioni_notifiche: {
@@ -1337,6 +1344,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "task_progetto_id_fkey"
+            columns: ["progetto_id"]
+            isOneToOne: false
+            referencedRelation: "v_progetti"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "task_servizio_id_fkey"
             columns: ["servizio_id"]
             isOneToOne: false
@@ -1486,6 +1500,39 @@ export type Database = {
         }
         Relationships: []
       }
+      v_progetti: {
+        Row: {
+          ambito: Database["public"]["Enums"]["ambito"] | null
+          cliente_id: string | null
+          colore: string | null
+          created_at: string | null
+          created_by: string | null
+          descrizione: string | null
+          id: string | null
+          nome: string | null
+          scadenza: string | null
+          stato: Database["public"]["Enums"]["stato_progetto"] | null
+          task_fatte: number | null
+          task_totali: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progetti_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progetti_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "v_clienti"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_servizi: {
         Row: {
           ambito: Database["public"]["Enums"]["ambito"] | null
@@ -1549,6 +1596,10 @@ export type Database = {
       cambia_cassaforte: {
         Args: { p_credenziali: Json; p_parametri: Json }
         Returns: undefined
+      }
+      completa_task: {
+        Args: { p_id: string; p_prossima?: Json; p_sottotask?: boolean }
+        Returns: string
       }
       imposta_contatto_principale: {
         Args: { p_contatto_id: string }
