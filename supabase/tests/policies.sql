@@ -169,6 +169,36 @@ select public._test_conta(
   1, 'il cambio di ambito del progetto si propaga alle task');
 update public.progetti set ambito = 'personale' where id = '30000000-0000-0000-0000-000000000002';
 
+-- Eventi: con un progetto ereditano ambito e cliente, con un cliente sono di lavoro,
+-- a giornata intera partono a mezzanotte di Roma.
+insert into public.eventi (id, ambito, titolo, inizio, progetto_id) values
+  ('50000000-0000-0000-0000-000000000010', 'personale', 'EP1', now(), '30000000-0000-0000-0000-000000000001');
+select public._test_conta(
+  $q$select 1 from public.eventi where id = '50000000-0000-0000-0000-000000000010'
+     and ambito = 'lavoro' and cliente_id = '10000000-0000-0000-0000-00000000000a'$q$,
+  1, 'evento con progetto: eredita ambito e cliente');
+insert into public.eventi (id, ambito, titolo, inizio, cliente_id) values
+  ('50000000-0000-0000-0000-000000000011', 'personale', 'EC1', now(), '10000000-0000-0000-0000-00000000000a');
+select public._test_conta(
+  $q$select 1 from public.eventi where id = '50000000-0000-0000-0000-000000000011' and ambito = 'lavoro'$q$,
+  1, 'evento con cliente: sempre di lavoro');
+insert into public.eventi (id, ambito, titolo, inizio, tutto_il_giorno) values
+  ('50000000-0000-0000-0000-000000000012', 'personale', 'EG1', '2027-03-10T15:30:00+01:00', true);
+select public._test_conta(
+  $q$select 1 from public.eventi where id = '50000000-0000-0000-0000-000000000012'
+     and inizio = '2027-03-10T00:00:00+01:00'$q$,
+  1, 'evento a giornata intera: parte a mezzanotte di Roma');
+-- Task con orario: nel calendario ha inizio e fine, senza orario dura tutto il giorno.
+update public.task set ora_inizio = '09:30', durata_min = 90 where id = '40000000-0000-0000-0000-000000000001';
+select public._test_conta(
+  $q$select 1 from public.v_calendario where tipo = 'task' and id = '40000000-0000-0000-0000-000000000001'
+     and not tutto_il_giorno and fine = inizio + interval '90 minutes'$q$,
+  1, 'v_calendario: task con orario e durata');
+select public._test_conta(
+  $q$select 1 from public.v_calendario where tipo = 'task' and id = '40000000-0000-0000-0000-000000000003' and tutto_il_giorno$q$,
+  1, 'v_calendario: task senza orario dura tutto il giorno');
+delete from public.eventi where id in ('50000000-0000-0000-0000-000000000010', '50000000-0000-0000-0000-000000000011', '50000000-0000-0000-0000-000000000012');
+
 -- "In attesa": la data si imposta da sola e si azzera uscendo dallo stato.
 update public.task set stato = 'in_attesa', in_attesa_di = 'Preventivo'
   where id = '40000000-0000-0000-0000-000000000012';
@@ -259,6 +289,14 @@ select public._test_conta('select 1 from public.tipi_servizio', 8, 'tipi di serv
 select public._test_conta('select 1 from public.progetti', 1, 'progetti visibili (solo P1)');
 select public._test_conta('select 1 from public.task', 2, 'task visibili (T1 con A, T2 assegnata)');
 select public._test_conta('select 1 from public.eventi', 1, 'eventi visibili (solo E1)');
+select public._test_conta('select 1 from public.impostazioni_calendario', 0, 'preferenze calendario: nessuna prima del primo accesso');
+select public._test_conta('select 1 from public.mie_impostazioni_calendario()', 1, 'preferenze calendario create al primo accesso');
+select public._test_conta(
+  'select 1 from public.impostazioni_calendario where user_id = ''00000000-0000-0000-0000-00000000000c'' and intervallo_minuti = 30',
+  1, 'preferenze calendario del collaboratore con i default');
+select public._test_rifiutato(
+  $q$insert into public.impostazioni_calendario (user_id) values ('00000000-0000-0000-0000-00000000000a')$q$,
+  'crea le preferenze calendario di un altro utente');
 select public._test_conta('select 1 from public.categorie', 0, 'categorie senza permesso budget');
 select public._test_conta('select 1 from public.metodi_pagamento', 0, 'metodi di pagamento senza permesso budget');
 select public._test_conta('select 1 from public.movimenti', 0, 'movimenti senza permesso budget');
@@ -377,6 +415,18 @@ select public._test_conta('select 1 from public.clienti where ragione_sociale li
 select public._test_conta('select 1 from public.servizi where nome in (''S1'',''S2'',''S3'',''S4'')', 4, 'owner: servizi');
 select public._test_conta('select 1 from public.task where titolo in (''T1'',''T2'',''T3'',''T4'',''T5'')', 5, 'owner: task');
 select public._test_conta('select 1 from public.eventi where titolo in (''E1'',''E2'',''E3'')', 3, 'owner: eventi');
+select public._test_conta('select 1 from public.mie_impostazioni_calendario()', 1, 'owner: preferenze calendario');
+select public._test_conta('select 1 from public.impostazioni_calendario', 1, 'owner: vede solo le proprie preferenze calendario');
+do $$
+begin
+  if length(public.rigenera_token_ics()) <> 64 then
+    raise exception 'FALLITO: il token ICS deve avere 64 caratteri';
+  end if;
+  if public.rigenera_token_ics() = (select token_ics from public.impostazioni_calendario where user_id = auth.uid()) then
+    null; -- la seconda chiamata ha sostituito il token: qui leggiamo già il nuovo
+  end if;
+end;
+$$;
 select public._test_conta('select 1 from public.credenziali where etichetta like ''Pannello S_''', 2, 'owner: credenziali');
 select public._test_conta('select 1 from public.v_servizi where nome = ''S4'' and stato_scadenza = ''scaduto''', 1, 'owner: stato scaduto calcolato');
 select public._test_conta('select 1 from public.v_servizi where nome = ''S1'' and stato_scadenza = ''urgente''', 1, 'owner: stato urgente calcolato');

@@ -668,6 +668,53 @@ export type Database = {
           },
         ]
       }
+      impostazioni_calendario: {
+        Row: {
+          created_at: string
+          ics_ambito: Database["public"]["Enums"]["ambito"] | null
+          ics_include: string[]
+          intervallo_minuti: number
+          ora_fine: string
+          ora_inizio: string
+          token_ics: string | null
+          updated_at: string
+          user_id: string
+          vista_default: string
+        }
+        Insert: {
+          created_at?: string
+          ics_ambito?: Database["public"]["Enums"]["ambito"] | null
+          ics_include?: string[]
+          intervallo_minuti?: number
+          ora_fine?: string
+          ora_inizio?: string
+          token_ics?: string | null
+          updated_at?: string
+          user_id?: string
+          vista_default?: string
+        }
+        Update: {
+          created_at?: string
+          ics_ambito?: Database["public"]["Enums"]["ambito"] | null
+          ics_include?: string[]
+          intervallo_minuti?: number
+          ora_fine?: string
+          ora_inizio?: string
+          token_ics?: string | null
+          updated_at?: string
+          user_id?: string
+          vista_default?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impostazioni_calendario_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profili"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       impostazioni_notifiche: {
         Row: {
           attivo: boolean
@@ -1248,6 +1295,7 @@ export type Database = {
           in_attesa_dal: string | null
           in_attesa_di: string | null
           note: string | null
+          ora_inizio: string | null
           ordine: number
           parent_id: string | null
           priorita: number | null
@@ -1272,6 +1320,7 @@ export type Database = {
           in_attesa_dal?: string | null
           in_attesa_di?: string | null
           note?: string | null
+          ora_inizio?: string | null
           ordine?: number
           parent_id?: string | null
           priorita?: number | null
@@ -1296,6 +1345,7 @@ export type Database = {
           in_attesa_dal?: string | null
           in_attesa_di?: string | null
           note?: string | null
+          ora_inizio?: string | null
           ordine?: number
           parent_id?: string | null
           priorita?: number | null
@@ -1402,10 +1452,12 @@ export type Database = {
         Row: {
           ambito: Database["public"]["Enums"]["ambito"] | null
           cliente_id: string | null
+          colore: string | null
           fine: string | null
           id: string | null
           inizio: string | null
           modificabile: boolean | null
+          progetto_id: string | null
           ricorrenza: string | null
           tipo: string | null
           titolo: string | null
@@ -1610,6 +1662,27 @@ export type Database = {
         Args: { p_frequenza: Database["public"]["Enums"]["frequenza_servizio"] }
         Returns: number
       }
+      mie_impostazioni_calendario: {
+        Args: never
+        Returns: {
+          created_at: string
+          ics_ambito: Database["public"]["Enums"]["ambito"] | null
+          ics_include: string[]
+          intervallo_minuti: number
+          ora_fine: string
+          ora_inizio: string
+          token_ics: string | null
+          updated_at: string
+          user_id: string
+          vista_default: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "impostazioni_calendario"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       oggi: { Args: never; Returns: string }
       puo: {
         Args: {
@@ -1618,6 +1691,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      rigenera_token_ics: { Args: never; Returns: string }
       rinnova_servizio: {
         Args: { p_data: string; p_importo: number; p_servizio_id: string }
         Returns: string
