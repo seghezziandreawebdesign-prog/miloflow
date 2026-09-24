@@ -52,3 +52,21 @@ export function formatCurrency(value: number): string {
 export function todayISO(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE }).format(now);
 }
+
+const localPartsFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** Istante (timestamptz) → ora locale di Europe/Rome come "yyyy-MM-ddTHH:mm". */
+export function localDateTime(value: Date | string): string {
+  const parts = Object.fromEntries(
+    localPartsFormatter.formatToParts(typeof value === "string" ? new Date(value) : value).map((p) => [p.type, p.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}

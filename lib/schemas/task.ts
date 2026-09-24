@@ -1,0 +1,112 @@
+import { z } from "zod";
+
+import { isIsoDate } from "@/lib/dates/giorni";
+import { isRRuleValida } from "@/lib/dates/ricorrenza";
+import type { Database } from "@/lib/supabase/database.types";
+
+const testo = z.string().trim();
+const idFacoltativo = z.union([z.uuid(), z.literal("")]);
+const dataFacoltativa = z.union([z.literal(""), z.string().refine(isIsoDate, "Data non valida")]);
+
+export const taskSchema = z.object({
+  titolo: testo.min(1, "Scrivi il titolo").max(500, "Titolo troppo lungo"),
+  note: testo.max(10_000),
+  ambito: z.enum(["lavoro", "personale"]),
+  stato: z.enum(["da_fare", "in_corso", "in_attesa", "fatto"]),
+  in_attesa_di: testo.max(500),
+  priorita: z.enum(["", "1", "2", "3"]),
+  data_pianificata: dataFacoltativa,
+  scadenza: dataFacoltativa,
+  durata_min: testo.refine((v) => v === "" || (/^\d+$/.test(v) && Number(v) > 0 && Number(v) <= 100_000), "Minuti non validi"),
+  ricorrenza: testo.refine((v) => v === "" || isRRuleValida(v), "Ricorrenza non valida"),
+  progetto_id: idFacoltativo,
+  cliente_id: idFacoltativo,
+  servizio_id: idFacoltativo,
+  parent_id: idFacoltativo,
+  assegnata_a: idFacoltativo,
+});
+
+export type TaskFormValues = z.infer<typeof taskSchema>;
+
+/** Per le modifiche puntuali dal pannello: solo i campi presenti. */
+export const taskPatchSchema = taskSchema.partial();
+export type TaskPatch = z.infer<typeof taskPatchSchema>;
+
+export function taskVuota(ambito: "lavoro" | "personale"): TaskFormValues {
+  return {
+    titolo: "",
+    note: "",
+    ambito,
+    stato: "da_fare",
+    in_attesa_di: "",
+    priorita: "",
+    data_pianificata: "",
+    scadenza: "",
+    durata_min: "",
+    ricorrenza: "",
+    progetto_id: "",
+    cliente_id: "",
+    servizio_id: "",
+    parent_id: "",
+    assegnata_a: "",
+  };
+}
+
+const nullIfEmpty = (v: string) => (v === "" ? null : v);
+
+/** Valori del form → colonne della tabella task (solo i campi presenti). */
+export function taskToDb(v: TaskPatch): Database["public"]["Tables"]["task"]["Update"] {
+  const out: Database["public"]["Tables"]["task"]["Update"] = {};
+  if (v.titolo !== undefined) out.titolo = v.titolo;
+  if (v.note !== undefined) out.note = nullIfEmpty(v.note);
+  if (v.ambito !== undefined) out.ambito = v.ambito;
+  if (v.stato !== undefined) out.stato = v.stato;
+  if (v.in_attesa_di !== undefined) out.in_attesa_di = nullIfEmpty(v.in_attesa_di);
+  if (v.priorita !== undefined) out.priorita = v.priorita === "" ? null : Number(v.priorita);
+  if (v.data_pianificata !== undefined) out.data_pianificata = nullIfEmpty(v.data_pianificata);
+  if (v.scadenza !== undefined) out.scadenza = nullIfEmpty(v.scadenza);
+  if (v.durata_min !== undefined) out.durata_min = v.durata_min === "" ? null : Number(v.durata_min);
+  if (v.ricorrenza !== undefined) out.ricorrenza = nullIfEmpty(v.ricorrenza);
+  if (v.progetto_id !== undefined) out.progetto_id = nullIfEmpty(v.progetto_id);
+  if (v.cliente_id !== undefined) out.cliente_id = nullIfEmpty(v.cliente_id);
+  if (v.servizio_id !== undefined) out.servizio_id = nullIfEmpty(v.servizio_id);
+  if (v.parent_id !== undefined) out.parent_id = nullIfEmpty(v.parent_id);
+  if (v.assegnata_a !== undefined) out.assegnata_a = nullIfEmpty(v.assegnata_a);
+  return out;
+}
+
+export const progettoSchema = z.object({
+  nome: testo.min(1, "Scrivi il nome").max(200, "Nome troppo lungo"),
+  ambito: z.enum(["lavoro", "personale"]),
+  cliente_id: idFacoltativo,
+  stato: z.enum(["attivo", "in_pausa", "completato", "archiviato"]),
+  scadenza: dataFacoltativa,
+  colore: z.union([z.literal(""), z.string().regex(/^#[0-9a-f]{6}$/i, "Colore non valido")]),
+  descrizione: testo.max(10_000),
+});
+
+export type ProgettoFormValues = z.infer<typeof progettoSchema>;
+
+export function progettoVuoto(ambito: "lavoro" | "personale", clienteId = ""): ProgettoFormValues {
+  return {
+    nome: "",
+    ambito: clienteId ? "lavoro" : ambito,
+    cliente_id: clienteId,
+    stato: "attivo",
+    scadenza: "",
+    colore: "",
+    descrizione: "",
+  };
+}
+
+export function progettoToDb(v: ProgettoFormValues) {
+  return {
+    nome: v.nome,
+    ambito: v.cliente_id ? ("lavoro" as const) : v.ambito,
+    cliente_id: nullIfEmpty(v.cliente_id),
+    stato: v.stato,
+    scadenza: nullIfEmpty(v.scadenza),
+    colore: nullIfEmpty(v.colore),
+    descrizione: nullIfEmpty(v.descrizione),
+  };
+}
