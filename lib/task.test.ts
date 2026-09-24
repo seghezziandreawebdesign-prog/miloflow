@@ -14,6 +14,7 @@ import {
   avanzamento,
   prossimiGiorni,
   raggruppaPerGiorno,
+  taskDiOggi,
 } from "./task";
 
 const oggi = "2026-09-24";
@@ -149,5 +150,19 @@ describe("taskDaRapida", () => {
     const parsed = parseTaskRapida("Pagare bolletta #casa", { oggi, riferimenti: [casa] });
     const v = taskDaRapida(parsed, { ambito: "lavoro", servizio_id: "33333333-3333-4333-8333-333333333333", scadenza: "2026-10-01" });
     expect(v).toMatchObject({ ambito: "personale", progetto_id: casa.id, scadenza: "2026-10-01", servizio_id: "33333333-3333-4333-8333-333333333333" });
+  });
+});
+
+describe("taskDiOggi", () => {
+  it("separa ritardi e task di oggi, ignora le completate e le future", () => {
+    const ritardoPianificata = task({ data_pianificata: "2026-09-20" });
+    const ritardoScadenza = task({ data_pianificata: "2026-09-30", scadenza: "2026-09-23" });
+    const pianificataOggi = task({ data_pianificata: oggi, priorita: 1 });
+    const scadeOggi = task({ scadenza: oggi });
+    const futura = task({ data_pianificata: "2026-09-25" });
+    const fatta = task({ data_pianificata: "2026-09-20", stato: "fatto" as const });
+    const r = taskDiOggi([ritardoPianificata, ritardoScadenza, pianificataOggi, scadeOggi, futura, fatta], oggi);
+    expect(r.inRitardo).toEqual([ritardoPianificata, ritardoScadenza]);
+    expect(r.perOggi).toEqual([pianificataOggi, scadeOggi]);
   });
 });

@@ -23,37 +23,71 @@ const ANELLO: Record<number, string> = {
   3: "border-sky-500 bg-sky-50 hover:bg-sky-100",
 };
 
+type TaskDaCompletare = { id: string; titolo: string; sottotask_aperte?: number };
+
 /**
- * Spunta tonda di una task, colorata per priorità. Completando una task con
- * sottotask aperte chiede se completare anche quelle.
+ * Completamento con la domanda sulle sottotask aperte: `completa(task)`
+ * completa subito oppure apre il dialog; `dialog` va messo nel JSX.
  */
+export function useCompletaConConferma({ onAnnulla }: { onAnnulla?: () => void } = {}) {
+  const { completa, riapri } = useSpuntaTask();
+  const [inAttesa, setInAttesa] = useState<TaskDaCompletare | null>(null);
+  const aperte = inAttesa?.sottotask_aperte ?? 0;
+
+  function conferma(sottotask: boolean) {
+    if (!inAttesa) return;
+    completa.mutate({ id: inAttesa.id, titolo: inAttesa.titolo, sottotask });
+    setInAttesa(null);
+  }
+
+  const dialog = (
+    <AlertDialog
+      open={inAttesa !== null}
+      onOpenChange={(open) => {
+        if (!open && inAttesa) {
+          setInAttesa(null);
+          onAnnulla?.();
+        }
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Completare anche le sottotask?</AlertDialogTitle>
+          <AlertDialogDescription>
+            «{inAttesa?.titolo}» ha {aperte === 1 ? "una sottotask aperta" : `${aperte} sottotask aperte`}.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annulla</AlertDialogCancel>
+          <Button variant="outline" onClick={() => conferma(false)}>
+            Solo la task
+          </Button>
+          <Button onClick={() => conferma(true)}>Completa tutto</Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  return {
+    completa: (task: TaskDaCompletare) => {
+      if ((task.sottotask_aperte ?? 0) > 0) setInAttesa(task);
+      else completa.mutate({ id: task.id, titolo: task.titolo });
+    },
+    riapri: (id: string) => riapri.mutate({ id }),
+    dialog,
+  };
+}
+
+/** Spunta tonda di una task, colorata per priorità. */
 export function TaskCheckbox({
   task,
   className,
 }: {
-  task: { id: string; titolo: string; stato: string; priorita: number | null; sottotask_aperte?: number };
+  task: TaskDaCompletare & { stato: string; priorita: number | null };
   className?: string;
 }) {
-  const { completa, riapri } = useSpuntaTask();
-  const [chiedi, setChiedi] = useState(false);
+  const { completa, riapri, dialog } = useCompletaConConferma();
   const fatta = task.stato === "fatto";
-  const aperte = task.sottotask_aperte ?? 0;
-
-  function onClick(event: React.MouseEvent) {
-    event.stopPropagation();
-    if (fatta) {
-      riapri.mutate({ id: task.id });
-    } else if (aperte > 0) {
-      setChiedi(true);
-    } else {
-      completa.mutate({ id: task.id, titolo: task.titolo });
-    }
-  }
-
-  function conferma(sottotask: boolean) {
-    setChiedi(false);
-    completa.mutate({ id: task.id, titolo: task.titolo, sottotask });
-  }
 
   return (
     <>
@@ -62,7 +96,12 @@ export function TaskCheckbox({
         role="checkbox"
         aria-checked={fatta}
         aria-label={fatta ? `Riapri «${task.titolo}»` : `Completa «${task.titolo}»`}
-        onClick={onClick}
+        onClick={(event) => {
+          event.stopPropagation();
+          if (fatta) riapri(task.id);
+          else completa(task);
+        }}
+        onPointerDown={(event) => event.stopPropagation()}
         className={cn(
           "group/check grid size-[18px] shrink-0 place-items-center rounded-full border-[1.5px] border-muted-foreground/50 transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
           task.priorita ? ANELLO[task.priorita] : null,
@@ -75,24 +114,11 @@ export function TaskCheckbox({
           className={cn("size-3", fatta ? "opacity-100" : "opacity-0 group-hover/check:opacity-40")}
         />
       </button>
-
-      <AlertDialog open={chiedi} onOpenChange={setChiedi}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Completare anche le sottotask?</AlertDialogTitle>
-            <AlertDialogDescription>
-              «{task.titolo}» ha {aperte === 1 ? "una sottotask aperta" : `${aperte} sottotask aperte`}.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <Button variant="outline" onClick={() => conferma(false)}>
-              Solo la task
-            </Button>
-            <Button onClick={() => conferma(true)}>Completa tutto</Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Il dialog è in un portale, ma gli eventi React risalgono comunque alla
+          riga della task: qui si fermano, così non si apre il pannello. */}
+      <span className="contents" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+        {dialog}
+      </span>
     </>
   );
 }

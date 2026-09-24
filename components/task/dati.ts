@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tansta
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { completaTask, riapriTask, updateTask } from "@/lib/actions/task";
+import { completaTask, riapriTask, riordinaTask, updateTask } from "@/lib/actions/task";
 import type { FiltroAmbito } from "@/lib/ambito";
 import { nomeCliente } from "@/lib/clienti";
 import { formatDate } from "@/lib/dates/format";
@@ -288,6 +288,27 @@ export function useTaskDettaglio(id: string) {
         leggiTask((q) => q.eq("parent_id", id).order("ordine").order("created_at")),
       ]);
       return task[0] ? { task: task[0], sottotask } : null;
+    },
+  });
+}
+
+/** Kanban: nuova colonna e posizione, con aggiornamento ottimistico. */
+export function useRiordinaTask() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  return useMutation({
+    mutationFn: async ({ id, ...input }: { id: string; stato: "da_fare" | "in_corso" | "in_attesa"; ordine: number; in_attesa_di?: string }) => {
+      const result = await riordinaTask(id, input);
+      if (!result.ok) throw new Error(result.error);
+    },
+    onMutate: async ({ id, stato, ordine, in_attesa_di }) => {
+      await annullaCache(queryClient);
+      aggiornaInCache(queryClient, id, { stato, ordine, ...(in_attesa_di !== undefined ? { in_attesa_di } : {}) });
+    },
+    onError: (error) => toast.error(error.message),
+    onSettled: () => {
+      invalidaTask(queryClient);
+      router.refresh();
     },
   });
 }

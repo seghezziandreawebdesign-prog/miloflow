@@ -133,3 +133,21 @@ export function ordineTra(prima: number | null, dopo: number | null): number {
 export function avanzamento(fatte: number, totali: number): number {
   return totali === 0 ? 0 : Math.round((fatte / totali) * 100);
 }
+
+/**
+ * Task per la pagina Oggi: in ritardo (pianificata o scadenza superata) e di
+ * oggi (pianificata oggi o in scadenza oggi). Solo task aperte.
+ */
+export function taskDiOggi<T extends DateTask & { priorita: number | null; ordine: number; created_at: string }>(
+  tasks: T[],
+  oggi: string,
+): { inRitardo: T[]; perOggi: T[] } {
+  const inRitardo: T[] = [];
+  const perOggi: T[] = [];
+  for (const t of tasks) {
+    if (!isAperta(t)) continue;
+    if (isPianificataInRitardo(t, oggi) || isScaduta(t, oggi)) inRitardo.push(t);
+    else if (t.data_pianificata === oggi || t.scadenza === oggi) perOggi.push(t);
+  }
+  return { inRitardo: inRitardo.sort(confrontaTask), perOggi: perOggi.sort(confrontaTask) };
+}

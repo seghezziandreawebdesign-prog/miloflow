@@ -1,9 +1,10 @@
-import { ListChecks } from "lucide-react";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { AmbitoBadge } from "@/components/ambito-badge";
-import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { PulsanteNuovaTask } from "@/components/task/pulsante-nuova-task";
+import { TaskView } from "@/components/task/task-view";
 import { getFiltroAmbito } from "@/lib/ambito.server";
 
 export const metadata: Metadata = { title: "Task" };
@@ -20,8 +21,11 @@ export default async function Page() {
             Ambito: <AmbitoBadge ambito={filtroAmbito} className="align-middle" />
           </>
         }
+        actions={<PulsanteNuovaTask />}
       />
-      <EmptyState icon={ListChecks} title="Nessuna task" description="Aggiungi la prima task: inbox, pianificazione e progetti arrivano con la fase 3." />
+      <Suspense>
+        <TaskView filtroAmbito={filtroAmbito} />
+      </Suspense>
     </>
   );
 }
