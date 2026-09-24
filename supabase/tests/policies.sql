@@ -138,6 +138,17 @@ insert into public.movimenti (ambito, importo, descrizione, stato) values
   ('lavoro', 10, 'M lavoro', 'pagato'),
   ('personale', 20, 'M personale', 'previsto');
 
+-- Salvadanai: uno di lavoro con piano mensile, uno personale (risparmio).
+insert into public.salvadanai (id, ambito, tipo, nome, importo_mensile, giorno_mensile) values
+  ('70000000-0000-0000-0000-000000000001', 'lavoro', 'investimento', 'SV lavoro', 50, 1);
+insert into public.salvadanai (id, ambito, tipo, nome, obiettivo) values
+  ('70000000-0000-0000-0000-000000000002', 'personale', 'risparmio', 'SV personale', 3000);
+insert into public.salvadanai_prelievi (salvadanaio_id, importo) values
+  ('70000000-0000-0000-0000-000000000001', 1),
+  ('70000000-0000-0000-0000-000000000002', 1);
+insert into public.salvadanai_valori (salvadanaio_id, valore) values
+  ('70000000-0000-0000-0000-000000000001', 100);
+
 -- Regole di coerenza delle task (trigger).
 insert into public.task (id, titolo, progetto_id) values
   ('40000000-0000-0000-0000-000000000010', 'Eredita cliente', '30000000-0000-0000-0000-000000000001');
@@ -405,6 +416,23 @@ select public._test_conta($q$select 1 from public.debiti_rate r join public.debi
 select public._test_rifiutato(
   $q$insert into public.movimenti (ambito, importo) values ('lavoro', 5)$q$,
   'crea un movimento con budget in sola lettura');
+select public._test_conta($q$select 1 from public.salvadanai where nome like 'SV %'$q$, 1, 'salvadanai: solo quello di lavoro');
+select public._test_conta($q$select 1 from public.v_salvadanai where nome like 'SV %'$q$, 1, 'v_salvadanai: solo quello di lavoro');
+select public._test_conta(
+  $q$select 1 from public.salvadanai_prelievi where salvadanaio_id in ('70000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002')$q$,
+  1, 'prelievi: solo del salvadanaio di lavoro');
+select public._test_conta(
+  $q$select 1 from public.salvadanai_valori where salvadanaio_id = '70000000-0000-0000-0000-000000000001'$q$,
+  1, 'valori del salvadanaio di lavoro');
+select public._test_rifiutato(
+  $q$insert into public.salvadanai (ambito, tipo, nome) values ('lavoro', 'risparmio', 'Intruso')$q$,
+  'crea un salvadanaio con budget in sola lettura');
+select public._test_rifiutato(
+  $q$insert into public.salvadanai_prelievi (salvadanaio_id, importo) values ('70000000-0000-0000-0000-000000000001', 5)$q$,
+  'registra un prelievo con budget in sola lettura');
+select public._test_rifiutato(
+  $q$select public.elimina_salvadanaio('70000000-0000-0000-0000-000000000001')$q$,
+  'elimina un salvadanaio con budget in sola lettura');
 
 reset role;
 
@@ -744,6 +772,70 @@ begin
 end;
 $$;
 
+-- Salvadanai: previsti del piano idempotenti, versamenti, prelievi, eliminazione.
+do $$
+declare
+  v_mese date := public.primo_del_mese(public.oggi());
+  v_sv uuid := '70000000-0000-0000-0000-000000000001';
+  v_prev uuid;
+  r record;
+begin
+  perform public.genera_previsti(v_mese);
+  perform public.genera_previsti(v_mese);
+  if (select count(*) from public.movimenti where salvadanaio_id = v_sv and periodo = v_mese) <> 1 then
+    raise exception 'FALLITO: il piano deve avere un solo previsto nel mese';
+  end if;
+  -- (il blocco precedente ha generato anche il mese dopo il successivo)
+  if (select count(*) from public.movimenti where salvadanaio_id = v_sv and stato = 'previsto'
+      and periodo in (v_mese, (v_mese + interval '1 month')::date)) <> 2 then
+    raise exception 'FALLITO: il piano deve avere il previsto del mese corrente e del successivo';
+  end if;
+  select id into v_prev from public.movimenti where salvadanaio_id = v_sv and periodo = v_mese;
+  if (select data from public.movimenti where id = v_prev) <> v_mese or (select importo from public.movimenti where id = v_prev) <> 50 then
+    raise exception 'FALLITO: il previsto del piano ha data o importo sbagliati';
+  end if;
+
+  -- Il previsto pagato diventa un versamento; un versamento a mano si somma.
+  update public.movimenti set stato = 'pagato' where id = v_prev;
+  insert into public.movimenti (ambito, importo, stato, salvadanaio_id) values ('lavoro', 25, 'pagato', v_sv);
+  select * into r from public.v_salvadanai where id = v_sv;
+  if r.versato <> 75 or r.prelevato <> 1 or r.saldo <> 74 or r.valore_attuale <> 100 then
+    raise exception 'FALLITO: totali del salvadanaio sbagliati (versato %, prelevato %, saldo %)', r.versato, r.prelevato, r.saldo;
+  end if;
+
+  -- Cambiare il piano aggiorna solo il previsto non pagato.
+  update public.salvadanai set importo_mensile = 60 where id = v_sv;
+  if (select importo from public.movimenti where id = v_prev) <> 50 then
+    raise exception 'FALLITO: cambiare il piano non deve toccare il versamento già pagato';
+  end if;
+  if not exists (select 1 from public.movimenti where salvadanaio_id = v_sv and stato = 'previsto' and importo = 60) then
+    raise exception 'FALLITO: il previsto del mese successivo non segue il piano';
+  end if;
+
+  -- Piano sospeso: i previsti non pagati spariscono, i versamenti restano.
+  update public.salvadanai set piano_attivo = false where id = v_sv;
+  if exists (select 1 from public.movimenti where salvadanaio_id = v_sv and stato = 'previsto') then
+    raise exception 'FALLITO: sospendere il piano deve togliere i previsti';
+  end if;
+  perform public.genera_previsti(v_mese);
+  if exists (select 1 from public.movimenti where salvadanaio_id = v_sv and stato = 'previsto') then
+    raise exception 'FALLITO: genera_previsti non deve ricreare i previsti di un piano sospeso';
+  end if;
+
+  begin
+    perform public.elimina_salvadanaio(v_sv);
+    raise exception 'FALLITO: un salvadanaio con versamenti non si elimina';
+  exception when others then
+    if sqlerrm like 'FALLITO%' then raise; end if;
+  end;
+  delete from public.salvadanai_prelievi where salvadanaio_id = '70000000-0000-0000-0000-000000000002';
+  perform public.elimina_salvadanaio('70000000-0000-0000-0000-000000000002');
+  if exists (select 1 from public.salvadanai where id = '70000000-0000-0000-0000-000000000002') then
+    raise exception 'FALLITO: un salvadanaio senza versamenti si elimina';
+  end if;
+end;
+$$;
+
 -- Backup: l'owner esporta tutto; il ripristino vale solo su un account vuoto.
 do $$
 declare
@@ -755,6 +847,9 @@ begin
   end if;
   if jsonb_array_length(v_backup -> 'credenziali') < 2 or jsonb_array_length(v_backup -> 'movimenti') < 1 then
     raise exception 'FALLITO: esporta_backup non contiene credenziali e movimenti';
+  end if;
+  if jsonb_array_length(v_backup -> 'salvadanai') < 1 or jsonb_array_length(v_backup -> 'salvadanai_valori') < 1 then
+    raise exception 'FALLITO: esporta_backup non contiene i salvadanai';
   end if;
   begin
     perform public.importa_backup(v_backup);

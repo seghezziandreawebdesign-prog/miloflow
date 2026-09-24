@@ -608,6 +608,13 @@ export type Database = {
             referencedRelation: "v_movimenti"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "debiti_rate_movimento_fk"
+            columns: ["movimento_id"]
+            isOneToOne: false
+            referencedRelation: "v_salvadanai"
+            referencedColumns: ["previsto_id"]
+          },
         ]
       }
       eventi: {
@@ -838,6 +845,7 @@ export type Database = {
           periodo: string | null
           rata_id: string | null
           ricevuta_path: string | null
+          salvadanaio_id: string | null
           servizio_id: string | null
           stato: Database["public"]["Enums"]["stato_movimento"]
           updated_at: string
@@ -855,6 +863,7 @@ export type Database = {
           periodo?: string | null
           rata_id?: string | null
           ricevuta_path?: string | null
+          salvadanaio_id?: string | null
           servizio_id?: string | null
           stato?: Database["public"]["Enums"]["stato_movimento"]
           updated_at?: string
@@ -872,6 +881,7 @@ export type Database = {
           periodo?: string | null
           rata_id?: string | null
           ricevuta_path?: string | null
+          salvadanaio_id?: string | null
           servizio_id?: string | null
           stato?: Database["public"]["Enums"]["stato_movimento"]
           updated_at?: string
@@ -896,6 +906,20 @@ export type Database = {
             columns: ["rata_id"]
             isOneToOne: true
             referencedRelation: "debiti_rate"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_salvadanaio_id_fkey"
+            columns: ["salvadanaio_id"]
+            isOneToOne: false
+            referencedRelation: "salvadanai"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_salvadanaio_id_fkey"
+            columns: ["salvadanaio_id"]
+            isOneToOne: false
+            referencedRelation: "v_salvadanai"
             referencedColumns: ["id"]
           },
           {
@@ -1029,6 +1053,189 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "v_clienti"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salvadanai: {
+        Row: {
+          ambito: Database["public"]["Enums"]["ambito"]
+          archiviato: boolean
+          categoria_id: string | null
+          colore: string | null
+          created_at: string
+          created_by: string | null
+          data_obiettivo: string | null
+          giorno_mensile: number | null
+          icona: string | null
+          id: string
+          importo_mensile: number | null
+          isin: string | null
+          metodo_pagamento_id: string | null
+          nome: string
+          note: string | null
+          obiettivo: number | null
+          piano_attivo: boolean
+          piattaforma: string | null
+          strumento: string | null
+          tipo: Database["public"]["Enums"]["tipo_salvadanaio"]
+          updated_at: string
+        }
+        Insert: {
+          ambito?: Database["public"]["Enums"]["ambito"]
+          archiviato?: boolean
+          categoria_id?: string | null
+          colore?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_obiettivo?: string | null
+          giorno_mensile?: number | null
+          icona?: string | null
+          id?: string
+          importo_mensile?: number | null
+          isin?: string | null
+          metodo_pagamento_id?: string | null
+          nome: string
+          note?: string | null
+          obiettivo?: number | null
+          piano_attivo?: boolean
+          piattaforma?: string | null
+          strumento?: string | null
+          tipo: Database["public"]["Enums"]["tipo_salvadanaio"]
+          updated_at?: string
+        }
+        Update: {
+          ambito?: Database["public"]["Enums"]["ambito"]
+          archiviato?: boolean
+          categoria_id?: string | null
+          colore?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_obiettivo?: string | null
+          giorno_mensile?: number | null
+          icona?: string | null
+          id?: string
+          importo_mensile?: number | null
+          isin?: string | null
+          metodo_pagamento_id?: string | null
+          nome?: string
+          note?: string | null
+          obiettivo?: number | null
+          piano_attivo?: boolean
+          piattaforma?: string | null
+          strumento?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_salvadanaio"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salvadanai_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorie"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salvadanai_metodo_pagamento_id_fkey"
+            columns: ["metodo_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "metodi_pagamento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salvadanai_prelievi: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: string
+          id: string
+          importo: number
+          note: string | null
+          salvadanaio_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          importo: number
+          note?: string | null
+          salvadanaio_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          importo?: number
+          note?: string | null
+          salvadanaio_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salvadanai_prelievi_salvadanaio_id_fkey"
+            columns: ["salvadanaio_id"]
+            isOneToOne: false
+            referencedRelation: "salvadanai"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salvadanai_prelievi_salvadanaio_id_fkey"
+            columns: ["salvadanaio_id"]
+            isOneToOne: false
+            referencedRelation: "v_salvadanai"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salvadanai_valori: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: string
+          id: string
+          note: string | null
+          salvadanaio_id: string
+          updated_at: string
+          valore: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          note?: string | null
+          salvadanaio_id: string
+          updated_at?: string
+          valore: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          note?: string | null
+          salvadanaio_id?: string
+          updated_at?: string
+          valore?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salvadanai_valori_salvadanaio_id_fkey"
+            columns: ["salvadanaio_id"]
+            isOneToOne: false
+            referencedRelation: "salvadanai"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salvadanai_valori_salvadanaio_id_fkey"
+            columns: ["salvadanaio_id"]
+            isOneToOne: false
+            referencedRelation: "v_salvadanai"
             referencedColumns: ["id"]
           },
         ]
@@ -1299,6 +1506,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_movimenti"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servizi_rinnovi_movimento_fk"
+            columns: ["movimento_id"]
+            isOneToOne: false
+            referencedRelation: "v_salvadanai"
+            referencedColumns: ["previsto_id"]
           },
           {
             foreignKeyName: "servizi_rinnovi_servizio_id_fkey"
@@ -1615,6 +1829,11 @@ export type Database = {
           rata_id: string | null
           rata_numero: number | null
           ricevuta_path: string | null
+          salvadanaio_id: string | null
+          salvadanaio_nome: string | null
+          salvadanaio_tipo:
+            | Database["public"]["Enums"]["tipo_salvadanaio"]
+            | null
           servizio_id: string | null
           servizio_nome: string | null
           stato: Database["public"]["Enums"]["stato_movimento"] | null
@@ -1647,6 +1866,20 @@ export type Database = {
             columns: ["rata_id"]
             isOneToOne: true
             referencedRelation: "debiti_rate"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_salvadanaio_id_fkey"
+            columns: ["salvadanaio_id"]
+            isOneToOne: false
+            referencedRelation: "salvadanai"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_salvadanaio_id_fkey"
+            columns: ["salvadanaio_id"]
+            isOneToOne: false
+            referencedRelation: "v_salvadanai"
             referencedColumns: ["id"]
           },
           {
@@ -1694,6 +1927,57 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "v_clienti"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_salvadanai: {
+        Row: {
+          ambito: Database["public"]["Enums"]["ambito"] | null
+          archiviato: boolean | null
+          categoria_id: string | null
+          colore: string | null
+          created_at: string | null
+          created_by: string | null
+          data_obiettivo: string | null
+          giorno_mensile: number | null
+          icona: string | null
+          id: string | null
+          importo_mensile: number | null
+          isin: string | null
+          metodo_pagamento_id: string | null
+          nome: string | null
+          note: string | null
+          obiettivo: number | null
+          piano_attivo: boolean | null
+          piattaforma: string | null
+          prelevato: number | null
+          previsto_data: string | null
+          previsto_id: string | null
+          previsto_importo: number | null
+          saldo: number | null
+          strumento: string | null
+          tipo: Database["public"]["Enums"]["tipo_salvadanaio"] | null
+          ultimo_versamento: string | null
+          updated_at: string | null
+          valore_attuale: number | null
+          valore_data: string | null
+          versamenti: number | null
+          versato: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salvadanai_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorie"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salvadanai_metodo_pagamento_id_fkey"
+            columns: ["metodo_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "metodi_pagamento"
             referencedColumns: ["id"]
           },
         ]
@@ -1775,6 +2059,7 @@ export type Database = {
         Returns: string
       }
       elimina_debito: { Args: { p_id: string }; Returns: undefined }
+      elimina_salvadanaio: { Args: { p_id: string }; Returns: undefined }
       esporta_backup: { Args: never; Returns: Json }
       genera_previsti: { Args: { p_mese: string }; Returns: number }
       importa_backup: { Args: { p_dati: Json }; Returns: Json }
@@ -1849,12 +2134,25 @@ export type Database = {
         }
         Returns: string
       }
+      salvadanaio_ha_piano: {
+        Args: {
+          p_archiviato: boolean
+          p_attivo: boolean
+          p_giorno: number
+          p_importo: number
+        }
+        Returns: boolean
+      }
       scadenza_successiva: {
         Args: {
           p_data: string
           p_frequenza: Database["public"]["Enums"]["frequenza_servizio"]
         }
         Returns: string
+      }
+      sincronizza_previsti_salvadanaio: {
+        Args: { p_id: string }
+        Returns: undefined
       }
       sincronizza_previsti_servizio: {
         Args: { p_servizio_id: string }
@@ -1925,6 +2223,7 @@ export type Database = {
         | "contanti"
         | "conto"
         | "altro"
+      tipo_salvadanaio: "risparmio" | "investimento"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2089,6 +2388,7 @@ export const Constants = {
         "conto",
         "altro",
       ],
+      tipo_salvadanaio: ["risparmio", "investimento"],
     },
   },
 } as const
