@@ -12,8 +12,7 @@ import { Blocco } from "./blocco";
 /** Budget del mese: speso e previsto rispetto al budget totale. */
 export function BloccoBudgetMese({ totali, mese }: { totali: TotaliMese; mese: string }) {
   const impegnato = totali.speso + totali.previsto;
-  const riferimento = totali.budget > 0 ? totali.budget : impegnato;
-  const pct = (v: number) => (riferimento > 0 ? Math.min(100, (v / riferimento) * 100) : 0);
+  const pct = (v: number) => (totali.budget > 0 ? Math.min(100, (v / totali.budget) * 100) : 0);
   const sfora = totali.budget > 0 && impegnato > totali.budget;
   return (
     <Blocco titolo="Budget del mese" icona={Wallet} link={{ href: `/budget?tab=mese&mese=${mese}`, label: "Budget" }}>
@@ -24,10 +23,12 @@ export function BloccoBudgetMese({ totali, mese }: { totali: TotaliMese; mese: s
         </span>
         {totali.budget > 0 && <span className="text-muted-foreground tabular-nums">su {formatCurrency(totali.budget)}</span>}
       </div>
-      <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-muted" role="img" aria-label={`Speso ${formatCurrency(totali.speso)}, previsto ${formatCurrency(totali.previsto)}, budget ${formatCurrency(totali.budget)}`}>
-        <div className={cn("h-full rounded-l-full", sfora ? "bg-destructive" : "bg-primary")} style={{ width: `${pct(totali.speso)}%` }} />
-        <div className={cn("h-full opacity-50", sfora ? "bg-destructive" : "bg-primary")} style={{ width: `${pct(totali.previsto)}%` }} />
-      </div>
+      {totali.budget > 0 && (
+        <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-muted" role="img" aria-label={`Speso ${formatCurrency(totali.speso)}, previsto ${formatCurrency(totali.previsto)}, budget ${formatCurrency(totali.budget)}`}>
+          <div className={cn("h-full rounded-l-full", sfora ? "bg-destructive" : "bg-primary")} style={{ width: `${pct(totali.speso)}%` }} />
+          <div className={cn("h-full opacity-50", sfora ? "bg-destructive" : "bg-primary")} style={{ width: `${pct(totali.previsto)}%` }} />
+        </div>
+      )}
       <p className="mt-1.5 text-xs text-muted-foreground">
         {totali.budget > 0
           ? sfora

@@ -168,10 +168,20 @@ Nel database finiscono solo payload cifrato, IV e salt. La cassaforte si richiud
 - Le preferenze (tacche da 15/30/60 minuti, ore di inizio e fine, vista di partenza) stanno in `impostazioni_calendario`, una riga per utente creata al primo accesso dalla funzione `mie_impostazioni_calendario()`.
 - **Feed ICS**: in Impostazioni → Calendario si crea un link con un token di 64 caratteri (`rigenera_token_ics()`); la Edge Function `calendario-ics` risponde con il file `.ics`. Il feed legge con la service role, quindi è disponibile solo per l'owner. Va pubblicata con `npx supabase functions deploy calendario-ics --use-api` e usa il segreto `SITE_URL` per i link.
 
+## Budget & Spese
+
+- **Pagina `/budget`** con tre sezioni sul parametro `?tab=`: *Mese* (`?mese=yyyy-MM-01`), *Debiti* e *Report* (`?periodo=mese|3mesi|12mesi|anno`). Il mese mostra budget, speso, previsto e rimanente, una barra per categoria (le sottocategorie contano nel padre) e i movimenti raggruppati per giorno. Un movimento appartiene al mese per la sua `data`; `periodo` è il mese di competenza usato dai vincoli univoci.
+- **Categorie** (Impostazioni → Categorie): due livelli, trascinamento per l'ordine, colore, icona (nome lucide in `lib/icone.ts`), ambito, budget mensile di default, archiviazione. Una sottocategoria ha sempre l'ambito del padre (trigger). Il budget di un padre nel mese è il suo override in `budget_mensili`, altrimenti il suo default più quelli delle figlie.
+- **Previsti**. La funzione SQL `genera_previsti(mese)` crea un movimento `previsto` per ogni servizio attivo pagato da me con la scadenza nel mese e per ogni rata non pagata del mese. È idempotente grazie ai vincoli univoci `(servizio_id, periodo)` e `(rata_id)`. La chiama l'owner con «Aggiorna previsti» (mese scelto e successivo) e il cron `genera-previsti` di `pg_cron` il primo del mese alle 00:05 UTC, in SQL diretto, senza Edge Function né segreti. I trigger su `servizi`, `servizi_economico`, `debiti` e `debiti_rate` tengono aggiornati i previsti del mese corrente e del successivo quando qualcosa cambia (disdetta, costo, scadenza, piano delle rate).
+- **Rinnovo**. `rinnova_servizio` avanza la scadenza e, se paghi tu, rende `pagato` il movimento del periodo della scadenza rinnovata (lo crea se manca; due rinnovi nello stesso periodo si sommano). Lo storico in `servizi_rinnovi` punta al movimento. Se paga il cliente non nasce nessun movimento.
+- **Debiti**. `salva_debito` scrive debito e piano delle rate in una transazione: le rate pagate non si toccano, le altre seguono il piano nuovo. `paga_rata` crea (o converte) il movimento `pagato` e segna la rata; `annulla_pagamento_rata` torna indietro. Un debito si elimina solo senza rate pagate (`elimina_debito`). Le rate ereditano `debiti.categoria_id`.
+- **Nuova spesa** (menu +, ⌘K, pagina Budget): importo, griglia di categorie, poi descrizione, data, metodo, foto della ricevuta nel bucket `ricevute/<movimento_id>/`. Un movimento si elimina con conferma; quello di una rata pagata si annulla dal debito.
+- **Report**: i calcoli sono funzioni pure in `lib/budget.ts` (con test) sugli stessi movimenti della lista, quindi i totali coincidono. Il grafico dei 12 mesi usa una tramatura sul personale, oltre al colore, e ha la tabella sotto.
+- **Calendario**: le rate e i previsti dei servizi compaiono una volta sola (come rata e come scadenza); le «Spese previste» sono solo quelle inserite a mano.
+
 ## Da completare nelle fasi successive
 
-- Collegamento dei rinnovi al budget (fase 5), gestione di categorie, tipi di servizio e utenti (fasi 5 e 6).
-- Pagina Oggi: i blocchi di budget, rate e spese previste arrivano con la fase 5. Nel calendario rate e spese previste si aprono in un pannello segnaposto fino alla fase 5.
+- Gestione di tipi di servizio e utenti (fase 6).
 
 ## Struttura
 
@@ -190,6 +200,8 @@ lib/parsing             parser dell'aggiunta rapida delle task
 lib/dates               date, giorni e ricorrenze RRULE
 components/task         viste delle task, kanban, Pianifica settimana, aggiunta rapida
 components/calendario   FullCalendar, filtri, creazione dallo slot, form dell'evento
+components/budget       pagina Budget, Nuova spesa, debiti con piano rate, report, griglia delle categorie
+components/impostazioni sezioni delle Impostazioni (calendario, categorie, cassaforte, metodi, notifiche)
 supabase/migrations     schema, policy e seed
 supabase/tests          test delle policy
 ```

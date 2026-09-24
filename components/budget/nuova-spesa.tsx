@@ -227,7 +227,9 @@ export function MovimentoDialog({
                     value={valori.categoria_id}
                     onChange={(id) => {
                       set("categoria_id", id);
-                      if (nuovo && passo === 2) setPasso(3);
+                      // Un padre con sottocategorie resta sul passo per mostrarle.
+                      const haFiglie = categorie.some((c) => c.parent_id === id && !c.archiviata);
+                      if (nuovo && passo === 2 && !haFiglie) setPasso(3);
                     }}
                   />
                 )}
@@ -309,7 +311,7 @@ export function MovimentoDialog({
               </Button>
               {nuovo && passo < 3 ? (
                 <Button type="button" onClick={avanti} disabled={passo === 1 && !importoValido}>
-                  {passo === 2 ? "Senza categoria" : "Avanti"}
+                  {passo === 2 && valori.categoria_id === "" ? "Senza categoria" : "Avanti"}
                 </Button>
               ) : (
                 <Button type="submit" disabled={pending}>

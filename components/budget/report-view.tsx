@@ -233,7 +233,7 @@ export function ReportView({
 
 function Riquadro({ titolo, sottotitolo, children }: { titolo: string; sottotitolo?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl bg-card p-4 ring-1 ring-black/8">
+    <section className="min-w-0 overflow-hidden rounded-xl bg-card p-4 ring-1 ring-black/8">
       <h3 className="font-semibold">{titolo}</h3>
       {sottotitolo && <p className="mb-3 text-xs text-muted-foreground">{sottotitolo}</p>}
       {children}

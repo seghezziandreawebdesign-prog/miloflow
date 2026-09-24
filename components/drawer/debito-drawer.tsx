@@ -73,7 +73,10 @@ export function DebitoDrawer({ id }: { id: string }) {
   }
 
   const stato = statoDebito(d, d.debiti_rate, oggi);
-  const andamento = andamentoResiduo(d, d.debiti_rate);
+  // Il grafico parte dal totale (alla data di inizio o alla prima rata) e scende a ogni rata.
+  const passi = andamentoResiduo(d, d.debiti_rate);
+  const andamento =
+    passi.length > 0 ? [{ scadenza: d.data_inizio ?? passi[0].scadenza, residuo: stato.residuo + stato.pagato, pagata: false }, ...passi] : [];
   const rate = [...d.debiti_rate].sort((a, b) => a.numero - b.numero);
   const categoria = nomeCategoria(d.categoria_id, d.categorie);
   const ratePagate = rate.filter((r) => r.pagata).map((r) => r.numero);

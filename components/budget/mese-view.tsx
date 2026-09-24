@@ -76,7 +76,11 @@ export function MeseView({
         <Contatore label="Budget" valore={totali.budget} />
         <Contatore label="Speso" valore={totali.speso} />
         <Contatore label="Previsto da pagare" valore={totali.previsto} tono="text-muted-foreground" />
-        <Contatore label="Rimanente" valore={totali.rimanente} tono={sfora ? "text-destructive" : "text-scadenza-ok"} />
+        <Contatore
+          label="Rimanente"
+          valore={totali.rimanente}
+          tono={totali.budget === 0 ? "text-muted-foreground" : sfora ? "text-destructive" : "text-scadenza-ok"}
+        />
       </dl>
 
       {totali.barre.length > 0 && (

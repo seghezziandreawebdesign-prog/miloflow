@@ -603,6 +603,10 @@ select public._test_conta(
   $q$select 1 from public.v_calendario v where v.tipo = 'movimento'
      and v.id in (select id from public.movimenti where rata_id is not null)$q$,
   0, 'owner: le rate non compaiono due volte nel calendario');
+select public._test_conta(
+  $q$select 1 from public.v_calendario v where v.tipo = 'movimento'
+     and v.id in (select id from public.movimenti where servizio_id is not null)$q$,
+  0, 'owner: i previsti dei servizi non raddoppiano la scadenza nel calendario');
 
 -- Disdetta: il previsto sparisce; riattivazione: torna.
 update public.servizi set stato = 'disdetto' where id = '20000000-0000-0000-0000-000000000001';
