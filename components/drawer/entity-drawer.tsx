@@ -2,10 +2,12 @@
 
 import { XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { APRI_PARAM, parseApri, type RiferimentoEntita } from "@/lib/entita";
+import { cn } from "@/lib/utils";
 
 import { ClienteDrawer } from "./cliente-drawer";
 import { DebitoDrawer } from "./debito-drawer";
@@ -23,6 +25,10 @@ export function EntityDrawer() {
   const router = useRouter();
   const pathname = usePathname();
   const ref = parseApri(searchParams.get(APRI_PARAM));
+  // Il tipo resta quello dell'ultima entità durante l'animazione di chiusura,
+  // così la finestra non cambia misura mentre si chiude.
+  const [tipo, setTipo] = useState(ref?.tipo);
+  if (ref && ref.tipo !== tipo) setTipo(ref.tipo);
 
   function close() {
     const params = new URLSearchParams(searchParams.toString());
@@ -35,7 +41,11 @@ export function EntityDrawer() {
     <Dialog open={ref !== null} onOpenChange={(open) => !open && close()}>
       <DialogContent
         showCloseButton={false}
-        className="block max-h-[92svh] overflow-y-auto p-0 max-sm:max-h-[94svh] max-sm:pb-0 sm:max-w-2xl"
+        className={cn(
+          "block max-h-[92svh] overflow-y-auto p-0 max-sm:max-h-[94svh] max-sm:pb-0",
+          // La task ha una descrizione lunga: finestra quasi a tutto schermo.
+          tipo === "task" ? "sm:h-[90svh] sm:max-h-[90svh] sm:max-w-[min(1200px,95vw)]" : "sm:max-w-2xl",
+        )}
       >
         {/* Chiusura sempre visibile anche scorrendo il contenuto. */}
         <div className="pointer-events-none sticky top-0 z-10 -mb-11 flex justify-end p-2.5">

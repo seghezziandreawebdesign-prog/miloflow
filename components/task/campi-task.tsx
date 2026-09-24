@@ -179,6 +179,7 @@ export function CampiPrincipali({
   aggiornaSubito = false,
   dateDalTesto = {},
   idPrefix = "task",
+  senzaDescrizione = false,
 }: {
   valori: Pick<TaskFormValues, "note" | "stato" | "in_attesa_di" | "data_pianificata" | "ora_inizio" | "scadenza">;
   onChange: (patch: Partial<TaskFormValues>) => void;
@@ -188,18 +189,22 @@ export function CampiPrincipali({
   /** Nel dialog di creazione la descrizione si aggiorna a ogni tasto. */
   aggiornaSubito?: boolean;
   idPrefix?: string;
+  /** La descrizione la mostra il chiamante altrove (es. la colonna grande del pannello). */
+  senzaDescrizione?: boolean;
 }) {
   return (
     <div className="space-y-4">
-      <Field>
-        <FieldLabel htmlFor={`${idPrefix}-descrizione`}>Descrizione</FieldLabel>
-        <EditorTesto
-          id={`${idPrefix}-descrizione`}
-          value={valori.note}
-          onChange={(note) => onChange({ note })}
-          aggiornaSubito={aggiornaSubito}
-        />
-      </Field>
+      {!senzaDescrizione && (
+        <Field>
+          <FieldLabel htmlFor={`${idPrefix}-descrizione`}>Descrizione</FieldLabel>
+          <EditorTesto
+            id={`${idPrefix}-descrizione`}
+            value={valori.note}
+            onChange={(note) => onChange({ note })}
+            aggiornaSubito={aggiornaSubito}
+          />
+        </Field>
+      )}
 
       <Segmented
         label="Stato"

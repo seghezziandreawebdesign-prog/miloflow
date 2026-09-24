@@ -45,6 +45,7 @@ export function EditorTesto({
   aggiornaSubito = false,
   id,
   className,
+  classeContenuto = "min-h-24",
 }: {
   value: string;
   onChange: (html: string) => void;
@@ -52,6 +53,8 @@ export function EditorTesto({
   aggiornaSubito?: boolean;
   id?: string;
   className?: string;
+  /** Classi dell'area di scrittura (es. l'altezza minima). */
+  classeContenuto?: string;
 }) {
   const leggi = (editor: Editor) => (editor.isEmpty ? "" : editor.getHTML());
   // Le callback dell'editor restano quelle della creazione: valore e onChange
@@ -83,7 +86,7 @@ export function EditorTesto({
       attributes: {
         ...(id ? { id } : {}),
         "aria-label": "Descrizione",
-        class: "editor-testo min-h-24 px-3 py-2 outline-none",
+        class: cn("editor-testo px-3 py-2 outline-none", classeContenuto),
       },
     },
     onUpdate: ({ editor }) => {

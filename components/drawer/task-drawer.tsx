@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { EditorTesto } from "@/components/editor-testo";
 import { AggiuntaRapida } from "@/components/task/aggiunta-rapida";
 import { AllegatiTask, useAllegatiTask, useRicezioneFile } from "@/components/task/allegati";
 import { CampiPrincipali, CampiTask, TestoAlBlur } from "@/components/task/campi-task";
@@ -15,6 +16,7 @@ import { InAttesaDialog } from "@/components/task/in-attesa-dialog";
 import { TaskCheckbox, useCompletaConConferma } from "@/components/task/task-checkbox";
 import { TaskRow } from "@/components/task/task-row";
 import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
@@ -108,7 +110,7 @@ export function TaskDrawer({ id }: { id: string }) {
 
   return (
     <div
-      className={cn("flex min-h-[50svh] flex-col", ricezione.trascinando && "bg-primary/5 ring-2 ring-primary ring-inset")}
+      className={cn("flex min-h-[50svh] flex-col lg:min-h-full", ricezione.trascinando && "bg-primary/5 ring-2 ring-primary ring-inset")}
       {...ricezione.props}
     >
       <PannelloHeader className="gap-3 pr-12 sm:pr-14">
@@ -143,116 +145,133 @@ export function TaskDrawer({ id }: { id: string }) {
         </PannelloDescription>
       </PannelloHeader>
 
-      <div className="space-y-6 px-4 pb-5 sm:px-5">
-        {(task.progetti || task.cliente_nome || task.servizi) && (
-          <div className="-mt-2 flex flex-wrap gap-2 text-xs">
-            {task.progetti && (
-              <Collegamento icona={FolderKanban} onClick={() => apri({ tipo: "progetto", id: task.progetti!.id })}>
-                {task.progetti.nome}
-              </Collegamento>
-            )}
-            {task.cliente_id && task.cliente_nome && (
-              <Collegamento icona={Building2} onClick={() => apri({ tipo: "cliente", id: task.cliente_id! })}>
-                {task.cliente_nome}
-              </Collegamento>
-            )}
-            {task.servizi && (
-              <Collegamento icona={RefreshCw} onClick={() => apri({ tipo: "servizio", id: task.servizi!.id })}>
-                {task.servizi.nome}
-              </Collegamento>
-            )}
-          </div>
-        )}
-
-        <CampiPrincipali
-          valori={valori}
-          onChange={salva}
-          onStato={(stato) => {
-            if (stato === task.stato) return;
-            if (stato === "fatto") spunta.completa(task);
-            else if (task.stato === "fatto") {
-              // Riaprendo si passa dallo stato scelto; "in attesa" chiede di cosa.
-              if (stato === "in_attesa") setAttesaOpen(true);
-              else salva({ stato });
-            } else if (stato === "in_attesa") setAttesaOpen(true);
-            else salva({ stato });
-          }}
-          idPrefix={`task-${id}`}
-        />
-
-        {task.stato === "in_attesa" && (
-          <div className="flex items-start gap-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-            <Hourglass className="mt-0.5 size-4 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p>
-                In attesa{task.in_attesa_di ? <> di <strong>{task.in_attesa_di}</strong></> : null}
-                {attesa !== null && (attesa === 0 ? " da oggi" : ` da ${attesa} ${attesa === 1 ? "giorno" : "giorni"}`)}
-              </p>
-              {task.in_attesa_dal && <p className="text-xs opacity-80">dal {formatDate(task.in_attesa_dal)}</p>}
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => setAttesaOpen(true)}>
-              Modifica
-            </Button>
-          </div>
-        )}
-
-        <AllegatiTask stato={allegati} />
-
-        {!isSottotask && (
-          <section className="space-y-2">
-            <h3 className="text-sm font-medium">
-              Sottotask
-              {sottotask.length > 0 && (
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  {sottotask.filter((s) => s.stato === "fatto").length}/{sottotask.length}
-                </span>
+      {/* Su schermi larghi due colonne: la descrizione a tutta altezza a sinistra, i campi a destra. */}
+      <div className="grid gap-6 px-4 pb-5 sm:px-5 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] lg:gap-8">
+        <div className="flex min-w-0 flex-col gap-4">
+          {(task.progetti || task.cliente_nome || task.servizi) && (
+            <div className="-mt-2 flex flex-wrap gap-2 text-xs">
+              {task.progetti && (
+                <Collegamento icona={FolderKanban} onClick={() => apri({ tipo: "progetto", id: task.progetti!.id })}>
+                  {task.progetti.nome}
+                </Collegamento>
               )}
-            </h3>
-            {sottotask.length > 0 && (
-              <div className="-mx-2">
-                {sottotask.map((s) => (
-                  <TaskRow key={s.id} task={s} opzioni={{ senzaProgetto: true, senzaCliente: true }} />
-                ))}
+              {task.cliente_id && task.cliente_nome && (
+                <Collegamento icona={Building2} onClick={() => apri({ tipo: "cliente", id: task.cliente_id! })}>
+                  {task.cliente_nome}
+                </Collegamento>
+              )}
+              {task.servizi && (
+                <Collegamento icona={RefreshCw} onClick={() => apri({ tipo: "servizio", id: task.servizi!.id })}>
+                  {task.servizi.nome}
+                </Collegamento>
+              )}
+            </div>
+          )}
+
+          <Field className="lg:flex-1">
+            <FieldLabel htmlFor={`task-${id}-descrizione`}>Descrizione</FieldLabel>
+            <EditorTesto
+              id={`task-${id}-descrizione`}
+              value={valori.note}
+              onChange={(note) => salva({ note })}
+              className="lg:flex-1"
+              classeContenuto="min-h-40 sm:min-h-64 lg:min-h-[calc(90svh-14rem)]"
+            />
+          </Field>
+        </div>
+
+        <div className="min-w-0 space-y-6">
+          <CampiPrincipali
+            valori={valori}
+            onChange={salva}
+            onStato={(stato) => {
+              if (stato === task.stato) return;
+              if (stato === "fatto") spunta.completa(task);
+              else if (task.stato === "fatto") {
+                // Riaprendo si passa dallo stato scelto; "in attesa" chiede di cosa.
+                if (stato === "in_attesa") setAttesaOpen(true);
+                else salva({ stato });
+              } else if (stato === "in_attesa") setAttesaOpen(true);
+              else salva({ stato });
+            }}
+            idPrefix={`task-${id}`}
+            senzaDescrizione
+          />
+
+          {task.stato === "in_attesa" && (
+            <div className="flex items-start gap-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+              <Hourglass className="mt-0.5 size-4 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p>
+                  In attesa{task.in_attesa_di ? <> di <strong>{task.in_attesa_di}</strong></> : null}
+                  {attesa !== null && (attesa === 0 ? " da oggi" : ` da ${attesa} ${attesa === 1 ? "giorno" : "giorni"}`)}
+                </p>
+                {task.in_attesa_dal && <p className="text-xs opacity-80">dal {formatDate(task.in_attesa_dal)}</p>}
               </div>
-            )}
-            <AggiuntaRapida
-              defaults={{ ambito: task.ambito, parent_id: id }}
-              placeholder="Aggiungi una sottotask"
-            />
-          </section>
-        )}
+              <Button variant="ghost" size="sm" onClick={() => setAttesaOpen(true)}>
+                Modifica
+              </Button>
+            </div>
+          )}
 
-        <Collapsible open={dettagliAperti} onOpenChange={setDettagliAperti} className="border-t pt-3">
-          <CollapsibleTrigger
-            render={<Button type="button" variant="ghost" size="sm" className="-ml-2 text-muted-foreground" />}
-          >
-            <ChevronDown className={cn("transition-transform", dettagliAperti && "rotate-180")} />
-            Dettagli
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-3">
-            <CampiTask
-              valori={valori}
-              onChange={salva}
-              opzioni={opzioni}
-              sottotask={isSottotask}
-              idPrefix={`task-${id}`}
-            />
-          </CollapsibleContent>
-        </Collapsible>
+          <AllegatiTask stato={allegati} />
 
-        <div className="flex items-center justify-between border-t pt-4 text-xs text-muted-foreground">
-          <span>Creata il {formatDate(task.created_at)}</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" size="icon-sm" aria-label="Altre azioni" />}>
-              <MoreHorizontal />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-                <Trash2 />
-                Elimina
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {!isSottotask && (
+            <section className="space-y-2">
+              <h3 className="text-sm font-medium">
+                Sottotask
+                {sottotask.length > 0 && (
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    {sottotask.filter((s) => s.stato === "fatto").length}/{sottotask.length}
+                  </span>
+                )}
+              </h3>
+              {sottotask.length > 0 && (
+                <div className="-mx-2">
+                  {sottotask.map((s) => (
+                    <TaskRow key={s.id} task={s} opzioni={{ senzaProgetto: true, senzaCliente: true }} />
+                  ))}
+                </div>
+              )}
+              <AggiuntaRapida
+                defaults={{ ambito: task.ambito, parent_id: id }}
+                placeholder="Aggiungi una sottotask"
+              />
+            </section>
+          )}
+
+          <Collapsible open={dettagliAperti} onOpenChange={setDettagliAperti} className="border-t pt-3">
+            <CollapsibleTrigger
+              render={<Button type="button" variant="ghost" size="sm" className="-ml-2 text-muted-foreground" />}
+            >
+              <ChevronDown className={cn("transition-transform", dettagliAperti && "rotate-180")} />
+              Dettagli
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-3">
+              <CampiTask
+                valori={valori}
+                onChange={salva}
+                opzioni={opzioni}
+                sottotask={isSottotask}
+                idPrefix={`task-${id}`}
+              />
+            </CollapsibleContent>
+          </Collapsible>
+
+          <div className="flex items-center justify-between border-t pt-4 text-xs text-muted-foreground">
+            <span>Creata il {formatDate(task.created_at)}</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="outline" size="icon-sm" aria-label="Altre azioni" />}>
+                <MoreHorizontal />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
+                  <Trash2 />
+                  Elimina
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
