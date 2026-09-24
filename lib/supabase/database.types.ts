@@ -700,6 +700,48 @@ export type Database = {
         }
         Relationships: []
       }
+      metodi_pagamento: {
+        Row: {
+          ambito: Database["public"]["Enums"]["ambito_categoria"]
+          archiviato: boolean
+          colore: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+          ordine: number
+          tipo: Database["public"]["Enums"]["tipo_metodo_pagamento"]
+          ultime_cifre: string | null
+          updated_at: string
+        }
+        Insert: {
+          ambito?: Database["public"]["Enums"]["ambito_categoria"]
+          archiviato?: boolean
+          colore?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+          ordine?: number
+          tipo: Database["public"]["Enums"]["tipo_metodo_pagamento"]
+          ultime_cifre?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ambito?: Database["public"]["Enums"]["ambito_categoria"]
+          archiviato?: boolean
+          colore?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+          ordine?: number
+          tipo?: Database["public"]["Enums"]["tipo_metodo_pagamento"]
+          ultime_cifre?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       movimenti: {
         Row: {
           ambito: Database["public"]["Enums"]["ambito"]
@@ -710,7 +752,7 @@ export type Database = {
           descrizione: string | null
           id: string
           importo: number
-          metodo_pagamento: string | null
+          metodo_pagamento_id: string | null
           periodo: string | null
           rata_id: string | null
           ricevuta_path: string | null
@@ -727,7 +769,7 @@ export type Database = {
           descrizione?: string | null
           id?: string
           importo: number
-          metodo_pagamento?: string | null
+          metodo_pagamento_id?: string | null
           periodo?: string | null
           rata_id?: string | null
           ricevuta_path?: string | null
@@ -744,7 +786,7 @@ export type Database = {
           descrizione?: string | null
           id?: string
           importo?: number
-          metodo_pagamento?: string | null
+          metodo_pagamento_id?: string | null
           periodo?: string | null
           rata_id?: string | null
           ricevuta_path?: string | null
@@ -758,6 +800,13 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categorie"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_metodo_pagamento_id_fkey"
+            columns: ["metodo_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "metodi_pagamento"
             referencedColumns: ["id"]
           },
           {
@@ -1067,7 +1116,7 @@ export type Database = {
           costo: number | null
           created_at: string
           created_by: string | null
-          metodo_pagamento: string | null
+          metodo_pagamento_id: string | null
           servizio_id: string
           updated_at: string
           valuta: string
@@ -1077,7 +1126,7 @@ export type Database = {
           costo?: number | null
           created_at?: string
           created_by?: string | null
-          metodo_pagamento?: string | null
+          metodo_pagamento_id?: string | null
           servizio_id: string
           updated_at?: string
           valuta?: string
@@ -1087,7 +1136,7 @@ export type Database = {
           costo?: number | null
           created_at?: string
           created_by?: string | null
-          metodo_pagamento?: string | null
+          metodo_pagamento_id?: string | null
           servizio_id?: string
           updated_at?: string
           valuta?: string
@@ -1098,6 +1147,13 @@ export type Database = {
             columns: ["categoria_spesa_id"]
             isOneToOne: false
             referencedRelation: "categorie"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servizi_economico_metodo_pagamento_id_fkey"
+            columns: ["metodo_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "metodi_pagamento"
             referencedColumns: ["id"]
           },
           {
@@ -1442,7 +1498,12 @@ export type Database = {
           frequenza: Database["public"]["Enums"]["frequenza_servizio"] | null
           giorni_alla_scadenza: number | null
           id: string | null
-          metodo_pagamento: string | null
+          metodo_pagamento_cifre: string | null
+          metodo_pagamento_id: string | null
+          metodo_pagamento_nome: string | null
+          metodo_pagamento_tipo:
+            | Database["public"]["Enums"]["tipo_metodo_pagamento"]
+            | null
           nome: string | null
           note: string | null
           preavviso_effettivo: number | null
@@ -1465,6 +1526,13 @@ export type Database = {
             columns: ["categoria_spesa_id"]
             isOneToOne: false
             referencedRelation: "categorie"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servizi_economico_metodo_pagamento_id_fkey"
+            columns: ["metodo_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "metodi_pagamento"
             referencedColumns: ["id"]
           },
           {
@@ -1576,6 +1644,13 @@ export type Database = {
       tipo_cliente: "azienda" | "privato"
       tipo_credenziale: "link_password_manager" | "cifrata"
       tipo_debito: "rateale" | "unica_soluzione" | "prestito_privato"
+      tipo_metodo_pagamento:
+        | "carta_credito"
+        | "carta_debito"
+        | "prepagata"
+        | "contanti"
+        | "conto"
+        | "altro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1732,6 +1807,14 @@ export const Constants = {
       tipo_cliente: ["azienda", "privato"],
       tipo_credenziale: ["link_password_manager", "cifrata"],
       tipo_debito: ["rateale", "unica_soluzione", "prestito_privato"],
+      tipo_metodo_pagamento: [
+        "carta_credito",
+        "carta_debito",
+        "prepagata",
+        "contanti",
+        "conto",
+        "altro",
+      ],
     },
   },
 } as const

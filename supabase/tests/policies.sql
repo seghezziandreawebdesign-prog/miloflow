@@ -225,6 +225,7 @@ select public._test_conta('select 1 from public.progetti', 1, 'progetti visibili
 select public._test_conta('select 1 from public.task', 2, 'task visibili (T1 con A, T2 assegnata)');
 select public._test_conta('select 1 from public.eventi', 1, 'eventi visibili (solo E1)');
 select public._test_conta('select 1 from public.categorie', 0, 'categorie senza permesso budget');
+select public._test_conta('select 1 from public.metodi_pagamento', 0, 'metodi di pagamento senza permesso budget');
 select public._test_conta('select 1 from public.movimenti', 0, 'movimenti senza permesso budget');
 select public._test_conta('select 1 from public.debiti', 0, 'debiti senza permesso budget');
 select public._test_conta('select 1 from public.v_calendario where ambito = ''personale''', 0,
@@ -386,9 +387,30 @@ begin
 end;
 $$;
 select public._test_rifiutato(
-  $q$select public.salva_servizio(null, '{"ambito":"lavoro","nome":"X","frequenza":"annuale","prossima_scadenza":"2027-01-01","chi_paga":"io"}',
-     '{"metodo_pagamento":"4111 1111 1111 1111"}', null)$q$,
-  'salva un numero di carta completo come metodo di pagamento');
+  $q$insert into public.metodi_pagamento (nome, tipo, ultime_cifre) values ('Visa', 'carta_credito', '4111111111111111')$q$,
+  'salva un numero di carta completo');
+
+-- Metodo di pagamento: si salva se pago io, si azzera se paga il cliente.
+insert into public.metodi_pagamento (id, nome, tipo, ultime_cifre)
+  values ('70000000-0000-0000-0000-000000000001', 'Revolut', 'prepagata', '4417');
+do $$
+declare
+  v_id uuid;
+begin
+  v_id := public.salva_servizio(null,
+    '{"ambito":"lavoro","nome":"Con carta","frequenza":"mensile","prossima_scadenza":"2027-01-01","chi_paga":"io"}',
+    '{"costo":"5","metodo_pagamento_id":"70000000-0000-0000-0000-000000000001"}', '[]');
+  if (select metodo_pagamento_nome from public.v_servizi where id = v_id) is distinct from 'Revolut' then
+    raise exception 'FALLITO: metodo di pagamento non salvato';
+  end if;
+  perform public.salva_servizio(v_id,
+    '{"ambito":"lavoro","nome":"Con carta","frequenza":"mensile","prossima_scadenza":"2027-01-01","chi_paga":"cliente"}',
+    '{"costo":"5","metodo_pagamento_id":"70000000-0000-0000-0000-000000000001"}', '[]');
+  if (select metodo_pagamento_id from public.v_servizi where id = v_id) is not null then
+    raise exception 'FALLITO: il metodo deve azzerarsi se paga il cliente';
+  end if;
+end;
+$$;
 
 reset role;
 
