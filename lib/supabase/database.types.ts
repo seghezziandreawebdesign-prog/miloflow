@@ -492,6 +492,7 @@ export type Database = {
       debiti: {
         Row: {
           ambito: Database["public"]["Enums"]["ambito"]
+          categoria_id: string | null
           created_at: string
           created_by: string | null
           creditore: string
@@ -505,6 +506,7 @@ export type Database = {
         }
         Insert: {
           ambito?: Database["public"]["Enums"]["ambito"]
+          categoria_id?: string | null
           created_at?: string
           created_by?: string | null
           creditore: string
@@ -518,6 +520,7 @@ export type Database = {
         }
         Update: {
           ambito?: Database["public"]["Enums"]["ambito"]
+          categoria_id?: string | null
           created_at?: string
           created_by?: string | null
           creditore?: string
@@ -529,7 +532,15 @@ export type Database = {
           tipo?: Database["public"]["Enums"]["tipo_debito"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "debiti_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorie"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       debiti_rate: {
         Row: {
@@ -577,10 +588,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "debiti_rate_debito_id_fkey"
+            columns: ["debito_id"]
+            isOneToOne: false
+            referencedRelation: "v_movimenti"
+            referencedColumns: ["debito_id"]
+          },
+          {
             foreignKeyName: "debiti_rate_movimento_fk"
             columns: ["movimento_id"]
             isOneToOne: false
             referencedRelation: "movimenti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debiti_rate_movimento_fk"
+            columns: ["movimento_id"]
+            isOneToOne: false
+            referencedRelation: "v_movimenti"
             referencedColumns: ["id"]
           },
         ]
@@ -1266,6 +1291,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "servizi_rinnovi_movimento_fk"
+            columns: ["movimento_id"]
+            isOneToOne: false
+            referencedRelation: "v_movimenti"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "servizi_rinnovi_servizio_id_fkey"
             columns: ["servizio_id"]
             isOneToOne: false
@@ -1552,6 +1584,83 @@ export type Database = {
         }
         Relationships: []
       }
+      v_movimenti: {
+        Row: {
+          ambito: Database["public"]["Enums"]["ambito"] | null
+          categoria_colore: string | null
+          categoria_icona: string | null
+          categoria_id: string | null
+          categoria_nome: string | null
+          categoria_padre_nome: string | null
+          categoria_parent_id: string | null
+          created_at: string | null
+          created_by: string | null
+          data: string | null
+          debito_creditore: string | null
+          debito_id: string | null
+          descrizione: string | null
+          id: string | null
+          importo: number | null
+          metodo_cifre: string | null
+          metodo_nome: string | null
+          metodo_pagamento_id: string | null
+          metodo_tipo:
+            | Database["public"]["Enums"]["tipo_metodo_pagamento"]
+            | null
+          periodo: string | null
+          rata_id: string | null
+          rata_numero: number | null
+          ricevuta_path: string | null
+          servizio_id: string | null
+          servizio_nome: string | null
+          stato: Database["public"]["Enums"]["stato_movimento"] | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categorie_parent_id_fkey"
+            columns: ["categoria_parent_id"]
+            isOneToOne: false
+            referencedRelation: "categorie"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorie"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_metodo_pagamento_id_fkey"
+            columns: ["metodo_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "metodi_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_rata_id_fkey"
+            columns: ["rata_id"]
+            isOneToOne: true
+            referencedRelation: "debiti_rate"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_servizio_id_fkey"
+            columns: ["servizio_id"]
+            isOneToOne: false
+            referencedRelation: "servizi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_servizio_id_fkey"
+            columns: ["servizio_id"]
+            isOneToOne: false
+            referencedRelation: "v_servizi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_progetti: {
         Row: {
           ambito: Database["public"]["Enums"]["ambito"] | null
@@ -1645,6 +1754,10 @@ export type Database = {
       }
     }
     Functions: {
+      annulla_pagamento_rata: {
+        Args: { p_rata_id: string }
+        Returns: undefined
+      }
       cambia_cassaforte: {
         Args: { p_credenziali: Json; p_parametri: Json }
         Returns: undefined
@@ -1653,11 +1766,14 @@ export type Database = {
         Args: { p_id: string; p_prossima?: Json; p_sottotask?: boolean }
         Returns: string
       }
+      elimina_debito: { Args: { p_id: string }; Returns: undefined }
+      genera_previsti: { Args: { p_mese: string }; Returns: number }
       imposta_contatto_principale: {
         Args: { p_contatto_id: string }
         Returns: undefined
       }
       is_owner: { Args: never; Returns: boolean }
+      mese_nell_orizzonte: { Args: { p_mese: string }; Returns: boolean }
       mesi_frequenza: {
         Args: { p_frequenza: Database["public"]["Enums"]["frequenza_servizio"] }
         Returns: number
@@ -1684,6 +1800,16 @@ export type Database = {
         }
       }
       oggi: { Args: never; Returns: string }
+      paga_rata: {
+        Args: {
+          p_data: string
+          p_importo: number
+          p_metodo_id: string
+          p_rata_id: string
+        }
+        Returns: string
+      }
+      primo_del_mese: { Args: { p_data: string }; Returns: string }
       puo: {
         Args: {
           p_livello?: Database["public"]["Enums"]["livello_permesso"]
@@ -1694,6 +1820,14 @@ export type Database = {
       rigenera_token_ics: { Args: never; Returns: string }
       rinnova_servizio: {
         Args: { p_data: string; p_importo: number; p_servizio_id: string }
+        Returns: string
+      }
+      riordina_categorie: {
+        Args: { p_ids: string[]; p_parent_id: string }
+        Returns: undefined
+      }
+      salva_debito: {
+        Args: { p_debito: Json; p_id: string; p_rate: Json }
         Returns: string
       }
       salva_servizio: {
@@ -1711,6 +1845,10 @@ export type Database = {
           p_frequenza: Database["public"]["Enums"]["frequenza_servizio"]
         }
         Returns: string
+      }
+      sincronizza_previsti_servizio: {
+        Args: { p_servizio_id: string }
+        Returns: undefined
       }
       storage_accesso: {
         Args: {

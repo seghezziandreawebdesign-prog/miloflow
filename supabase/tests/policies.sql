@@ -394,7 +394,11 @@ select public._test_conta('select 1 from public.servizi_clienti_economico', 1, '
 select public._test_conta('select 1 from public.credenziali', 1, 'credenziali (solo S1)');
 select public._test_conta('select 1 from public.categorie where ambito = ''personale''', 0, 'nessuna categoria personale');
 select public._test_conta('select 1 from public.categorie', 8, 'categorie di lavoro (4 + 4 sottocategorie)');
-select public._test_conta('select 1 from public.movimenti', 1, 'movimenti di lavoro');
+select public._test_conta('select 1 from public.movimenti where descrizione like ''M %''', 1, 'movimenti di lavoro');
+select public._test_rifiutato('select public.genera_previsti(public.oggi())', 'genera i previsti senza essere owner');
+select public._test_rifiutato(
+  $q$select public.paga_rata((select id from public.debiti_rate where debito_id = '60000000-0000-0000-0000-000000000001'), null, null, null)$q$,
+  'paga una rata con budget in sola lettura');
 select public._test_conta('select 1 from public.debiti', 1, 'debiti di lavoro');
 select public._test_conta('select 1 from public.debiti_rate', 1, 'rate dei debiti di lavoro');
 select public._test_rifiutato(
@@ -557,6 +561,202 @@ begin
   if public.completa_task('40000000-0000-0000-0000-000000000020', false,
       '{"data_pianificata":"2027-01-11"}') is not null then
     raise exception 'FALLITO: ricompletare la task ha creato un doppione';
+  end if;
+end;
+$$;
+
+reset role;
+
+-- ============================================================
+-- 5. Budget: previsti idempotenti, rate, rinnovi e debiti.
+-- ============================================================
+
+set local role authenticated;
+select public._test_come('00000000-0000-0000-0000-00000000000a');
+
+-- I trigger hanno già creato i previsti del mese per i servizi (S1, S2, S3, S4
+-- sono attivi e pagati da me) e per le rate in scadenza. Generare due volte
+-- non crea doppioni.
+do $$
+declare
+  v_mese date := public.primo_del_mese(public.oggi());
+begin
+  perform public.genera_previsti(v_mese);
+  perform public.genera_previsti(v_mese);
+  perform public.genera_previsti(public.oggi() + 40);
+end;
+$$;
+select public._test_conta(
+  $q$select 1 from public.movimenti where servizio_id = '20000000-0000-0000-0000-000000000001'$q$,
+  1, 'owner: un solo previsto per S1');
+select public._test_conta(
+  $q$select 1 from public.movimenti where servizio_id = '20000000-0000-0000-0000-000000000001'
+     and stato = 'previsto' and importo = 120 and periodo = public.primo_del_mese(public.oggi() + 3)
+     and data = public.oggi() + 3$q$,
+  1, 'owner: il previsto di S1 ha costo, data e periodo');
+select public._test_conta(
+  $q$select 1 from public.movimenti m join public.debiti_rate r on r.id = m.rata_id
+     where r.debito_id = '60000000-0000-0000-0000-000000000001' and m.stato = 'previsto' and m.importo = 100$q$,
+  1, 'owner: la rata del debito di lavoro ha il suo previsto');
+-- Nel calendario la rata compare una volta sola.
+select public._test_conta(
+  $q$select 1 from public.v_calendario v where v.tipo = 'movimento'
+     and v.id in (select id from public.movimenti where rata_id is not null)$q$,
+  0, 'owner: le rate non compaiono due volte nel calendario');
+
+-- Disdetta: il previsto sparisce; riattivazione: torna.
+update public.servizi set stato = 'disdetto' where id = '20000000-0000-0000-0000-000000000001';
+select public._test_conta(
+  $q$select 1 from public.movimenti where servizio_id = '20000000-0000-0000-0000-000000000001'$q$,
+  0, 'owner: disdire elimina il previsto');
+update public.servizi set stato = 'attivo' where id = '20000000-0000-0000-0000-000000000001';
+select public._test_conta(
+  $q$select 1 from public.movimenti where servizio_id = '20000000-0000-0000-0000-000000000001' and stato = 'previsto'$q$,
+  1, 'owner: riattivare ricrea il previsto');
+-- Se paga il cliente non c'è previsto; se cambia il costo il previsto si aggiorna.
+update public.servizi set chi_paga = 'cliente' where id = '20000000-0000-0000-0000-000000000002';
+select public._test_conta(
+  $q$select 1 from public.movimenti where servizio_id = '20000000-0000-0000-0000-000000000002'$q$,
+  0, 'owner: se paga il cliente niente previsto');
+update public.servizi set chi_paga = 'io' where id = '20000000-0000-0000-0000-000000000002';
+update public.servizi_economico set costo = 99 where servizio_id = '20000000-0000-0000-0000-000000000001';
+select public._test_conta(
+  $q$select 1 from public.movimenti where servizio_id = '20000000-0000-0000-0000-000000000001' and importo = 99$q$,
+  1, 'owner: il previsto segue il costo');
+
+-- Rinnovo: il previsto del periodo diventa pagato, senza aggiungerne un altro.
+do $$
+declare
+  v_mov uuid;
+begin
+  perform public.rinnova_servizio('20000000-0000-0000-0000-000000000001', public.oggi(), 95);
+  select movimento_id into v_mov from public.servizi_rinnovi
+  where servizio_id = '20000000-0000-0000-0000-000000000001' order by created_at desc limit 1;
+  if v_mov is null then
+    raise exception 'FALLITO: il rinnovo non è collegato al movimento';
+  end if;
+  if not exists (select 1 from public.movimenti where id = v_mov and stato = 'pagato' and importo = 95
+      and periodo = public.primo_del_mese(public.oggi() + 3) and data = public.oggi()) then
+    raise exception 'FALLITO: il movimento del rinnovo non è pagato con importo e periodo giusti';
+  end if;
+  if (select count(*) from public.movimenti where servizio_id = '20000000-0000-0000-0000-000000000001'
+      and periodo = public.primo_del_mese(public.oggi() + 3)) <> 1 then
+    raise exception 'FALLITO: il rinnovo ha aggiunto un movimento invece di aggiornare il previsto';
+  end if;
+  -- Rinnovare di nuovo nello stesso periodo somma gli importi.
+  update public.servizi set prossima_scadenza = public.oggi() + 3 where id = '20000000-0000-0000-0000-000000000001';
+  perform public.rinnova_servizio('20000000-0000-0000-0000-000000000001', public.oggi(), 5);
+  if (select importo from public.movimenti where id = v_mov) <> 100 then
+    raise exception 'FALLITO: due rinnovi nello stesso periodo devono sommarsi';
+  end if;
+end;
+$$;
+-- Se paga il cliente, il rinnovo non crea movimenti.
+update public.servizi set chi_paga = 'cliente' where id = '20000000-0000-0000-0000-000000000002';
+do $$
+begin
+  perform public.rinnova_servizio('20000000-0000-0000-0000-000000000002', null, 10);
+end;
+$$;
+select public._test_conta(
+  $q$select 1 from public.movimenti where servizio_id = '20000000-0000-0000-0000-000000000002'$q$,
+  0, 'owner: rinnovo pagato dal cliente senza movimento');
+
+-- Rata: pagare crea il movimento pagato, ripagare è rifiutato, annullare torna previsto.
+do $$
+declare
+  v_rata uuid := (select id from public.debiti_rate where debito_id = '60000000-0000-0000-0000-000000000001');
+  v_mov uuid;
+begin
+  v_mov := public.paga_rata(v_rata, public.oggi(), 101, null);
+  if not exists (select 1 from public.debiti_rate where id = v_rata and pagata and movimento_id = v_mov) then
+    raise exception 'FALLITO: la rata non risulta pagata';
+  end if;
+  if not exists (select 1 from public.movimenti where id = v_mov and stato = 'pagato' and importo = 101 and rata_id = v_rata) then
+    raise exception 'FALLITO: il movimento della rata non è pagato';
+  end if;
+  if (select count(*) from public.movimenti where rata_id = v_rata) <> 1 then
+    raise exception 'FALLITO: pagare la rata ha creato un doppione';
+  end if;
+  begin
+    perform public.paga_rata(v_rata, null, null, null);
+    raise exception 'FALLITO: una rata pagata non si paga due volte';
+  exception when others then
+    if sqlerrm like 'FALLITO%' then raise; end if;
+  end;
+  perform public.annulla_pagamento_rata(v_rata);
+  if not exists (select 1 from public.debiti_rate where id = v_rata and not pagata and movimento_id is null) then
+    raise exception 'FALLITO: annullare il pagamento non ha riaperto la rata';
+  end if;
+  if not exists (select 1 from public.movimenti where rata_id = v_rata and stato = 'previsto' and importo = 100) then
+    raise exception 'FALLITO: annullare il pagamento non ha riportato il movimento a previsto';
+  end if;
+end;
+$$;
+
+-- Debito con piano: le rate pagate restano, le altre seguono il piano nuovo;
+-- non si elimina un debito con rate pagate.
+do $$
+declare
+  v_id uuid;
+  v_rata uuid;
+begin
+  v_id := public.salva_debito(null,
+    '{"ambito":"personale","creditore":"Concessionaria","importo_totale":300,"tipo":"rateale","categoria_id":""}',
+    format('[{"numero":1,"scadenza":"%s","importo":100},{"numero":2,"scadenza":"%s","importo":100},{"numero":3,"scadenza":"%s","importo":100}]',
+      public.primo_del_mese(public.oggi()) + 27,
+      (public.primo_del_mese(public.oggi()) + interval '1 month 5 days')::date,
+      (public.primo_del_mese(public.oggi()) + interval '2 months 5 days')::date)::jsonb);
+  if (select count(*) from public.debiti_rate where debito_id = v_id) <> 3 then
+    raise exception 'FALLITO: il piano non ha 3 rate';
+  end if;
+  if (select count(*) from public.movimenti m join public.debiti_rate r on r.id = m.rata_id where r.debito_id = v_id) <> 2 then
+    raise exception 'FALLITO: solo le rate del mese corrente e del successivo hanno il previsto';
+  end if;
+  select id into v_rata from public.debiti_rate where debito_id = v_id and numero = 1;
+  perform public.paga_rata(v_rata, null, null, null);
+  perform public.salva_debito(v_id,
+    '{"ambito":"personale","creditore":"Concessionaria","importo_totale":300,"tipo":"rateale","categoria_id":""}',
+    format('[{"numero":1,"scadenza":"%s","importo":1},{"numero":2,"scadenza":"%s","importo":150}]',
+      public.primo_del_mese(public.oggi()) + 27,
+      (public.primo_del_mese(public.oggi()) + interval '1 month 5 days')::date)::jsonb);
+  if (select importo from public.debiti_rate where id = v_rata) <> 100 then
+    raise exception 'FALLITO: una rata pagata non deve cambiare';
+  end if;
+  if (select count(*) from public.debiti_rate where debito_id = v_id) <> 2 then
+    raise exception 'FALLITO: la rata tolta dal piano deve sparire';
+  end if;
+  if not exists (select 1 from public.movimenti m join public.debiti_rate r on r.id = m.rata_id
+      where r.debito_id = v_id and r.numero = 2 and m.importo = 150 and m.stato = 'previsto') then
+    raise exception 'FALLITO: il previsto della rata 2 non segue il piano';
+  end if;
+  begin
+    perform public.elimina_debito(v_id);
+    raise exception 'FALLITO: un debito con rate pagate non si elimina';
+  exception when others then
+    if sqlerrm like 'FALLITO%' then raise; end if;
+  end;
+end;
+$$;
+
+-- Categorie: la sottocategoria prende l'ambito del padre e lo segue.
+do $$
+declare
+  v_padre uuid;
+  v_figlia uuid;
+begin
+  insert into public.categorie (nome, ambito) values ('Padre test', 'lavoro') returning id into v_padre;
+  insert into public.categorie (nome, ambito, parent_id) values ('Figlia test', 'personale', v_padre) returning id into v_figlia;
+  if (select ambito from public.categorie where id = v_figlia) <> 'lavoro' then
+    raise exception 'FALLITO: la sottocategoria deve avere l''ambito del padre';
+  end if;
+  update public.categorie set ambito = 'entrambi' where id = v_padre;
+  if (select ambito from public.categorie where id = v_figlia) <> 'entrambi' then
+    raise exception 'FALLITO: cambiare l''ambito del padre deve propagarsi';
+  end if;
+  perform public.riordina_categorie(v_padre, array[v_figlia]);
+  if (select ordine from public.categorie where id = v_figlia) <> 10 then
+    raise exception 'FALLITO: riordina_categorie non aggiorna l''ordine';
   end if;
 end;
 $$;
