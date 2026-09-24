@@ -1,0 +1,54 @@
+// Formattazione italiana, sempre nel fuso Europe/Rome (il server gira in UTC).
+
+export const TIME_ZONE = "Europe/Rome";
+
+const dateFormatter = new Intl.DateTimeFormat("it-IT", {
+  timeZone: TIME_ZONE,
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
+const longDateFormatter = new Intl.DateTimeFormat("it-IT", {
+  timeZone: TIME_ZONE,
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
+const currencyFormatter = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
+
+// Le colonne `date` di Postgres arrivano come "yyyy-MM-dd": vanno lette come
+// giorno di calendario, non come istante UTC, altrimenti slittano di un giorno.
+function toDate(value: Date | string): Date {
+  if (typeof value !== "string") return value;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (match) {
+    return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12));
+  }
+  return new Date(value);
+}
+
+/** dd/MM/yyyy */
+export function formatDate(value: Date | string): string {
+  return dateFormatter.format(toDate(value));
+}
+
+/** es. "giovedì 24 settembre" */
+export function formatLongDate(value: Date | string): string {
+  return longDateFormatter.format(toDate(value));
+}
+
+/** Prima lettera maiuscola, il resto invariato (in italiano i mesi restano minuscoli). */
+export function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+export function formatCurrency(value: number): string {
+  return currencyFormatter.format(value);
+}
+
+/** Data odierna in Europe/Rome come "yyyy-MM-dd". */
+export function todayISO(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE }).format(now);
+}
