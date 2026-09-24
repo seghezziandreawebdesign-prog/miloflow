@@ -4,11 +4,12 @@ import type { FiltroAmbito } from "@/lib/ambito";
 import { aggiungiMesi, primoDelMese, type Categoria, type Movimento } from "@/lib/budget";
 import { nomeCliente } from "@/lib/clienti";
 import { addDays } from "@/lib/dates/giorni";
+import { normalizzaSalvadanaio, type Salvadanaio, type TipoSalvadanaio } from "@/lib/salvadanai";
 import { createClient } from "@/lib/supabase/server";
 
 // Una sola stringa letterale: il parser dei tipi di Supabase non legge le concatenazioni.
 const COLONNE_MOVIMENTO =
-  "id, ambito, data, importo, descrizione, categoria_id, stato, servizio_id, rata_id, periodo, metodo_pagamento_id, ricevuta_path, created_at, categoria_nome, categoria_colore, categoria_icona, categoria_parent_id, categoria_padre_nome, metodo_nome, metodo_tipo, metodo_cifre, servizio_nome, debito_id, debito_creditore, rata_numero";
+  "id, ambito, data, importo, descrizione, categoria_id, stato, servizio_id, rata_id, periodo, metodo_pagamento_id, ricevuta_path, created_at, categoria_nome, categoria_colore, categoria_icona, categoria_parent_id, categoria_padre_nome, metodo_nome, metodo_tipo, metodo_cifre, servizio_nome, debito_id, debito_creditore, rata_numero, salvadanaio_id, salvadanaio_nome";
 
 type Ambitabile<Q> = Q & { eq: (col: "ambito", v: "lavoro" | "personale") => Q };
 
@@ -37,6 +38,8 @@ type RigaVista = {
   debito_id: string | null;
   debito_creditore: string | null;
   rata_numero: number | null;
+  salvadanaio_id: string | null;
+  salvadanaio_nome: string | null;
 };
 
 /** Le viste generano colonne tutte nullable: qui si ristabiliscono i tipi veri. */
@@ -66,6 +69,8 @@ function normalizzaMovimento(r: RigaVista): Movimento {
     debito_id: r.debito_id,
     debito_creditore: r.debito_creditore,
     rata_numero: r.rata_numero,
+    salvadanaio_id: r.salvadanaio_id,
+    salvadanaio_nome: r.salvadanaio_nome,
   };
 }
 const perAmbito = <Q>(q: Ambitabile<Q>, ambito: FiltroAmbito): Q => (ambito === "tutto" ? q : q.eq("ambito", ambito));
@@ -150,6 +155,16 @@ export async function leggiDebiti(ambito: FiltroAmbito) {
 }
 
 export type DebitoRiga = Awaited<ReturnType<typeof leggiDebiti>>[number];
+
+/** Risparmi o investimenti con i totali, i più recenti prima. */
+export async function leggiSalvadanai(tipo: TipoSalvadanaio, ambito: FiltroAmbito): Promise<Salvadanaio[]> {
+  const supabase = await createClient();
+  const { data, error } = await perAmbito(supabase.from("v_salvadanai").select("*").eq("tipo", tipo), ambito).order("created_at", {
+    ascending: false,
+  });
+  if (error) throw new Error(`Lettura non riuscita: ${error.message}`);
+  return data.map(normalizzaSalvadanaio);
+}
 
 /** Servizi attivi pagati da me con costo (per il costo annuo degli abbonamenti). */
 export async function leggiAbbonamenti(ambito: FiltroAmbito) {

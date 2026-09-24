@@ -5,6 +5,7 @@ import { BudgetHeader, type TabBudget } from "@/components/budget/budget-header"
 import { DebitiView } from "@/components/budget/debiti-view";
 import { MeseView } from "@/components/budget/mese-view";
 import { ReportView } from "@/components/budget/report-view";
+import { SalvadanaiView } from "@/components/budget/salvadanai-view";
 import { EmptyState } from "@/components/empty-state";
 import { getFiltroAmbito } from "@/lib/ambito.server";
 import {
@@ -24,6 +25,7 @@ import {
   type SceltaReport,
 } from "@/lib/budget";
 import { todayISO } from "@/lib/dates/format";
+import { categoriaPredefinita, type TipoSalvadanaio } from "@/lib/salvadanai";
 import {
   leggiAbbonamenti,
   leggiBudgetMese,
@@ -33,12 +35,13 @@ import {
   leggiMovimentiMese,
   leggiMovimentiPeriodo,
   leggiRivendite,
+  leggiSalvadanai,
   permessiBudget,
 } from "@/lib/queries/budget";
 
 export const metadata: Metadata = { title: "Budget & Spese" };
 
-const TABS: TabBudget[] = ["mese", "debiti", "report"];
+const TABS: TabBudget[] = ["mese", "debiti", "risparmi", "investimenti", "report"];
 
 export default async function Page({ searchParams }: PageProps<"/budget">) {
   const params = await searchParams;
@@ -63,6 +66,9 @@ export default async function Page({ searchParams }: PageProps<"/budget">) {
       <BudgetHeader tab={tab} mese={mese} filtroAmbito={filtroAmbito} report={report} />
       {tab === "mese" && <TabMese mese={mese} filtroAmbito={filtroAmbito} oggi={oggi} scrittura={permessi.scrittura} owner={permessi.owner} />}
       {tab === "debiti" && <TabDebiti filtroAmbito={filtroAmbito} oggi={oggi} scrittura={permessi.scrittura} />}
+      {(tab === "risparmi" || tab === "investimenti") && (
+        <TabSalvadanai tipo={tab === "risparmi" ? "risparmio" : "investimento"} filtroAmbito={filtroAmbito} oggi={oggi} scrittura={permessi.scrittura} />
+      )}
       {tab === "report" && <TabReport report={report} filtroAmbito={filtroAmbito} oggi={oggi} />}
     </>
   );
@@ -111,6 +117,30 @@ async function TabDebiti({
 }) {
   const debiti = await leggiDebiti(filtroAmbito);
   return <DebitiView debiti={debiti} oggi={oggi} filtroAmbito={filtroAmbito} scrittura={scrittura} />;
+}
+
+async function TabSalvadanai({
+  tipo,
+  filtroAmbito,
+  oggi,
+  scrittura,
+}: {
+  tipo: TipoSalvadanaio;
+  filtroAmbito: Awaited<ReturnType<typeof getFiltroAmbito>>;
+  oggi: string;
+  scrittura: boolean;
+}) {
+  const [salvadanai, categorie] = await Promise.all([leggiSalvadanai(tipo, filtroAmbito), leggiCategorie()]);
+  return (
+    <SalvadanaiView
+      tipo={tipo}
+      salvadanai={salvadanai}
+      oggi={oggi}
+      filtroAmbito={filtroAmbito}
+      scrittura={scrittura}
+      categoriaDefault={categoriaPredefinita(categorie, tipo)}
+    />
+  );
 }
 
 async function TabReport({

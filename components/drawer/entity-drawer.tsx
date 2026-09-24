@@ -14,6 +14,7 @@ import { DebitoDrawer } from "./debito-drawer";
 import { EventoDrawer } from "./evento-drawer";
 import { MovimentoDrawer } from "./movimento-drawer";
 import { ProgettoDrawer } from "./progetto-drawer";
+import { SalvadanaioDrawer } from "./salvadanaio-drawer";
 import { ServizioDrawer } from "./servizio-drawer";
 import { TaskDrawer } from "./task-drawer";
 
@@ -84,5 +85,7 @@ function EntityContent({ riferimento }: { riferimento: RiferimentoEntita }) {
       return <MovimentoDrawer key={riferimento.id} id={riferimento.id} />;
     case "debito":
       return <DebitoDrawer key={riferimento.id} id={riferimento.id} />;
+    case "salvadanaio":
+      return <SalvadanaioDrawer key={riferimento.id} id={riferimento.id} />;
   }
 }

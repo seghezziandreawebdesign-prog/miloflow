@@ -14,11 +14,13 @@ import { aggiungiMesi, formatMese, PERIODI_REPORT, primoDelMese, type SceltaRepo
 import { capitalize, todayISO } from "@/lib/dates/format";
 import { cn } from "@/lib/utils";
 
-export type TabBudget = "mese" | "debiti" | "report";
+export type TabBudget = "mese" | "debiti" | "risparmi" | "investimenti" | "report";
 
 const TABS = [
   { value: "mese", label: "Mese" },
   { value: "debiti", label: "Debiti" },
+  { value: "risparmi", label: "Risparmi" },
+  { value: "investimenti", label: "Investimenti" },
   { value: "report", label: "Report" },
 ] as const;
 
@@ -54,7 +56,7 @@ export function BudgetHeader({
         title="Budget & Spese"
         description={
           <>
-            Spese, previsti, debiti e report. Ambito: <AmbitoBadge ambito={filtroAmbito} className="align-middle" />
+            Spese, previsti, debiti, risparmi, investimenti e report. Ambito: <AmbitoBadge ambito={filtroAmbito} className="align-middle" />
           </>
         }
         actions={
@@ -63,7 +65,8 @@ export function BudgetHeader({
             value={tab}
             onChange={(t) => router.push(hrefBudget(t, t === "mese" ? { mese } : t === "report" ? parametriReport(report) : {}))}
             opzioni={TABS}
-            className="[&>p]:sr-only"
+            // Su mobile le cinque sezioni scorrono su una riga invece di andare a capo.
+            className="scrollbar-none [&>p]:sr-only max-sm:-mx-4 max-sm:w-[calc(100%+2rem)] max-sm:overflow-x-auto max-sm:px-4 max-sm:[&>div]:max-w-none max-sm:[&>div]:flex-nowrap max-sm:[&_button]:shrink-0"
           />
         }
       />

@@ -8,6 +8,7 @@ export const TIPI_ENTITA = [
   "evento",
   "movimento",
   "debito",
+  "salvadanaio",
 ] as const;
 export type TipoEntita = (typeof TIPI_ENTITA)[number];
 
@@ -19,6 +20,7 @@ export const ETICHETTE_ENTITA: Record<TipoEntita, string> = {
   evento: "Evento",
   movimento: "Movimento",
   debito: "Debito",
+  salvadanaio: "Risparmio o investimento",
 };
 
 export const APRI_PARAM = "apri";

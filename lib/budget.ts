@@ -249,6 +249,10 @@ export type MovimentoBase = {
   servizio_id: string | null;
   rata_id: string | null;
   metodo_pagamento_id: string | null;
+  /** Versamento in un risparmio o investimento. */
+  salvadanaio_id?: string | null;
+  /** Mese di competenza: per un salvadanaio c'è solo sui versamenti del piano mensile. */
+  periodo?: string | null;
 };
 
 /** Riga di v_movimenti con i tipi veri (le viste generano tutto nullable). */
@@ -268,6 +272,7 @@ export type Movimento = MovimentoBase & {
   debito_id: string | null;
   debito_creditore: string | null;
   rata_numero: number | null;
+  salvadanaio_nome: string | null;
 };
 
 /** "Software › Hosting" dalla riga della vista. */
@@ -418,8 +423,10 @@ export function spesaPerMese(movimenti: MovimentoBase[], mesi: string[]): PuntoM
 /** Fisse = servizi e rate; variabili = tutto il resto (solo pagati). */
 export function fisseVsVariabili(movimenti: MovimentoBase[]): { fisse: number; variabili: number } {
   const pagati = movimenti.filter((m) => m.stato === "pagato");
-  const fisse = somma(pagati.filter((m) => m.servizio_id !== null || m.rata_id !== null).map((m) => m.importo));
-  const variabili = somma(pagati.filter((m) => m.servizio_id === null && m.rata_id === null).map((m) => m.importo));
+  // Fisse: servizi, rate e i versamenti del piano mensile di un salvadanaio.
+  const fissa = (m: MovimentoBase) => m.servizio_id !== null || m.rata_id !== null || (Boolean(m.salvadanaio_id) && Boolean(m.periodo));
+  const fisse = somma(pagati.filter(fissa).map((m) => m.importo));
+  const variabili = somma(pagati.filter((m) => !fissa(m)).map((m) => m.importo));
   return { fisse, variabili };
 }
 

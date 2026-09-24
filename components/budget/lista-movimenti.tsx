@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Landmark, Paperclip, RefreshCw } from "lucide-react";
+import { Landmark, Paperclip, PiggyBank, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -50,7 +50,13 @@ export function RigaMovimento({ movimento: m, scrittura, compatta }: { movimento
   const [paga, setPaga] = useState(false);
   const previsto = m.stato === "previsto";
   const categoria = etichettaCategoriaMovimento(m);
-  const origine = m.servizio_id ? "Servizio" : m.rata_id ? `Rata ${m.rata_numero ?? ""}`.trim() : null;
+  const origine = m.servizio_id
+    ? "Servizio"
+    : m.rata_id
+      ? `Rata ${m.rata_numero ?? ""}`.trim()
+      : m.salvadanaio_nome
+        ? `In «${m.salvadanaio_nome}»`
+        : null;
 
   return (
     <li className={cn("flex items-center gap-3 px-3 py-2.5", previsto && "text-muted-foreground")}>
@@ -61,6 +67,7 @@ export function RigaMovimento({ movimento: m, scrittura, compatta }: { movimento
             <span className={cn("truncate text-sm", !previsto && "font-medium text-foreground")}>{m.descrizione || categoria || "Movimento"}</span>
             {m.servizio_id && <RefreshCw className="size-3 shrink-0" aria-label="Da un servizio" />}
             {m.rata_id && <Landmark className="size-3 shrink-0" aria-label="Rata di un debito" />}
+            {m.salvadanaio_id && <PiggyBank className="size-3 shrink-0" aria-label="Versamento in un risparmio o investimento" />}
             {m.ricevuta_path && <Paperclip className="size-3 shrink-0" aria-label="Con ricevuta" />}
           </span>
           {!compatta && (

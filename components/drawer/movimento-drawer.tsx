@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, Landmark, MoreHorizontal, Paperclip, Pencil, ReceiptEuro, RefreshCw, Trash2, Undo2, X } from "lucide-react";
+import { Camera, Landmark, MoreHorizontal, Paperclip, Pencil, PiggyBank, ReceiptEuro, RefreshCw, Trash2, Undo2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -68,7 +68,7 @@ export function MovimentoDrawer({ id }: { id: string }) {
   }
 
   const previsto = m.stato === "previsto";
-  const generato = Boolean(m.servizio_id || m.rata_id);
+  const generato = Boolean(m.servizio_id || m.rata_id || (m.salvadanaio_id && m.periodo));
   const categoria = etichettaCategoriaMovimento(m);
 
   function aggiorna() {
@@ -196,6 +196,14 @@ export function MovimentoDrawer({ id }: { id: string }) {
             <button type="button" className="inline-flex items-center gap-1 text-primary hover:underline" onClick={() => apri({ tipo: "debito", id: m.debito_id! })}>
               <Landmark className="size-3.5" />
               {m.debito_creditore} · rata {m.rata_numero}
+            </button>
+          </Voce>
+        )}
+        {m.salvadanaio_id && (
+          <Voce label={m.salvadanaio_tipo === "investimento" ? "Investimento" : "Risparmio"}>
+            <button type="button" className="inline-flex items-center gap-1 text-primary hover:underline" onClick={() => apri({ tipo: "salvadanaio", id: m.salvadanaio_id! })}>
+              <PiggyBank className="size-3.5" />
+              {m.salvadanaio_nome}
             </button>
           </Voce>
         )}

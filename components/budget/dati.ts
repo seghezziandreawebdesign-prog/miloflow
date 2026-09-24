@@ -38,6 +38,7 @@ export const chiaviBudget = {
   opzioni: ["budget", "opzioni"] as const,
   movimento: (id: string) => ["movimento", id] as const,
   debito: (id: string) => ["debito", id] as const,
+  salvadanaio: (id: string) => ["salvadanaio", id] as const,
 };
 
 /** Categorie e metodi di pagamento per i form del budget, ovunque si aprano. */
@@ -49,6 +50,7 @@ export function useOpzioniBudget(enabled = true) {
 export function invalidaBudget(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: ["movimento"] });
   void queryClient.invalidateQueries({ queryKey: ["debito"] });
+  void queryClient.invalidateQueries({ queryKey: ["salvadanaio"] });
   void queryClient.invalidateQueries({ queryKey: ["calendario"] });
   void queryClient.invalidateQueries({ queryKey: chiaviBudget.opzioni });
 }

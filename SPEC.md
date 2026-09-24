@@ -116,6 +116,8 @@ Se una task ha `progetto_id` e il progetto ha un cliente, il `cliente_id` della 
 - **movimenti**: `ambito`, `data`, `importo`, `descrizione`, `categoria_id`, `stato` (`previsto` | `pagato`), `servizio_id`, `rata_id`, `periodo date` (primo del mese di competenza), `metodo_pagamento`, `ricevuta_path`. Vincoli univoci su (`servizio_id`, `periodo`) e su (`rata_id`) per impedire duplicati.
 - **debiti**: `ambito`, `creditore`, `descrizione`, `importo_totale`, `tipo` (`rateale` | `unica_soluzione` | `prestito_privato`), `data_inizio`, `note`.
 - **debiti_rate**: `debito_id`, `numero`, `scadenza`, `importo`, `pagata bool`, `movimento_id`.
+- **salvadanai** (risparmi e investimenti): `ambito`, `tipo` (`risparmio` | `investimento`), `nome`, `obiettivo`, `data_obiettivo`, `strumento`, `isin`, `piattaforma`, `importo_mensile`, `giorno_mensile` (1-28), `piano_attivo`, `categoria_id`, `metodo_pagamento_id`, `colore`, `icona`, `archiviato`, `note`. I versamenti sono `movimenti` con `salvadanaio_id` (vincolo univoco su (`salvadanaio_id`, `periodo`) per i previsti del piano).
+- **salvadanai_prelievi**: `salvadanaio_id`, `data`, `importo`, `note`. **salvadanai_valori**: `salvadanaio_id`, `data`, `valore`, `note` (uno per giorno).
 
 Seed categorie di esempio (modificabili): Lavoro → Software (Hosting, Domini, Licenze, SaaS), Attrezzatura, Formazione, Commercialista; Personale → Casa (Affitto, Bollette), Spesa, Trasporti, Salute, Svago, Abbonamenti.
 
@@ -192,6 +194,7 @@ Tutto rispetta lo switch di ambito. Ogni elemento si apre nel pannello laterale.
   - *Crea task*: task precompilata collegata al servizio e al cliente.
   - *Avvisa cliente*: apre un'anteprima di email modificabile ("Il servizio X scade il …") e la invia via Resend al contatto principale del cliente. **Invia solo dopo conferma esplicita.**
   - *Duplica*.
+- Cestino sulla riga (con conferma) e selezione multipla: disdici, archivia, riattiva, elimina.
 
 ### 6.4 Task
 - **Layout**: su desktop una colonna a sinistra con le viste e i progetti, a destra il contenuto. Su mobile la colonna diventa un selettore che apre un foglio dal basso.
@@ -209,6 +212,7 @@ Tutto rispetta lo switch di ambito. Ogni elemento si apre nel pannello laterale.
   Scrivi il parser come funzione pura con test unitari.
 - **Pannello della task**: titolo, note, stato, priorità, data pianificata, scadenza, durata, progetto, cliente, ricorrenza, assegnatario, sottotask (aggiunta rapida e spunta), collegamento al servizio. Passando a "In attesa" chiede "in attesa di cosa" e salva la data.
 - Completando una task con sottotask aperte, chiedi se completare anche quelle.
+- Cestino sulla riga (con conferma) e selezione multipla nelle viste a lista con azioni rapide: completa, data di inizio, priorità, stato, progetto, elimina. Il pannello della task è quasi a tutto schermo, a due colonne su desktop.
 
 ### 6.5 Calendario
 - FullCalendar con viste giorno, settimana, mese, lista. Settimana da lunedì, orari 24h, locale italiano. Su desktop si parte dalla vista scelta in Impostazioni (default settimana), su mobile dal giorno.
@@ -234,7 +238,8 @@ Tutto rispetta lo switch di ambito. Ogni elemento si apre nel pannello laterale.
   Eseguita da pg_cron il primo di ogni mese e richiamabile con un pulsante "Aggiorna previsti". Se un servizio viene modificato o disdetto, il previsto non ancora pagato del mese si aggiorna o si elimina.
 - **Nuova spesa**: form ottimizzato per mobile: prima l'importo con tastierino numerico, poi una griglia di categorie con icone (filtrate per ambito), poi facoltativi descrizione, data (default oggi), metodo di pagamento, foto ricevuta.
 - **Debiti** (tab dedicata): elenco con creditore, residuo, prossima rata, barra di avanzamento. Creazione: se rateale, dati numero rate, importo e giorno di scadenza, si genera il piano rate (modificabile). Grafico del residuo nel tempo. Pagare una rata crea il movimento collegato.
-- **Report** (tab dedicata, con filtro periodo e ambito):
+- **Risparmi** (tab dedicata): obiettivi con cifra e data facoltativa (es. "Viaggio a New York", 3.000 €), barra di avanzamento e quanto versare al mese per arrivare in tempo. **Investimenti** (tab dedicata): fondo o strumento con ISIN e piattaforma, totale investito, valore attuale aggiornato a mano e rendimento. Per entrambi: versamenti che entrano nel budget come spesa del mese, prelievi che non ci entrano, piano mensile facoltativo che genera un previsto al mese (idempotente, come servizi e rate).
+- **Report** (tab dedicata, con filtro periodo, anche un intervallo di date personalizzato, e ambito):
   - torta per categoria del periodo;
   - barre impilate ultimi 12 mesi, lavoro vs personale;
   - spese fisse (da servizi e rate) vs variabili;

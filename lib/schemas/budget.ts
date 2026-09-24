@@ -3,23 +3,23 @@ import { z } from "zod";
 import { isPrimoDelMese } from "@/lib/budget";
 import { parseImporto } from "@/lib/servizi";
 
-const testo = z.string().trim();
-const dataISO = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida");
-const uuidOVuoto = z.union([z.uuid(), z.literal("")]);
+export const testo = z.string().trim();
+export const dataISO = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida");
+export const uuidOVuoto = z.union([z.uuid(), z.literal("")]);
 
 /** Importo scritto dall'utente: vuoto ammesso, altrimenti un numero ≥ 0. */
-const importoFacoltativo = testo.refine((v) => {
+export const importoFacoltativo = testo.refine((v) => {
   const n = parseImporto(v);
   return n === null || (Number.isFinite(n) && n >= 0);
 }, "Importo non valido");
 
 /** Importo obbligatorio e positivo. */
-const importoObbligatorio = testo.refine((v) => {
+export const importoObbligatorio = testo.refine((v) => {
   const n = parseImporto(v);
   return n !== null && Number.isFinite(n) && n > 0;
 }, "Inserisci un importo");
 
-const numero = (v: string) => {
+export const numero = (v: string) => {
   const n = parseImporto(v);
   return n === null ? null : n;
 };

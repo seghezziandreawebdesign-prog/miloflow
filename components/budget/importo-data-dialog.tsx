@@ -11,26 +11,19 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input";
 import type { ActionResult } from "@/lib/actions/types";
 import { todayISO } from "@/lib/dates/format";
-import type { PagamentoFormValues } from "@/lib/schemas/budget";
 
-import { useOpzioniBudget } from "./dati";
-import { MetodoSelect } from "./metodo-select";
+type Valori = { data: string; importo: string; note: string };
 
-/**
- * "Segna pagato" di un previsto o pagamento di una rata: data, importo
- * (precompilato, modificabile) e metodo.
- */
-export function PagamentoDialog({
+/** Importo, data e nota: prelievo da un risparmio o valore di un investimento. */
+export function ImportoDataDialog({
   open,
   onOpenChange,
   titolo,
   descrizione,
-  importo,
-  ambito,
-  metodoIniziale = "",
-  etichettaImporto = "Importo pagato (€)",
-  etichettaConferma = "Segna pagato",
-  messaggio = "Pagamento registrato",
+  etichettaImporto,
+  etichettaConferma,
+  messaggio,
+  importo = null,
   onConferma,
   onFatto,
 }: {
@@ -38,24 +31,20 @@ export function PagamentoDialog({
   onOpenChange: (open: boolean) => void;
   titolo: string;
   descrizione?: string;
-  /** Precompilato; null per lasciarlo vuoto. */
-  importo: number | null;
-  ambito: "lavoro" | "personale";
-  metodoIniziale?: string;
-  etichettaImporto?: string;
-  etichettaConferma?: string;
-  messaggio?: string;
-  onConferma: (valori: PagamentoFormValues) => Promise<ActionResult>;
+  etichettaImporto: string;
+  etichettaConferma: string;
+  messaggio: string;
+  importo?: number | null;
+  onConferma: (valori: Valori) => Promise<ActionResult>;
   onFatto?: () => void;
 }) {
-  const [valori, setValori] = useState<PagamentoFormValues>({
+  const [valori, setValori] = useState<Valori>({
     data: todayISO(),
     importo: importo === null ? "" : String(importo).replace(".", ","),
-    metodo_pagamento_id: metodoIniziale,
+    note: "",
   });
   const [errori, setErrori] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
-  const opzioni = useOpzioniBudget(open);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -83,9 +72,9 @@ export function PagamentoDialog({
           <FieldGroup className="gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field data-invalid={Boolean(errori.importo) || undefined}>
-                <FieldLabel htmlFor="pagamento-importo">{etichettaImporto}</FieldLabel>
+                <FieldLabel htmlFor="importo-data-importo">{etichettaImporto}</FieldLabel>
                 <Input
-                  id="pagamento-importo"
+                  id="importo-data-importo"
                   value={valori.importo}
                   onChange={(e) => setValori((v) => ({ ...v, importo: e.target.value }))}
                   inputMode="decimal"
@@ -100,14 +89,8 @@ export function PagamentoDialog({
               </Field>
             </div>
             <Field>
-              <FieldLabel htmlFor="pagamento-metodo">Pagato con</FieldLabel>
-              <MetodoSelect
-                id="pagamento-metodo"
-                metodi={opzioni.data?.metodi ?? []}
-                ambito={ambito}
-                value={valori.metodo_pagamento_id}
-                onChange={(metodo_pagamento_id) => setValori((v) => ({ ...v, metodo_pagamento_id }))}
-              />
+              <FieldLabel htmlFor="importo-data-note">Nota</FieldLabel>
+              <Input id="importo-data-note" value={valori.note} onChange={(e) => setValori((v) => ({ ...v, note: e.target.value }))} />
             </Field>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
