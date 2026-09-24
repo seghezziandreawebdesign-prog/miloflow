@@ -72,7 +72,7 @@ export function GruppoTask({
 /** Riquadro bianco che contiene una lista (stile "inset grouped"). */
 export function Superficie({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("overflow-hidden rounded-2xl bg-card px-1 py-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8", className)}>
+    <div className={cn("overflow-hidden rounded-xl bg-card px-1 py-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8", className)}>
       {children}
     </div>
   );

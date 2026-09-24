@@ -5,10 +5,18 @@ import { Dialog as SheetPrimitive } from "@base-ui/react/dialog"
 import { cn } from "cn"
 
 import { Button } from "@/components/ui/button"
+import { ChiusuraContext, ManigliaTrascina } from "@/components/ui/trascina-per-chiudere"
 import { XIcon } from "lucide-react"
 
-function Sheet({ ...props }: SheetPrimitive.Root.Props) {
-  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+function Sheet({ children, ...props }: SheetPrimitive.Root.Props) {
+  // La maniglia del foglio dal basso chiude tramite le azioni di Base UI.
+  const actionsRef = React.useRef<SheetPrimitive.Root.Actions | null>(null)
+  const chiudi = React.useCallback(() => actionsRef.current?.close(), [])
+  return (
+    <SheetPrimitive.Root data-slot="sheet" actionsRef={actionsRef} {...props}>
+      <ChiusuraContext.Provider value={chiudi}>{children as React.ReactNode}</ChiusuraContext.Provider>
+    </SheetPrimitive.Root>
+  )
 }
 
 function SheetTrigger({ ...props }: SheetPrimitive.Trigger.Props) {
@@ -58,6 +66,7 @@ function SheetContent({
         )}
         {...props}
       >
+        {side === "bottom" && <ManigliaTrascina />}
         {children}
         {showCloseButton && (
           <SheetPrimitive.Close

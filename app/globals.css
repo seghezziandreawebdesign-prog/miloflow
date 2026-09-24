@@ -61,10 +61,10 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Tema chiaro, in stile Apple: sfondo grigio chiarissimo, superfici bianche,
-   un solo accento blu, bordi quasi invisibili e angoli ampi. */
+/* Tema chiaro, in stile Apple: sfondo bianco, sidebar grigia, superfici con bordo sottile,
+   un solo accento blu e angoli morbidi. */
 :root {
-  --background: oklch(0.972 0.002 286);
+  --background: oklch(1 0 0);
   --foreground: oklch(0.22 0.006 286);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.22 0.006 286);
@@ -88,7 +88,7 @@
   --chart-3: oklch(0.7 0.16 60);
   --chart-4: oklch(0.63 0.15 150);
   --chart-5: oklch(0.53 0.008 286);
-  --radius: 0.75rem;
+  --radius: 0.5rem;
   --sidebar: oklch(0.955 0.003 286);
   --sidebar-foreground: oklch(0.22 0.006 286);
   --sidebar-primary: oklch(0.556 0.196 257.6);

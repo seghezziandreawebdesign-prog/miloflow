@@ -58,7 +58,7 @@ export function TaskSidebar({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
           type="button"
           onClick={() => setAperto(true)}
           aria-haspopup="dialog"
-          className="inline-flex max-w-full items-center gap-2 rounded-full bg-card py-1.5 pr-3 pl-4 text-[15px] font-semibold ring-1 ring-black/8 active:bg-muted"
+          className="inline-flex max-w-full items-center gap-2 rounded-lg bg-card py-1.5 pr-2.5 pl-3 text-[15px] font-semibold ring-1 ring-black/8 active:bg-muted"
         >
           {progettoCorrente?.colore && <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: progettoCorrente.colore }} />}
           <span className="truncate">{etichetta}</span>
@@ -71,7 +71,6 @@ export function TaskSidebar({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
             className="max-h-[85svh] overflow-y-auto rounded-t-2xl p-3 pb-[max(1rem,env(safe-area-inset-bottom))]"
           >
             <SheetTitle className="sr-only">Viste e progetti</SheetTitle>
-            <div className="mx-auto mb-2 h-1 w-9 rounded-full bg-black/15" aria-hidden />
             <Contenuto filtroAmbito={filtroAmbito} progettoId={progettoId} vista={vista} onNavigate={() => setAperto(false)} large />
           </SheetContent>
         </Sheet>

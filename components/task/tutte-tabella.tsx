@@ -249,10 +249,10 @@ export function TutteTabella({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
         <p className="py-12 text-center text-sm text-muted-foreground">Nessuna task corrisponde ai filtri.</p>
       ) : (
         <>
-          <div className="rounded-2xl bg-card px-1 py-1 ring-1 ring-black/8 md:hidden">
+          <div className="rounded-xl bg-card px-1 py-1 ring-1 ring-black/8 md:hidden">
             <ListaTask tasks={table.getRowModel().rows.map((r) => r.original)} />
           </div>
-          <div className="hidden overflow-hidden rounded-2xl bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8 md:block">
+          <div className="hidden overflow-hidden rounded-xl bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8 md:block">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((hg) => (

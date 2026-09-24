@@ -19,6 +19,8 @@ export type OpzioniRiga = {
   senzaCliente?: boolean;
   /** Nasconde la data pianificata (es. nelle viste già raggruppate per giorno). */
   senzaData?: boolean;
+  /** Niente barra colorata del progetto a sinistra (es. nelle schede della board, che hanno già il bordo). */
+  senzaBarra?: boolean;
 };
 
 export function TaskRow({
@@ -35,17 +37,19 @@ export function TaskRow({
 }) {
   const apri = useApriEntita();
   const fatta = task.stato === "fatto";
+  const colore = !opzioni.senzaBarra ? (task.progetti?.colore ?? null) : null;
 
   return (
     <div
       role="button"
       tabIndex={0}
+      style={colore ? { borderLeftColor: colore } : undefined}
       onClick={() => apri({ tipo: "task", id: task.id })}
       onKeyDown={(e) => {
         if (e.key === "Enter" && e.target === e.currentTarget) apri({ tipo: "task", id: task.id });
       }}
       className={cn(
-        "group flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50",
+        "group flex cursor-pointer items-start gap-3 rounded-lg border-l-[3px] border-l-transparent px-2 py-2 outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50",
         className,
       )}
     >

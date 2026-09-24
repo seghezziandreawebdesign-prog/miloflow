@@ -38,7 +38,7 @@ export function BarraFiltri({
           <button
             type="button"
             onClick={azzera}
-            className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-[13px] font-medium text-primary hover:bg-primary-soft"
+            className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg px-2.5 text-[13px] font-medium text-primary hover:bg-primary-soft"
           >
             <X className="size-3.5" />
             Azzera
@@ -68,7 +68,7 @@ export function CampoRicerca({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={label}
-        className="h-8 rounded-full border-transparent bg-card pl-9 ring-1 ring-black/8 ring-inset placeholder:text-muted-foreground/80 focus-visible:ring-ring"
+        className="h-8 rounded-lg border-transparent bg-card pl-9 ring-1 ring-black/8 ring-inset placeholder:text-muted-foreground/80 focus-visible:ring-ring"
       />
       {value && (
         <button

@@ -171,7 +171,7 @@ export function ServiziView({
               ]}
               className="[&>p]:sr-only"
             />
-            <Button className="hidden rounded-full sm:inline-flex" onClick={() => setCreaAperto(true)}>
+            <Button className="hidden sm:inline-flex" onClick={() => setCreaAperto(true)}>
               <Plus />
               Nuovo servizio
             </Button>
@@ -202,7 +202,7 @@ export function ServiziView({
       {filtrati.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">Nessun servizio corrisponde ai filtri.</p>
       ) : vista === "lista" ? (
-        <ul className="divide-y divide-black/5 overflow-hidden rounded-2xl bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8">
+        <ul className="divide-y divide-black/5 overflow-hidden rounded-xl bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8">
           {filtrati.map((s) => (
             <li key={s.id}>
               <RigaServizio servizio={s} mostraCosti={mostraCosti} onOpen={() => apri({ tipo: "servizio", id: s.id })} />
@@ -323,7 +323,7 @@ function VistaPerMese({
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       {mesi.map(({ mese, voci, aCarico, clienti }) => (
-        <section key={mese} className="rounded-2xl bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8">
+        <section key={mese} className="rounded-xl bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8">
           <header className="mb-2 flex items-baseline justify-between gap-2">
             <h3 className="font-medium">{capitalize(formatterMese.format(new Date(`${mese}-01T12:00:00Z`)))}</h3>
             {mostraCosti && (

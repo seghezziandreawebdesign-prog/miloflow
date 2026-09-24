@@ -210,7 +210,7 @@ function Colonna({
     <section
       ref={setNodeRef}
       aria-label={titolo}
-      className={cn("flex min-h-40 flex-col gap-1.5 rounded-2xl bg-black/4 p-2", isOver && "ring-2 ring-primary")}
+      className={cn("flex min-h-40 flex-col gap-1.5 rounded-xl bg-black/4 p-2", isOver && "ring-2 ring-primary")}
     >
       <h3 className="flex items-baseline gap-2 px-1 pb-1 text-sm font-semibold">
         {titolo}
@@ -228,18 +228,27 @@ function Colonna({
 
 function Scheda({ task, opzioniRiga }: { task: TaskLista; opzioniRiga: OpzioniRiga }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+  const colore = task.progetti?.colore ?? null;
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        // Bordo leggero del colore del progetto.
+        boxShadow: colore
+          ? `0 0 0 1px color-mix(in srgb, ${colore} 45%, transparent), 0 1px 2px rgba(0,0,0,0.06)`
+          : undefined,
+      }}
       {...attributes}
       {...listeners}
       className={cn(
-        "cursor-grab touch-manipulation rounded-xl bg-card shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-black/5 active:cursor-grabbing",
+        "cursor-grab touch-manipulation rounded-lg bg-card shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-black/6 active:cursor-grabbing",
+        colore && "ring-0",
         isDragging && "opacity-40",
       )}
     >
-      <TaskRow task={task} opzioni={opzioniRiga} />
+      <TaskRow task={task} opzioni={{ ...opzioniRiga, senzaBarra: true }} />
     </div>
   );
 }

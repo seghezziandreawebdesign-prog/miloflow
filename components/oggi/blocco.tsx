@@ -16,7 +16,7 @@ export function Blocco({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8">
+    <section className="rounded-xl bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8">
       <div className="mb-3 flex items-start gap-2">
         {Icona && <Icona className="mt-0.5 size-4 text-primary" />}
         <div className="min-w-0 flex-1">

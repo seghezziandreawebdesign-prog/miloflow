@@ -18,7 +18,7 @@ export function MobileNav({ nome, email }: { nome: string; email: string }) {
       <Button
         variant="outline"
         size="icon"
-        className="rounded-full lg:hidden"
+        className="lg:hidden"
         onClick={() => setOpen(true)}
         aria-label="Apri il menu"
       >

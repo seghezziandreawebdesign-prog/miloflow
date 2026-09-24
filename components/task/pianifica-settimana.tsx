@@ -180,7 +180,7 @@ function ZonaRilascio({
       ref={setNodeRef}
       aria-label={titolo}
       className={cn(
-        "min-h-14 space-y-1 rounded-2xl bg-card p-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8 transition-colors",
+        "min-h-14 space-y-1 rounded-xl bg-card p-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8 transition-colors",
         evidenza === "oggi" && "ring-primary/40",
         evidenza === "passato" && "opacity-70",
         isOver && "bg-primary/5 ring-2 ring-primary",

@@ -81,7 +81,7 @@ export function ProgettoPagina({ id }: { id: string }) {
         azioni={
           <>
             <SwitchListaBoard value={modo} onChange={setModo} />
-            <Button variant="outline" size="icon" className="rounded-full" aria-label="Dettagli progetto" onClick={() => apri({ tipo: "progetto", id })}>
+            <Button variant="outline" size="icon" aria-label="Dettagli progetto" onClick={() => apri({ tipo: "progetto", id })}>
               <Pencil />
             </Button>
           </>
