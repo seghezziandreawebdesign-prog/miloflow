@@ -416,3 +416,10 @@ enabled = true
 
 [functions.vies-lookup]
 verify_jwt = true
+
+[functions.digest-scadenze]
+# Chiamata dal cron con un segreto proprio: il JWT si verifica nel codice.
+verify_jwt = false
+
+[functions.invia-email-cliente]
+verify_jwt = true
