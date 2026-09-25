@@ -1,12 +1,11 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useState } from "react";
 
 import { useApriEntita } from "@/components/drawer/use-apri-entita";
+import { EditorTesto } from "@/components/editor-testo-lazy";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { EventoDialog } from "@/components/calendario/evento-dialog";
@@ -128,8 +127,6 @@ function NuovaTaskDialog({
   const { data: opzioni } = useOpzioniTask();
   const [dettagli, setDettagli] = useState<TaskFormValues>(() => ({ ...taskVuota(defaults.ambito), ...defaults }));
   const [allegati, setAllegati] = useState<File[]>([]);
-  // Se il contesto porta già progetto, cliente o servizio, i dettagli partono aperti.
-  const [aperti, setAperti] = useState(Boolean(defaults.servizio_id || defaults.cliente_id || defaults.progetto_id));
   const stato = useAggiuntaRapida({
     defaults: { ambito: dettagli.ambito, titolo: defaults.titolo },
     onCreated: (id) => {
@@ -146,64 +143,72 @@ function NuovaTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen} onOpenChangeComplete={(o) => !o && onClose()}>
+      {/* Stessa finestra quasi a tutto schermo del pannello della task. */}
       <DialogContent
-        className={cn("max-h-[92svh] overflow-y-auto sm:max-w-2xl", ricezione.trascinando && "ring-2 ring-primary")}
+        className={cn(
+          "flex max-h-[92svh] flex-col overflow-y-auto sm:h-[90svh] sm:max-h-[90svh] sm:max-w-[min(1200px,95vw)]",
+          ricezione.trascinando && "ring-2 ring-primary",
+        )}
         {...ricezione.props}
       >
-        <DialogHeader>
+        <DialogHeader className="text-left">
           <DialogTitle>Nuova task</DialogTitle>
           <DialogDescription>
             Nel titolo puoi scrivere date («domani», «ven», «12/10», «entro lunedì»), #cliente o #progetto e
-            !alta !media !bassa.
+            !alta !media !bassa: hanno la precedenza sui campi qui sotto.
           </DialogDescription>
         </DialogHeader>
 
         <form
-          className="space-y-5"
+          className="flex min-h-0 flex-col gap-5 lg:flex-1"
           onSubmit={(e) => {
             e.preventDefault();
             salva();
           }}
         >
-          <Field>
-            <FieldLabel htmlFor="nuova-task-titolo">Titolo</FieldLabel>
-            <CampoAggiuntaRapida
-              id="nuova-task-titolo"
-              stato={stato}
-              onInvio={salva}
-              autoFocus
-              placeholder="Cosa devi fare?"
-            />
-          </Field>
+          {/* Come nel pannello: descrizione a tutta altezza a sinistra, campi a destra. */}
+          <div className="grid gap-6 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] lg:gap-8">
+            <div className="flex min-w-0 flex-col gap-4">
+              <Field>
+                <FieldLabel htmlFor="nuova-task-titolo">Titolo</FieldLabel>
+                <CampoAggiuntaRapida
+                  id="nuova-task-titolo"
+                  stato={stato}
+                  onInvio={salva}
+                  autoFocus
+                  placeholder="Cosa devi fare?"
+                />
+              </Field>
+              <Field className="lg:flex-1">
+                <FieldLabel htmlFor="nuova-task-descrizione">Descrizione</FieldLabel>
+                <EditorTesto
+                  id="nuova-task-descrizione"
+                  value={dettagli.note}
+                  onChange={(note) => aggiorna({ note })}
+                  aggiornaSubito
+                  className="lg:flex-1"
+                  classeContenuto="min-h-40 sm:min-h-52 lg:min-h-[calc(90svh-24rem)]"
+                />
+              </Field>
+            </div>
 
-          <CampiPrincipali
-            valori={{
-              ...dettagli,
-              data_pianificata: parsed.dataPianificata ?? dettagli.data_pianificata,
-              scadenza: parsed.scadenza ?? dettagli.scadenza,
-            }}
-            dateDalTesto={{ data_pianificata: Boolean(parsed.dataPianificata), scadenza: Boolean(parsed.scadenza) }}
-            onChange={aggiorna}
-            aggiornaSubito
-            idPrefix="nuova-task"
-          />
-
-          <AllegatiInAttesa files={allegati} onChange={setAllegati} />
-
-          <Collapsible open={aperti} onOpenChange={setAperti}>
-            <CollapsibleTrigger
-              render={<Button type="button" variant="ghost" size="sm" className="-ml-2 text-muted-foreground" />}
-            >
-              <ChevronDown className={cn("transition-transform", aperti && "rotate-180")} />
-              Dettagli
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-3">
+            <div className="min-w-0 space-y-5">
+              <CampiPrincipali
+                valori={{
+                  ...dettagli,
+                  data_pianificata: parsed.dataPianificata ?? dettagli.data_pianificata,
+                  scadenza: parsed.scadenza ?? dettagli.scadenza,
+                }}
+                dateDalTesto={{ data_pianificata: Boolean(parsed.dataPianificata), scadenza: Boolean(parsed.scadenza) }}
+                onChange={aggiorna}
+                aggiornaSubito
+                idPrefix="nuova-task"
+                senzaDescrizione
+              />
               <CampiTask valori={dettagli} onChange={aggiorna} opzioni={opzioni} idPrefix="nuova-task" />
-              <p className="mt-3 text-xs text-muted-foreground">
-                Quello che scrivi nel titolo (#cliente, !priorità) ha la precedenza su questi campi.
-              </p>
-            </CollapsibleContent>
-          </Collapsible>
+              <AllegatiInAttesa files={allegati} onChange={setAllegati} />
+            </div>
+          </div>
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
