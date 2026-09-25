@@ -22,7 +22,7 @@ export function ClienteDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{clienteId ? "Modifica cliente" : "Nuovo cliente"}</DialogTitle>
           {!clienteId && (

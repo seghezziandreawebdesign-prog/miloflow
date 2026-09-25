@@ -19,18 +19,24 @@ import type { SchedaCliente } from "@/lib/queries/clienti";
 import { contattoSchema, type ContattoFormValues } from "@/lib/schemas/clienti";
 import { cn } from "@/lib/utils";
 
+import { useAggiornaScheda } from "./scheda-cliente";
+
 type Contatto = SchedaCliente["contatti"][number];
 
 export function ContattiCliente({ clienteId, contatti }: { clienteId: string; contatti: Contatto[] }) {
   const [editing, setEditing] = useState<Contatto | "nuovo" | null>(null);
   const conferma = useConfirm<Contatto>();
+  const aggiornaScheda = useAggiornaScheda();
   const [, startTransition] = useTransition();
 
   function rendiPrincipale(contatto: Contatto) {
     startTransition(async () => {
       const result = await setContattoPrincipale(clienteId, contatto.id);
       if (!result.ok) toast.error(result.error);
-      else toast.success(`${contatto.nome} è ora il contatto principale`);
+      else {
+        toast.success(`${contatto.nome} è ora il contatto principale`);
+        aggiornaScheda();
+      }
     });
   }
 
@@ -129,6 +135,7 @@ export function ContattiCliente({ clienteId, contatti }: { clienteId: string; co
             return false;
           }
           toast.success("Contatto eliminato");
+          aggiornaScheda();
         }}
       />
     </Card>
@@ -145,6 +152,7 @@ function ContattoForm({
   onDone: () => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const aggiornaScheda = useAggiornaScheda();
   const { register, control, handleSubmit, setError, formState } = useForm<ContattoFormValues>({
     resolver: zodResolver(contattoSchema),
     defaultValues: {
@@ -168,6 +176,7 @@ function ContattoForm({
         return;
       }
       toast.success(contatto ? "Contatto aggiornato" : "Contatto aggiunto");
+      aggiornaScheda();
       onDone();
     }),
   );

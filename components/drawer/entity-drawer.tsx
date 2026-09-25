@@ -57,8 +57,10 @@ export function EntityDrawer() {
         showCloseButton={false}
         className={cn(
           "block max-h-[92svh] overflow-y-auto p-0 max-sm:max-h-[94svh] max-sm:pb-0",
-          // La task ha una descrizione lunga: finestra quasi a tutto schermo.
-          tipo === "task" ? "sm:h-[90svh] sm:max-h-[90svh] sm:max-w-[min(1200px,95vw)]" : "sm:max-w-2xl",
+          // Task e cliente hanno tanto contenuto: finestra quasi a tutto schermo.
+          tipo === "task" || tipo === "cliente"
+            ? "sm:h-[90svh] sm:max-h-[90svh] sm:max-w-[min(1200px,95vw)]"
+            : "sm:max-w-2xl",
         )}
       >
         {/* Chiusura sempre visibile anche scorrendo il contenuto. */}

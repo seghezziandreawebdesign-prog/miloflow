@@ -2,6 +2,7 @@ import "server-only";
 
 import { notFound } from "next/navigation";
 
+import { caricaSchedaCliente } from "@/lib/queries/cliente-scheda";
 import { createClient } from "@/lib/supabase/server";
 
 const LOGO_TTL = 60 * 60; // 1 ora
@@ -33,35 +34,9 @@ export type ClienteLista = Awaited<ReturnType<typeof listClienti>>[number];
 export async function getCliente(id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const supabase = await createClient();
-  const [cliente, contatti, link, diario] = await Promise.all([
-    supabase.from("clienti").select("*").eq("id", id).maybeSingle(),
-    supabase
-      .from("clienti_contatti")
-      .select("*")
-      .eq("cliente_id", id)
-      .order("principale", { ascending: false })
-      .order("nome"),
-    supabase.from("clienti_link").select("*").eq("cliente_id", id).order("ordine").order("created_at"),
-    supabase
-      .from("clienti_diario")
-      .select("*")
-      .eq("cliente_id", id)
-      .order("data", { ascending: false })
-      .order("created_at", { ascending: false }),
-  ]);
-  if (cliente.error) throw new Error(`Lettura cliente non riuscita: ${cliente.error.message}`);
-  if (!cliente.data) notFound();
-
-  const urls = await signedLogoUrls(supabase, cliente.data.logo_path ? [cliente.data.logo_path] : []);
-  return {
-    cliente: {
-      ...cliente.data,
-      logo_url: cliente.data.logo_path ? (urls.get(cliente.data.logo_path) ?? null) : null,
-    },
-    contatti: contatti.data ?? [],
-    link: link.data ?? [],
-    diario: diario.data ?? [],
-  };
+  const scheda = await caricaSchedaCliente(supabase, id);
+  if (!scheda) notFound();
+  return scheda;
 }
 
-export type SchedaCliente = Awaited<ReturnType<typeof getCliente>>;
+export type { SchedaCliente } from "@/lib/queries/cliente-scheda";

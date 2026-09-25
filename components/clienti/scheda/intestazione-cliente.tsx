@@ -27,6 +27,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ClienteDialog } from "../cliente-dialog";
 import { ClienteLogo } from "../cliente-logo";
 import { StatoClienteBadge } from "../stato-badge";
+import { useAggiornaScheda } from "./scheda-cliente";
 
 const TIPI_LOGO = ["image/png", "image/jpeg", "image/webp"];
 const MAX_LOGO = 2 * 1024 * 1024;
@@ -41,6 +42,7 @@ export function IntestazioneCliente({
   isOwner: boolean;
 }) {
   const router = useRouter();
+  const aggiornaScheda = useAggiornaScheda();
   const nome = nomeCliente(cliente);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -73,6 +75,7 @@ export function IntestazioneCliente({
       }
       toast.success("Logo aggiornato");
       router.refresh();
+      aggiornaScheda();
     });
   }
 
@@ -83,6 +86,7 @@ export function IntestazioneCliente({
       else {
         toast.success("Logo rimosso");
         router.refresh();
+        aggiornaScheda();
       }
     });
   }
@@ -90,7 +94,10 @@ export function IntestazioneCliente({
   async function cambiaStato(stato: string) {
     const result = await setStatoCliente(cliente.id, stato);
     if (!result.ok) toast.error(result.error);
-    else toast.success(stato === "archiviato" ? "Cliente archiviato" : "Stato aggiornato");
+    else {
+      toast.success(stato === "archiviato" ? "Cliente archiviato" : "Stato aggiornato");
+      aggiornaScheda();
+    }
   }
 
   return (
@@ -192,7 +199,10 @@ export function IntestazioneCliente({
         clienteId={cliente.id}
         defaultValues={rowToClienteForm(cliente)}
         tagSuggestions={tagSuggestions}
-        onSaved={() => router.refresh()}
+        onSaved={() => {
+          router.refresh();
+          aggiornaScheda();
+        }}
       />
       <ConfirmDialog
         open={deleteOpen}

@@ -1,44 +1,54 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Mail, Phone } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useCallback, useState } from "react";
 
-import { ClienteLogo } from "@/components/clienti/cliente-logo";
-import { StatoClienteBadge } from "@/components/clienti/stato-badge";
-import { CopyButton } from "@/components/copy-button";
-import { buttonVariants } from "@/components/ui/button";
+import { AggiornaSchedaProvider, SchedaClienteContenuto, type TabCliente } from "@/components/clienti/scheda/scheda-cliente";
 import { PannelloDescription, PannelloHeader, PannelloTitle } from "@/components/drawer/pannello";
+import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { nomeCliente } from "@/lib/clienti";
+import { caricaSchedaCliente, caricaServizi } from "@/lib/queries/cliente-scheda";
 import { createClient } from "@/lib/supabase/client";
 
-async function fetchCliente(id: string) {
+async function fetchScheda(id: string) {
   const supabase = createClient();
-  const [cliente, contatto] = await Promise.all([
-    supabase.from("clienti").select("*").eq("id", id).maybeSingle(),
-    supabase.from("clienti_contatti").select("*").eq("cliente_id", id).eq("principale", true).maybeSingle(),
+  const [scheda, servizi, budget, owner, tags] = await Promise.all([
+    caricaSchedaCliente(supabase, id),
+    caricaServizi(supabase, { clienteId: id }),
+    supabase.rpc("puo", { p_sezione: "budget" }),
+    supabase.rpc("is_owner"),
+    supabase.from("clienti").select("tags"),
   ]);
-  if (cliente.error) throw cliente.error;
-  if (!cliente.data) return null;
-  let logoUrl: string | null = null;
-  if (cliente.data.logo_path) {
-    const { data } = await supabase.storage.from("loghi").createSignedUrl(cliente.data.logo_path, 3600);
-    logoUrl = data?.signedUrl ?? null;
-  }
-  return { cliente: cliente.data, contatto: contatto.data, logoUrl };
+  if (!scheda) return null;
+  const tagSuggestions = [...new Set((tags.data ?? []).flatMap((r) => r.tags))].sort((a, b) => a.localeCompare(b, "it"));
+  return {
+    scheda,
+    servizi,
+    mostraCosti: budget.data === true,
+    isOwner: owner.data === true,
+    tagSuggestions,
+  };
 }
 
-/** Anteprima del cliente nel pannello laterale; la scheda completa è una pagina. */
+/** Scheda completa del cliente nel pannello grande; la pagina resta per i link diretti. */
 export function ClienteDrawer({ id }: { id: string }) {
-  const { data, isPending, isError } = useQuery({ queryKey: ["cliente", id], queryFn: () => fetchCliente(id) });
+  const { data, isPending, isError } = useQuery({ queryKey: ["scheda-cliente", id], queryFn: () => fetchScheda(id) });
+  const [tab, setTab] = useState<TabCliente>("panoramica");
+  const queryClient = useQueryClient();
+  const aggiorna = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["scheda-cliente", id] });
+  }, [queryClient, id]);
 
   if (isPending) {
     return (
-      <div className="space-y-3 p-4">
+      <div className="space-y-3 p-4 pt-12 sm:p-6 sm:pt-12">
         <Skeleton className="size-16 rounded-xl" />
         <Skeleton className="h-6 w-2/3" />
         <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
@@ -51,64 +61,26 @@ export function ClienteDrawer({ id }: { id: string }) {
     );
   }
 
-  const { cliente: c, contatto, logoUrl } = data;
-  const nome = nomeCliente(c);
-
   return (
-    <div className="flex flex-col">
-      <PannelloHeader className="gap-3 pr-12 sm:pr-14">
-        <ClienteLogo nome={nome} colore={c.colore} logoUrl={logoUrl} sito={c.sito} size="lg" />
-        <div>
-          <PannelloTitle className="text-lg">{nome}</PannelloTitle>
-          <PannelloDescription>{c.nome_breve ? c.ragione_sociale : c.citta}</PannelloDescription>
-        </div>
-        <StatoClienteBadge stato={c.stato} className="w-fit" />
-      </PannelloHeader>
-
-      <dl className="space-y-3 px-4 text-sm">
-        {c.piva && <Riga label="Partita IVA" value={`${c.nazione} ${c.piva}`} copia={c.piva} />}
-        {c.codice_fiscale && <Riga label="Codice fiscale" value={c.codice_fiscale} copia={c.codice_fiscale} />}
-        {c.codice_sdi && <Riga label="Codice SDI" value={c.codice_sdi} copia={c.codice_sdi} />}
-        {c.pec && <Riga label="PEC" value={c.pec} copia={c.pec} />}
-      </dl>
-
-      {contatto && (
-        <div className="mx-4 mt-5 rounded-lg bg-muted/60 p-3 text-sm">
-          <p className="text-xs text-muted-foreground">Contatto principale</p>
-          <p className="font-medium">{contatto.nome}</p>
-          {contatto.email && (
-            <a href={`mailto:${contatto.email}`} className="flex items-center gap-1.5 hover:underline">
-              <Mail className="size-3.5" />
-              {contatto.email}
-            </a>
-          )}
-          {contatto.telefono && (
-            <a href={`tel:${contatto.telefono.replace(/\s/g, "")}`} className="flex items-center gap-1.5 hover:underline">
-              <Phone className="size-3.5" />
-              {contatto.telefono}
-            </a>
-          )}
-        </div>
-      )}
-
-      <div className="mt-auto p-4">
-        <Link href={`/clienti/${c.id}`} className={buttonVariants({ className: "w-full" })}>
-          Apri scheda
+    <div className="p-4 pt-11 sm:p-6 sm:pt-11">
+      <PannelloTitle className="sr-only">{nomeCliente(data.scheda.cliente)}</PannelloTitle>
+      <div className="mb-3 flex justify-start">
+        <Link href={`/clienti/${id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+          Apri come pagina
           <ArrowRight />
         </Link>
       </div>
-    </div>
-  );
-}
-
-function Riga({ label, value, copia }: { label: string; value: string; copia: string }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="flex items-center gap-1">
-        <span className="truncate">{value}</span>
-        <CopyButton value={copia} label={label} />
-      </dd>
+      <AggiornaSchedaProvider value={aggiorna}>
+        <SchedaClienteContenuto
+          scheda={data.scheda}
+          servizi={data.servizi}
+          mostraCosti={data.mostraCosti}
+          tagSuggestions={data.tagSuggestions}
+          isOwner={data.isOwner}
+          tab={tab}
+          onTabChange={setTab}
+        />
+      </AggiornaSchedaProvider>
     </div>
   );
 }

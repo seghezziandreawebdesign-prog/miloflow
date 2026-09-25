@@ -12,6 +12,8 @@ import { deleteNotaDiario, saveNotaDiario } from "@/lib/actions/clienti";
 import { capitalize, formatDate, formatLongDate, todayISO } from "@/lib/dates/format";
 import type { SchedaCliente } from "@/lib/queries/clienti";
 
+import { useAggiornaScheda } from "./scheda-cliente";
+
 type Nota = SchedaCliente["diario"][number];
 
 export function DiarioCliente({ clienteId, note }: { clienteId: string; note: Nota[] }) {
@@ -20,6 +22,7 @@ export function DiarioCliente({ clienteId, note }: { clienteId: string; note: No
   const [pending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
   const conferma = useConfirm<Nota>();
+  const aggiornaScheda = useAggiornaScheda();
 
   function aggiungi(e?: React.FormEvent) {
     e?.preventDefault();
@@ -33,6 +36,7 @@ export function DiarioCliente({ clienteId, note }: { clienteId: string; note: No
       setTesto("");
       setData(todayISO());
       toast.success("Nota aggiunta al diario");
+      aggiornaScheda();
     });
   }
 
@@ -103,6 +107,7 @@ export function DiarioCliente({ clienteId, note }: { clienteId: string; note: No
             return false;
           }
           toast.success("Nota eliminata");
+          aggiornaScheda();
         }}
       />
     </div>
@@ -113,6 +118,7 @@ function ModificaNota({ clienteId, nota, onDone }: { clienteId: string; nota: No
   const [data, setData] = useState(nota.data);
   const [testo, setTesto] = useState(nota.testo);
   const [pending, startTransition] = useTransition();
+  const aggiornaScheda = useAggiornaScheda();
 
   function salva() {
     startTransition(async () => {
@@ -122,6 +128,7 @@ function ModificaNota({ clienteId, nota, onDone }: { clienteId: string; nota: No
         return;
       }
       toast.success("Nota aggiornata");
+      aggiornaScheda();
       onDone();
     });
   }

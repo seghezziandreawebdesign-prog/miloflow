@@ -3,6 +3,7 @@
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { createContext, useCallback, useContext } from "react";
 
 import { EmptyState } from "@/components/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,15 +24,24 @@ const TABS = [
   { value: "eventi", label: "Eventi" },
   { value: "diario", label: "Diario" },
 ] as const;
-type Tab = (typeof TABS)[number]["value"];
+export type TabCliente = (typeof TABS)[number]["value"];
+type Tab = TabCliente;
 
-export function SchedaCliente({
-  scheda,
-  servizi,
-  mostraCosti,
-  tagSuggestions,
-  isOwner,
-}: {
+// Nella pagina i dati arrivano dai Server Components e si aggiornano da soli
+// con le revalidate delle action; nel pannello arrivano da React Query e vanno
+// invalidati a mano dopo ogni modifica. I componenti della scheda chiamano
+// questo hook dopo un salvataggio riuscito: fuori dal pannello è un no-op.
+const AggiornaSchedaContext = createContext<(() => void) | null>(null);
+
+export const AggiornaSchedaProvider = AggiornaSchedaContext.Provider;
+
+export function useAggiornaScheda() {
+  const aggiorna = useContext(AggiornaSchedaContext);
+  return useCallback(() => aggiorna?.(), [aggiorna]);
+}
+
+/** Pagina /clienti/[id]: la scheda con la tab nell'URL (?tab=). */
+export function SchedaCliente(props: {
   scheda: SchedaClienteData;
   servizi: ServizioLista[];
   mostraCosti: boolean;
@@ -58,10 +68,34 @@ export function SchedaCliente({
         <ArrowLeft className="size-4" />
         Clienti
       </Link>
+      <SchedaClienteContenuto {...props} tab={tab} onTabChange={setTab} />
+    </div>
+  );
+}
 
+/** Corpo della scheda, con la tab controllata: lo usano la pagina e il pannello. */
+export function SchedaClienteContenuto({
+  scheda,
+  servizi,
+  mostraCosti,
+  tagSuggestions,
+  isOwner,
+  tab,
+  onTabChange,
+}: {
+  scheda: SchedaClienteData;
+  servizi: ServizioLista[];
+  mostraCosti: boolean;
+  tagSuggestions: string[];
+  isOwner: boolean;
+  tab: Tab;
+  onTabChange: (tab: Tab) => void;
+}) {
+  return (
+    <div className="space-y-6">
       <IntestazioneCliente cliente={scheda.cliente} tagSuggestions={tagSuggestions} isOwner={isOwner} />
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+      <Tabs value={tab} onValueChange={(v) => onTabChange(v as Tab)}>
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <TabsList variant="line" className="w-max">
             {TABS.map((t) => (

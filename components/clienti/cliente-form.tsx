@@ -50,7 +50,8 @@ export function ClienteForm({
     defaultValues,
   });
   const { register, control, handleSubmit, setError, setValue, formState } = form;
-  const [dettagliAperti, setDettagliAperti] = useState(isEdit);
+  // Sempre aperti: nel dialog largo si vede tutto senza passaggi in più.
+  const [dettagliAperti, setDettagliAperti] = useState(true);
   const [saving, startSaving] = useTransition();
   const [vies, setVies] = useState<RisultatoVies | null>(null);
   const [viesLoading, setViesLoading] = useState(false);

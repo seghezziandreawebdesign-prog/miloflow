@@ -46,7 +46,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
                 </div>
               )}
               {/* In basso lo spazio per il pulsante + fisso su mobile. */}
-              <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-28 sm:px-6 lg:pb-8">
+              <main className="w-full flex-1 px-4 pt-5 pb-28 sm:px-6 lg:pb-8">
                 {children}
               </main>
             </div>

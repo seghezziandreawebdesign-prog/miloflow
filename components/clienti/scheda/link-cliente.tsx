@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { deleteLink, moveLink, saveLink } from "@/lib/actions/clienti";
 import type { SchedaCliente } from "@/lib/queries/clienti";
 
+import { useAggiornaScheda } from "./scheda-cliente";
+
 type LinkRow = SchedaCliente["link"][number];
 
 export function LinkCliente({ clienteId, link }: { clienteId: string; link: LinkRow[] }) {
@@ -19,6 +21,7 @@ export function LinkCliente({ clienteId, link }: { clienteId: string; link: Link
   const [url, setUrl] = useState("");
   const [pending, startTransition] = useTransition();
   const conferma = useConfirm<LinkRow>();
+  const aggiornaScheda = useAggiornaScheda();
 
   function aggiungi(e: React.FormEvent) {
     e.preventDefault();
@@ -32,6 +35,7 @@ export function LinkCliente({ clienteId, link }: { clienteId: string; link: Link
       setUrl("");
       setAdding(false);
       toast.success("Link aggiunto");
+      aggiornaScheda();
     });
   }
 
@@ -39,6 +43,7 @@ export function LinkCliente({ clienteId, link }: { clienteId: string; link: Link
     startTransition(async () => {
       const result = await moveLink(clienteId, l.id, direzione);
       if (!result.ok) toast.error(result.error);
+      else aggiornaScheda();
     });
   }
 
@@ -123,6 +128,7 @@ export function LinkCliente({ clienteId, link }: { clienteId: string; link: Link
             return false;
           }
           toast.success("Link eliminato");
+          aggiornaScheda();
         }}
       />
     </Card>
