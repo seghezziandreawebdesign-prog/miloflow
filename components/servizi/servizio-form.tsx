@@ -336,8 +336,9 @@ export function ServizioForm({
       <div className="space-y-5">
       <fieldset className="space-y-3 rounded-lg border p-3">
         <legend className="px-1 text-sm font-medium">Accesso</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field data-invalid={Boolean(err.url_pannello) || undefined} className="sm:col-span-2">
+        {/* Una colonna sola: nella colonna stretta del form largo i campi affiancati sbordano. */}
+        <div className="grid gap-3">
+          <Field data-invalid={Boolean(err.url_pannello) || undefined}>
             <FieldLabel htmlFor="servizio-pannello">Pannello di gestione</FieldLabel>
             <Input
               id="servizio-pannello"
