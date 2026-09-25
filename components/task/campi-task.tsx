@@ -172,6 +172,26 @@ const STATI_OPZIONI = STATI_TASK.map((s) => ({ value: s.value, label: s.label })
  * Campi in primo piano: descrizione, stato, inizio e scadenza.
  * `onStato` permette al pannello di intercettare "In attesa" e "Fatto".
  */
+/** Ora di fine derivata da inizio e durata (la durata resta la fonte di verità). */
+function oraFineDa(oraInizio: string, durataMin: string): string {
+  const durata = Number(durataMin);
+  if (!oraInizio || !durata) return "";
+  const [h, m] = oraInizio.split(":").map(Number);
+  const tot = h * 60 + m + durata;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(Math.floor(tot / 60) % 24)}:${pad(tot % 60)}`;
+}
+
+/** Minuti tra l'ora di inizio e quella di fine; oltre mezzanotte si va al giorno dopo. */
+function durataDaOre(oraInizio: string, oraFine: string): string {
+  if (!oraInizio || !oraFine) return "";
+  const [hi, mi] = oraInizio.split(":").map(Number);
+  const [hf, mf] = oraFine.split(":").map(Number);
+  let diff = hf * 60 + mf - (hi * 60 + mi);
+  if (diff <= 0) diff += 24 * 60;
+  return String(diff);
+}
+
 export function CampiPrincipali({
   valori,
   onChange,
@@ -181,7 +201,7 @@ export function CampiPrincipali({
   idPrefix = "task",
   senzaDescrizione = false,
 }: {
-  valori: Pick<TaskFormValues, "note" | "stato" | "in_attesa_di" | "data_pianificata" | "ora_inizio" | "scadenza">;
+  valori: Pick<TaskFormValues, "note" | "stato" | "in_attesa_di" | "data_pianificata" | "ora_inizio" | "scadenza" | "durata_min">;
   onChange: (patch: Partial<TaskFormValues>) => void;
   onStato?: (stato: StatoTask) => void;
   /** Date riconosciute nel titolo: hanno la precedenza e bloccano il campo. */
@@ -227,8 +247,8 @@ export function CampiPrincipali({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field>
           <FieldLabel htmlFor={`${idPrefix}-pianificata`}>Inizio</FieldLabel>
-          {/* Se la colonna è stretta l'ora scende sotto la data invece di sovrapporsi. */}
-          <div className="flex flex-wrap gap-2">
+          {/* Se la colonna è stretta le ore scendono sotto la data invece di sovrapporsi. */}
+          <div className="flex flex-wrap items-center gap-2">
             <DatePicker
               id={`${idPrefix}-pianificata`}
               value={valori.data_pianificata}
@@ -237,22 +257,37 @@ export function CampiPrincipali({
               clearable
               disabled={dateDalTesto.data_pianificata}
               // Larghezza minima per la data completa: se manca spazio
-              // l'ora va a capo (flex-wrap) invece di coprirla.
+              // le ore vanno a capo (flex-wrap) invece di coprirla.
               className="min-w-[8.5rem] flex-1"
             />
-            <Input
-              type="time"
-              aria-label="Ora di inizio"
-              value={valori.ora_inizio}
-              disabled={!valori.data_pianificata}
-              onChange={(e) => onChange({ ora_inizio: e.target.value })}
-              className="w-28 shrink-0"
-            />
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="time"
+                aria-label="Ora di inizio"
+                value={valori.ora_inizio}
+                disabled={!valori.data_pianificata}
+                onChange={(e) => onChange({ ora_inizio: e.target.value })}
+                className="w-[6.5rem] shrink-0"
+              />
+              <span className="text-xs text-muted-foreground">–</span>
+              <Input
+                type="time"
+                aria-label="Ora di fine"
+                // La fine è inizio + durata: cambiandola si riscrive la durata.
+                value={oraFineDa(valori.ora_inizio, valori.durata_min)}
+                disabled={!valori.data_pianificata || !valori.ora_inizio}
+                onChange={(e) => onChange({ durata_min: durataDaOre(valori.ora_inizio, e.target.value) })}
+                className="w-[6.5rem] shrink-0"
+              />
+            </div>
           </div>
           {dateDalTesto.data_pianificata ? (
             <FieldDescription>Presa dal titolo.</FieldDescription>
+          ) : valori.data_pianificata && !valori.ora_inizio ? (
+            <FieldDescription>Senza ora sta in «tutto il giorno».</FieldDescription>
           ) : (
-            valori.data_pianificata && !valori.ora_inizio && <FieldDescription>Senza ora sta in «tutto il giorno».</FieldDescription>
+            valori.ora_inizio &&
+            !valori.durata_min && <FieldDescription>Senza fine dura un&apos;ora nel calendario.</FieldDescription>
           )}
         </Field>
         <Field>

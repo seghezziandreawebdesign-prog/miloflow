@@ -1657,6 +1657,7 @@ export type Database = {
           created_by: string | null
           data_pianificata: string | null
           durata_min: number | null
+          esclusa_da_pianificare: boolean
           id: string
           in_attesa_dal: string | null
           in_attesa_di: string | null
@@ -1682,6 +1683,7 @@ export type Database = {
           created_by?: string | null
           data_pianificata?: string | null
           durata_min?: number | null
+          esclusa_da_pianificare?: boolean
           id?: string
           in_attesa_dal?: string | null
           in_attesa_di?: string | null
@@ -1707,6 +1709,7 @@ export type Database = {
           created_by?: string | null
           data_pianificata?: string | null
           durata_min?: number | null
+          esclusa_da_pianificare?: boolean
           id?: string
           in_attesa_dal?: string | null
           in_attesa_di?: string | null

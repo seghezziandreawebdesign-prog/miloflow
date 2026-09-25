@@ -123,6 +123,21 @@ export async function riapriTask(id: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+/** Spunta "non pianificare": la task esce dalla lista Da pianificare del calendario. */
+export async function setEsclusaDaPianificare(id: string, esclusa: boolean): Promise<ActionResult> {
+  if (!idSchema.safeParse(id).success) return NESSUN_PERMESSO;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("task")
+    .update({ esclusa_da_pianificare: esclusa })
+    .eq("id", id)
+    .select("id");
+  if (error) return { ok: false, error: dbErrorMessage(error) };
+  if (data.length === 0) return NESSUN_PERMESSO;
+  revalida();
+  return { ok: true };
+}
+
 const riordinoSchema = z.object({
   stato: z.enum(["da_fare", "in_corso", "in_attesa"]),
   ordine: z.number().finite(),

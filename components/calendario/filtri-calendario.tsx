@@ -11,6 +11,10 @@ import { cn } from "@/lib/utils";
 const CHIAVE = "calendario.filtri";
 const listeners = new Set<() => void>();
 
+// I tipi che esistevano quando il formato salvato era un semplice array:
+// per quelle scelte, un tipo nato dopo (es. "esterno") parte acceso.
+const TIPI_STORICI = ["task", "deadline", "scadenza_servizio", "evento", "rata", "movimento"];
+
 function leggi(): string {
   try {
     return localStorage.getItem(CHIAVE) ?? "";
@@ -22,9 +26,22 @@ function leggi(): string {
 function analizza(raw: string): Set<TipoCalendario> {
   if (!raw) return new Set(TUTTI_I_TIPI);
   try {
-    const lista = JSON.parse(raw);
-    if (!Array.isArray(lista)) return new Set(TUTTI_I_TIPI);
-    return new Set(lista.filter((t): t is TipoCalendario => TUTTI_I_TIPI.includes(t)));
+    const dati: unknown = JSON.parse(raw);
+    // Formato attuale: { attivi, conosciuti }. Un tipo non ancora conosciuto
+    // quando la scelta è stata salvata parte acceso.
+    const attivi = Array.isArray(dati)
+      ? dati
+      : dati && typeof dati === "object" && Array.isArray((dati as { attivi?: unknown }).attivi)
+        ? (dati as { attivi: unknown[] }).attivi
+        : null;
+    if (!attivi) return new Set(TUTTI_I_TIPI);
+    const conosciuti = Array.isArray(dati)
+      ? TIPI_STORICI
+      : ((dati as { conosciuti?: unknown }).conosciuti as string[] | undefined) ?? TIPI_STORICI;
+    return new Set([
+      ...attivi.filter((t): t is TipoCalendario => TUTTI_I_TIPI.includes(t as TipoCalendario)),
+      ...TUTTI_I_TIPI.filter((t) => !conosciuti.includes(t)),
+    ]);
   } catch {
     return new Set(TUTTI_I_TIPI);
   }
@@ -43,7 +60,7 @@ export function useFiltriCalendario(): [Set<TipoCalendario>, (next: Set<TipoCale
   const raw = useSyncExternalStore(subscribe, leggi, () => "");
   const set = useCallback((next: Set<TipoCalendario>) => {
     try {
-      localStorage.setItem(CHIAVE, JSON.stringify([...next]));
+      localStorage.setItem(CHIAVE, JSON.stringify({ attivi: [...next], conosciuti: TUTTI_I_TIPI }));
     } catch {
       // storage non disponibile: la scelta vale finché la pagina resta aperta
     }
