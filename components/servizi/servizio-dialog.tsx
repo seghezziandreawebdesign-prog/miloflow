@@ -25,7 +25,8 @@ export function ServizioDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-2xl">
+      {/* Come il pannello della task: finestra larga, il form si apre su due colonne. */}
+      <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-2xl lg:max-w-[min(1000px,95vw)]">
         <DialogHeader>
           <DialogTitle>{servizioId ? "Modifica servizio" : "Nuovo servizio"}</DialogTitle>
         </DialogHeader>

@@ -113,6 +113,7 @@ export function ServizioForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:items-start lg:gap-8">
       <FieldGroup className="gap-4">
         <Field data-invalid={Boolean(err.nome) || undefined}>
           <FieldLabel htmlFor="servizio-nome">Nome</FieldLabel>
@@ -211,6 +212,43 @@ export function ServizioForm({
           />
         </Field>
 
+        {/* Il prezzo che paga il cliente sta accanto al costo, non nei dettagli. */}
+        {mostraEconomico && clientiField.fields.length > 0 && (
+          <Field>
+            <FieldLabel>Prezzo al cliente</FieldLabel>
+            <div className="space-y-2">
+              {clientiField.fields.map((f, i) => {
+                const prezzo = parseImporto(clienti[i]?.prezzo_rivendita ?? "");
+                const margine =
+                  prezzo !== null && !Number.isNaN(prezzo) && costoNum !== null && !Number.isNaN(costoNum)
+                    ? prezzo - costoNum
+                    : null;
+                return (
+                  <div key={f.id} className="grid grid-cols-[1fr_7rem_6rem] items-center gap-2">
+                    <span className="truncate text-sm">{nomeCliente.get(f.cliente_id) ?? "Cliente"}</span>
+                    <Input
+                      {...register(`clienti.${i}.prezzo_rivendita`)}
+                      inputMode="decimal"
+                      placeholder="€"
+                      aria-label={`Prezzo per ${nomeCliente.get(f.cliente_id) ?? "cliente"}`}
+                      aria-invalid={Boolean(err.clienti?.[i]?.prezzo_rivendita) || undefined}
+                    />
+                    <span
+                      className={cn(
+                        "text-right text-xs tabular-nums",
+                        margine === null ? "text-muted-foreground" : margine >= 0 ? "text-emerald-700" : "text-red-700",
+                      )}
+                    >
+                      {margine === null ? "—" : `${margine >= 0 ? "+" : ""}${formatCurrency(margine)}`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <FieldDescription>Accanto c&apos;è il margine, calcolato sul costo di un periodo.</FieldDescription>
+          </Field>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2">
           <Controller
             control={control}
@@ -295,6 +333,7 @@ export function ServizioForm({
         )}
       </FieldGroup>
 
+      <div className="space-y-5">
       <fieldset className="space-y-3 rounded-lg border p-3">
         <legend className="px-1 text-sm font-medium">Accesso</legend>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -437,42 +476,6 @@ export function ServizioForm({
               )}
             </div>
 
-            {mostraEconomico && clientiField.fields.length > 0 && (
-              <Field>
-                <FieldLabel>Prezzo di rivendita per cliente</FieldLabel>
-                <div className="space-y-2">
-                  {clientiField.fields.map((f, i) => {
-                    const prezzo = parseImporto(clienti[i]?.prezzo_rivendita ?? "");
-                    const margine =
-                      prezzo !== null && !Number.isNaN(prezzo) && costoNum !== null && !Number.isNaN(costoNum)
-                        ? prezzo - costoNum
-                        : null;
-                    return (
-                      <div key={f.id} className="grid grid-cols-[1fr_7rem_6rem] items-center gap-2">
-                        <span className="truncate text-sm">{nomeCliente.get(f.cliente_id) ?? "Cliente"}</span>
-                        <Input
-                          {...register(`clienti.${i}.prezzo_rivendita`)}
-                          inputMode="decimal"
-                          placeholder="€"
-                          aria-label={`Prezzo di rivendita per ${nomeCliente.get(f.cliente_id) ?? "cliente"}`}
-                          aria-invalid={Boolean(err.clienti?.[i]?.prezzo_rivendita) || undefined}
-                        />
-                        <span
-                          className={cn(
-                            "text-right text-xs tabular-nums",
-                            margine === null ? "text-muted-foreground" : margine >= 0 ? "text-emerald-700" : "text-red-700",
-                          )}
-                        >
-                          {margine === null ? "—" : `${margine >= 0 ? "+" : ""}${formatCurrency(margine)}`}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <FieldDescription>Il margine è calcolato sul costo di un periodo.</FieldDescription>
-              </Field>
-            )}
-
             <Field>
               <FieldLabel htmlFor="servizio-note">Note</FieldLabel>
               <Textarea id="servizio-note" rows={3} {...register("note")} />
@@ -480,6 +483,8 @@ export function ServizioForm({
           </FieldGroup>
         </CollapsibleContent>
       </Collapsible>
+      </div>
+      </div>
 
       <div className="flex justify-end gap-2 border-t pt-4">
         <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>

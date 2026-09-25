@@ -268,8 +268,9 @@ export function ServizioDrawer({ id }: { id: string }) {
         </DropdownMenu>
       </div>
 
-      <div className="space-y-6 p-4 sm:p-5">
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+      {/* Finestra quasi a tutto schermo: contenuto a sinistra, dati a destra. */}
+      <div className="grid gap-6 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:items-start lg:gap-8">
+        <dl className="order-first grid grid-cols-2 gap-x-4 gap-y-3 text-sm lg:order-last lg:rounded-xl lg:bg-muted/40 lg:p-4">
           {puoBudget && (
             <Dato label="Costo">
               {s.costo === null ? "—" : s.prossima_scadenza ? `${formatCurrency(s.costo)} · ${freq.label.toLowerCase()}` : formatCurrency(s.costo)}
@@ -296,6 +297,7 @@ export function ServizioDrawer({ id }: { id: string }) {
           )}
         </dl>
 
+        <div className="space-y-6">
         <section className="space-y-2">
           <h3 className="text-sm font-medium">Clienti</h3>
           {clienti.length === 0 ? (
@@ -361,6 +363,7 @@ export function ServizioDrawer({ id }: { id: string }) {
             )}
           </section>
         )}
+        </div>
       </div>
 
       <ServizioDialog
