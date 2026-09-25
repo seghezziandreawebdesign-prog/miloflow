@@ -99,20 +99,23 @@ export const chiaviProgetti = {
   lista: (ambito: FiltroAmbito) => ["progetti", "lista", ambito] as const,
   cliente: (id: string) => ["progetti", "cliente", id] as const,
   dettaglio: (id: string) => ["progetti", "dettaglio", id] as const,
+  figli: (id: string) => ["progetti", "figli", id] as const,
 };
 
 const SELECT_PROGETTO = "*, clienti(id, nome_breve, ragione_sociale, colore)";
 
-function normalizzaProgetto<T extends { clienti: { nome_breve: string | null; ragione_sociale: string } | null }>(p: T) {
-  return { ...p, cliente_nome: p.clienti ? nomeCliente(p.clienti) : null };
+function normalizzaProgetto<T extends { id: string | null; clienti: { nome_breve: string | null; ragione_sociale: string } | null }>(p: T) {
+  // La vista rende tutto nullable: l'id però c'è sempre.
+  return { ...p, id: p.id ?? "", cliente_nome: p.clienti ? nomeCliente(p.clienti) : null };
 }
 
-async function leggiProgetti(filtro: { ambito?: FiltroAmbito; clienteId?: string; id?: string }) {
+async function leggiProgetti(filtro: { ambito?: FiltroAmbito; clienteId?: string; id?: string; parentId?: string }) {
   let q = createClient().from("v_progetti").select(SELECT_PROGETTO);
   if (filtro.ambito && filtro.ambito !== "tutto") q = q.eq("ambito", filtro.ambito);
   if (filtro.clienteId) q = q.eq("cliente_id", filtro.clienteId);
   if (filtro.id) q = q.eq("id", filtro.id);
-  const { data, error } = await q.order("nome");
+  if (filtro.parentId) q = q.eq("parent_id", filtro.parentId);
+  const { data, error } = await q.order("ordine").order("nome");
   if (error) throw new Error(`Lettura progetti non riuscita: ${error.message}`);
   return data.map(normalizzaProgetto);
 }
@@ -134,11 +137,15 @@ export function useProgetto(id: string) {
   });
 }
 
+export function useSottoprogetti(parentId: string) {
+  return useQuery({ queryKey: chiaviProgetti.figli(parentId), queryFn: () => leggiProgetti({ parentId }) });
+}
+
 // Opzioni dei form e riferimenti dell'aggiunta rapida ---------------------
 
 export type OpzioniTask = {
   clienti: { id: string; nome: string }[];
-  progetti: { id: string; nome: string; cliente_id: string | null; ambito: "lavoro" | "personale" }[];
+  progetti: { id: string; nome: string; cliente_id: string | null; ambito: "lavoro" | "personale"; parent_id: string | null }[];
   utenti: { id: string; nome: string }[];
   riferimenti: RiferimentoRapido[];
 };
@@ -147,7 +154,7 @@ async function caricaOpzioni(): Promise<OpzioniTask> {
   const supabase = createClient();
   const [clienti, progetti, utenti] = await Promise.all([
     supabase.from("clienti").select("id, nome_breve, ragione_sociale").neq("stato", "archiviato").order("ragione_sociale"),
-    supabase.from("progetti").select("id, nome, cliente_id, ambito").in("stato", ["attivo", "in_pausa"]).order("nome"),
+    supabase.from("progetti").select("id, nome, cliente_id, ambito, parent_id").in("stato", ["attivo", "in_pausa"]).order("ordine").order("nome"),
     supabase.from("profili").select("id, nome").order("nome"),
   ]);
   const listaClienti = (clienti.data ?? []).map((c) => ({ id: c.id, nome: nomeCliente(c), ragione: c.ragione_sociale }));

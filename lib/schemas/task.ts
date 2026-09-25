@@ -122,6 +122,7 @@ export const progettoSchema = z.object({
   nome: testo.min(1, "Scrivi il nome").max(200, "Nome troppo lungo"),
   ambito: z.enum(["lavoro", "personale"]),
   cliente_id: idFacoltativo,
+  parent_id: idFacoltativo,
   stato: z.enum(["attivo", "in_pausa", "completato", "archiviato"]),
   scadenza: dataFacoltativa,
   colore: z.union([z.literal(""), z.string().regex(/^#[0-9a-f]{6}$/i, "Colore non valido")]),
@@ -130,11 +131,12 @@ export const progettoSchema = z.object({
 
 export type ProgettoFormValues = z.infer<typeof progettoSchema>;
 
-export function progettoVuoto(ambito: "lavoro" | "personale", clienteId = ""): ProgettoFormValues {
+export function progettoVuoto(ambito: "lavoro" | "personale", clienteId = "", parentId = ""): ProgettoFormValues {
   return {
     nome: "",
     ambito: clienteId ? "lavoro" : ambito,
     cliente_id: clienteId,
+    parent_id: parentId,
     stato: "attivo",
     scadenza: "",
     colore: "",
@@ -147,6 +149,7 @@ export function progettoToDb(v: ProgettoFormValues) {
     nome: v.nome,
     ambito: v.cliente_id ? ("lavoro" as const) : v.ambito,
     cliente_id: nullIfEmpty(v.cliente_id),
+    parent_id: nullIfEmpty(v.parent_id),
     stato: v.stato,
     scadenza: nullIfEmpty(v.scadenza),
     colore: nullIfEmpty(v.colore),

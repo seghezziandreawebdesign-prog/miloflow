@@ -1,14 +1,15 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Archive, ArrowRight, Building2, CheckCircle2, MoreHorizontal, Pause, Pencil, Play } from "lucide-react";
+import { Archive, ArrowRight, Building2, CheckCircle2, MoreHorizontal, Pause, Pencil, Play, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { AggiuntaRapida } from "@/components/task/aggiunta-rapida";
 import { invalidaTask, useProgetto, useTaskProgetto } from "@/components/task/dati";
+import { EliminaProgettoDialog } from "@/components/task/elimina-progetto";
 import { ProgettoDialog } from "@/components/task/progetto-dialog";
 import { Progresso } from "@/components/task/progresso";
 import { TaskRow } from "@/components/task/task-row";
@@ -17,6 +18,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PannelloDescription, PannelloHeader, PannelloTitle } from "@/components/drawer/pannello";
@@ -26,7 +28,7 @@ import { formatDate } from "@/lib/dates/format";
 import { confrontaTask, statoProgetto, type StatoProgetto } from "@/lib/task";
 import { cn } from "@/lib/utils";
 
-import { useApriEntita } from "./use-apri-entita";
+import { useApriEntita, useChiudiEntita } from "./use-apri-entita";
 
 const MAX_TASK = 8;
 
@@ -36,7 +38,10 @@ export function ProgettoDrawer({ id }: { id: string }) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const apri = useApriEntita();
+  const chiudi = useChiudiEntita();
+  const pathname = usePathname();
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [, startTransition] = useTransition();
 
   if (isPending) {
@@ -128,6 +133,11 @@ export function ProgettoDrawer({ id }: { id: string }) {
                   Archivia
                 </DropdownMenuItem>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
+                <Trash2 />
+                Elimina
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -171,6 +181,18 @@ export function ProgettoDrawer({ id }: { id: string }) {
         </section>
       </div>
 
+      <EliminaProgettoDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        progettoId={id}
+        nome={progetto.nome ?? "Progetto"}
+        onDeleted={() => {
+          // Dalla pagina del progetto eliminato si torna alla griglia.
+          if (pathname.startsWith(`/task/progetti/${id}`)) router.push("/task?vista=progetti");
+          else chiudi();
+        }}
+      />
+
       <ProgettoDialog
         open={editOpen}
         onOpenChange={setEditOpen}
@@ -179,6 +201,7 @@ export function ProgettoDrawer({ id }: { id: string }) {
           nome: progetto.nome ?? "",
           ambito: progetto.ambito ?? "lavoro",
           cliente_id: progetto.cliente_id ?? "",
+          parent_id: progetto.parent_id ?? "",
           stato: progetto.stato ?? "attivo",
           scadenza: progetto.scadenza ?? "",
           colore: progetto.colore ?? "",

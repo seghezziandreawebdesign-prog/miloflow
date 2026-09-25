@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Building2, ChevronDown, Pencil } from "lucide-react";
+import { ArrowLeft, Building2, ChevronDown, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -15,18 +15,23 @@ import { cn } from "@/lib/utils";
 
 import { AggiuntaRapida } from "./aggiunta-rapida";
 import { AzioniMultipleTask } from "./azioni-multiple";
-import { useProgetto, useTaskProgetto } from "./dati";
+import { useProgetto, useSottoprogetti, useTaskProgetto } from "./dati";
 import { IntestazioneVista } from "./intestazione-vista";
 import { Kanban } from "./kanban";
 import { ListaSkeleton, ListaTask, Superficie } from "./liste";
+import { useNuovoProgetto } from "./nuova-task";
+import { ProgettoCard } from "./progetti-lista";
 import { Progresso } from "./progresso";
+import { PulsanteNuovaTask } from "./pulsante-nuova-task";
 import { SwitchListaBoard, useModoTutte } from "./tutte-le-task";
 
 export function ProgettoPagina({ id }: { id: string }) {
   const { data: progetto, isPending } = useProgetto(id);
   const { data: tasks, isPending: taskPending } = useTaskProgetto(id);
+  const { data: sottoprogetti } = useSottoprogetti(id);
   const [modo, setModo] = useModoTutte();
   const apri = useApriEntita();
+  const nuovoProgetto = useNuovoProgetto();
 
   if (isPending) {
     return (
@@ -46,18 +51,23 @@ export function ProgettoPagina({ id }: { id: string }) {
   const fatte = (tasks ?? [])
     .filter((t) => t.stato === "fatto")
     .sort((a, b) => (b.completata_il ?? "").localeCompare(a.completata_il ?? ""));
+  const figli = (sottoprogetti ?? []).filter((p) => p.stato !== "archiviato");
 
   return (
     <SelezioneProvider key={modo} className="space-y-5">
       <IntestazioneVista
         prima={
-          <Link
-            href="/task?vista=progetti"
-            className="mb-1 inline-flex items-center gap-1 text-sm text-primary hover:underline lg:hidden"
-          >
-            <ArrowLeft className="size-4" />
-            Progetti
-          </Link>
+          progetto.parent_id ? (
+            <LinkPadre id={progetto.parent_id} />
+          ) : (
+            <Link
+              href="/task?vista=progetti"
+              className="mb-1 inline-flex items-center gap-1 text-sm text-primary hover:underline lg:hidden"
+            >
+              <ArrowLeft className="size-4" />
+              Progetti
+            </Link>
+          )
         }
         titolo={
           <span className="flex min-w-0 items-center gap-2">
@@ -87,12 +97,35 @@ export function ProgettoPagina({ id }: { id: string }) {
             <Button variant="outline" size="icon" aria-label="Dettagli progetto" onClick={() => apri({ tipo: "progetto", id })}>
               <Pencil />
             </Button>
+            <PulsanteNuovaTask
+              label="Aggiungi task"
+              valori={{ ambito: progetto.ambito ?? "lavoro", progetto_id: id, cliente_id: progetto.cliente_id ?? "" }}
+            />
           </>
         }
       />
 
       <Progresso fatte={progetto.task_fatte ?? 0} totali={progetto.task_totali ?? 0} colore={progetto.colore} className="max-w-md" />
       {progetto.descrizione && <p className="max-w-3xl text-sm whitespace-pre-line text-muted-foreground">{progetto.descrizione}</p>}
+
+      {!progetto.parent_id && (
+        <section className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-muted-foreground">Sottoprogetti</h2>
+            <Button variant="ghost" size="sm" className="text-primary" onClick={() => nuovoProgetto({ parent_id: id })}>
+              <Plus />
+              Sottoprogetto
+            </Button>
+          </div>
+          {figli.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {figli.map((p) => (
+                <ProgettoCard key={p.id} progetto={p} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <AggiuntaRapida
         defaults={{ ambito: progetto.ambito ?? "lavoro", progetto_id: id }}
@@ -117,6 +150,17 @@ export function ProgettoPagina({ id }: { id: string }) {
       )}
       {modo === "lista" && <AzioniMultipleTask />}
     </SelezioneProvider>
+  );
+}
+
+/** Link al progetto padre di un sottoprogetto. */
+function LinkPadre({ id }: { id: string }) {
+  const { data: padre } = useProgetto(id);
+  return (
+    <Link href={`/task/progetti/${id}`} className="mb-1 inline-flex items-center gap-1 text-sm text-primary hover:underline">
+      <ArrowLeft className="size-4" />
+      {padre?.nome ?? "Progetto"}
+    </Link>
   );
 }
 

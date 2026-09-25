@@ -135,6 +135,18 @@ export function avanzamento(fatte: number, totali: number): number {
 }
 
 /**
+ * Albero dei progetti a un livello, nell'ordine della lista. Un sottoprogetto
+ * il cui padre non è nella lista (es. archiviato) risale tra le radici.
+ */
+export function alberoProgetti<T extends { id: string; parent_id: string | null }>(
+  progetti: T[],
+): { padre: T; figli: T[] }[] {
+  const ids = new Set(progetti.map((p) => p.id));
+  const radici = progetti.filter((p) => !p.parent_id || !ids.has(p.parent_id));
+  return radici.map((padre) => ({ padre, figli: progetti.filter((p) => p.parent_id === padre.id) }));
+}
+
+/**
  * Task per la pagina Oggi: in ritardo (pianificata o scadenza superata) e di
  * oggi (pianificata oggi o in scadenza oggi). Solo task aperte.
  */

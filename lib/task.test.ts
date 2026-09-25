@@ -4,6 +4,7 @@ import { parseTaskRapida } from "@/lib/parsing/task-rapida";
 import { taskDaRapida, taskSchema, taskToDb, taskVuota } from "@/lib/schemas/task";
 
 import {
+  alberoProgetti,
   confrontaTask,
   daSollecitare,
   giorniInAttesa,
@@ -164,5 +165,25 @@ describe("taskDiOggi", () => {
     const r = taskDiOggi([ritardoPianificata, ritardoScadenza, pianificataOggi, scadeOggi, futura, fatta], oggi);
     expect(r.inRitardo).toEqual([ritardoPianificata, ritardoScadenza]);
     expect(r.perOggi).toEqual([pianificataOggi, scadeOggi]);
+  });
+});
+
+describe("alberoProgetti", () => {
+  const p = (id: string, parent_id: string | null = null) => ({ id, parent_id });
+
+  it("raggruppa i sottoprogetti sotto il padre, nell'ordine della lista", () => {
+    const a = p("a");
+    const a1 = p("a1", "a");
+    const b = p("b");
+    const a2 = p("a2", "a");
+    expect(alberoProgetti([a, a1, b, a2])).toEqual([
+      { padre: a, figli: [a1, a2] },
+      { padre: b, figli: [] },
+    ]);
+  });
+
+  it("un sottoprogetto senza padre nella lista risale tra le radici", () => {
+    const orfano = p("x1", "archiviato");
+    expect(alberoProgetti([orfano])).toEqual([{ padre: orfano, figli: [] }]);
   });
 });

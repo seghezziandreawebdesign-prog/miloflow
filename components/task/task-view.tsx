@@ -60,11 +60,7 @@ export function TaskView({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) {
           <>
             {selezionabile && <PulsanteSeleziona />}
             {vista === "tutte" && <SwitchListaBoard value={modo} onChange={setModo} />}
-            {vista !== "progetti" && (
-              <div className="hidden sm:block">
-                <PulsanteNuovaTask valori={{ ambito: ambitoDiDefault(filtroAmbito) }} />
-              </div>
-            )}
+            {vista !== "progetti" && <PulsanteNuovaTask valori={{ ambito: ambitoDiDefault(filtroAmbito) }} />}
           </>
         }
       />

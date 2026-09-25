@@ -221,6 +221,12 @@ export async function completaTasks(
   return { ok: true, data: { completate } };
 }
 
+function erroreProgetto(error: { code?: string; message: string }): string {
+  if (error.message.includes("un solo livello")) return "I sottoprogetti possono avere un solo livello";
+  if (error.message.includes("non può diventare")) return "Un progetto con sottoprogetti non può diventare un sottoprogetto";
+  return dbErrorMessage(error, "Salvataggio non riuscito");
+}
+
 export async function saveProgetto(id: string | null, input: unknown): Promise<ActionResult<{ id: string }>> {
   if (id !== null && !idSchema.safeParse(id).success) return NESSUN_PERMESSO;
   const parsed = progettoSchema.safeParse(input);
@@ -231,16 +237,58 @@ export async function saveProgetto(id: string | null, input: unknown): Promise<A
   const valori = progettoToDb(parsed.data);
   if (id === null) {
     const nuovo = crypto.randomUUID();
-    const { error } = await supabase.from("progetti").insert({ id: nuovo, ...valori });
-    if (error) return { ok: false, error: dbErrorMessage(error, "Salvataggio non riuscito") };
+    // In fondo al proprio livello.
+    const { data: ultimo } = await supabase
+      .from("progetti")
+      .select("ordine")
+      .order("ordine", { ascending: false })
+      .limit(1);
+    const { error } = await supabase.from("progetti").insert({ id: nuovo, ...valori, ordine: (ultimo?.[0]?.ordine ?? 0) + 10 });
+    if (error) return { ok: false, error: erroreProgetto(error) };
     revalida();
     return { ok: true, data: { id: nuovo } };
   }
   const { data, error } = await supabase.from("progetti").update(valori).eq("id", id).select("id");
-  if (error) return { ok: false, error: dbErrorMessage(error, "Salvataggio non riuscito") };
+  if (error) return { ok: false, error: erroreProgetto(error) };
   if (data.length === 0) return NESSUN_PERMESSO;
   revalida();
   return { ok: true, data: { id } };
+}
+
+/** Riordina i progetti di un livello: l'ordine è la posizione nell'array. */
+export async function riordinaProgetti(ids: unknown): Promise<ActionResult> {
+  const parsed = z.array(idSchema).min(1).max(500).safeParse(ids);
+  if (!parsed.success) return NESSUN_PERMESSO;
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("riordina_progetti", { p_ids: parsed.data });
+  if (error) return { ok: false, error: dbErrorMessage(error, "Riordino non riuscito") };
+  revalida();
+  return { ok: true };
+}
+
+/**
+ * Eliminazione definitiva del progetto, sottoprogetti compresi. Le task si
+ * eliminano solo se richiesto (con sottotask e allegati); altrimenti restano
+ * senza progetto (foreign key con set null).
+ */
+export async function deleteProgetto(id: string, { conTask = false }: { conTask?: boolean } = {}): Promise<ActionResult> {
+  if (!idSchema.safeParse(id).success) return NESSUN_PERMESSO;
+  const supabase = await createClient();
+  const { data: figli } = await supabase.from("progetti").select("id").eq("parent_id", id);
+  const progettoIds = [id, ...(figli ?? []).map((f) => f.id)];
+  if (conTask) {
+    const { data: tasks, error } = await supabase.from("task").select("id").in("progetto_id", progettoIds).is("parent_id", null);
+    if (error) return { ok: false, error: dbErrorMessage(error, "Eliminazione non riuscita") };
+    if (tasks && tasks.length > 0) {
+      const result = await eliminaTask(tasks.map((t) => t.id));
+      if (!result.ok) return result;
+    }
+  }
+  const { data, error } = await supabase.from("progetti").delete().eq("id", id).select("id");
+  if (error) return { ok: false, error: dbErrorMessage(error, "Eliminazione non riuscita") };
+  if (data.length === 0) return NESSUN_PERMESSO;
+  revalida();
+  return { ok: true };
 }
 
 const statoProgettoSchema = z.enum(["attivo", "in_pausa", "completato", "archiviato"]);

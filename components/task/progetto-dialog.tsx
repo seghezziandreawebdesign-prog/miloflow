@@ -83,6 +83,11 @@ function ProgettoForm({
   const [saving, startSaving] = useTransition();
   const err = formState.errors;
 
+  // Un solo livello: come padre valgono solo i progetti radice, non se stesso;
+  // un progetto che ha già sottoprogetti non può diventare figlio.
+  const haFigli = Boolean(progettoId && opzioni?.progetti.some((p) => p.parent_id === progettoId));
+  const padri = (opzioni?.progetti ?? []).filter((p) => !p.parent_id && p.id !== progettoId).map((p) => ({ id: p.id, nome: p.nome }));
+
   const onSubmit = handleSubmit((values) =>
     startSaving(async () => {
       const result = await saveProgetto(progettoId ?? null, values);
@@ -148,6 +153,26 @@ function ProgettoForm({
             />
           </Field>
         </div>
+
+        {!haFigli && padri.length > 0 && (
+          <Field>
+            <FieldLabel htmlFor="progetto-padre">Progetto padre</FieldLabel>
+            <Controller
+              control={control}
+              name="parent_id"
+              render={({ field }) => (
+                <SceltaPicker
+                  id="progetto-padre"
+                  opzioni={padri}
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Nessuno: è un progetto principale"
+                  cerca="Cerca un progetto…"
+                />
+              )}
+            />
+          </Field>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Controller

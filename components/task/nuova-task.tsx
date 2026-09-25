@@ -22,7 +22,7 @@ import { CampoAggiuntaRapida, useAggiuntaRapida, type DefaultTask } from "./aggi
 import { ProgettoDialog } from "./progetto-dialog";
 
 type Richiesta = Partial<TaskFormValues> & { apriDopo?: boolean };
-type RichiestaProgetto = { cliente_id?: string };
+type RichiestaProgetto = { cliente_id?: string; parent_id?: string };
 type RichiestaEvento = Partial<EventoFormValues>;
 
 type ContextValue = {
@@ -99,7 +99,7 @@ export function NuovaTaskProvider({
         key={`progetto-${chiave}`}
         open={progetto !== null}
         onOpenChange={(o) => !o && setProgetto(null)}
-        defaultValues={progettoVuoto(ambito, progetto?.cliente_id ?? "")}
+        defaultValues={progettoVuoto(ambito, progetto?.cliente_id ?? "", progetto?.parent_id ?? "")}
         onSaved={(id) => router.push(`/task/progetti/${id}`)}
       />
       {evento && (

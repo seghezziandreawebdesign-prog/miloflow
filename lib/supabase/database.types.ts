@@ -2157,6 +2157,7 @@ export type Database = {
         Args: { p_ids: string[]; p_parent_id: string }
         Returns: undefined
       }
+      riordina_progetti: { Args: { p_ids: string[] }; Returns: undefined }
       salva_debito: {
         Args: { p_debito: Json; p_id: string; p_rate: Json }
         Returns: string

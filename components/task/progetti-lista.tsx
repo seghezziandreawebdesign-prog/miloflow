@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ambitoDiDefault, type FiltroAmbito } from "@/lib/ambito";
 import { formatGiornoRelativo, todayISO } from "@/lib/dates/format";
 import { progettoVuoto } from "@/lib/schemas/task";
-import { statoProgetto } from "@/lib/task";
+import { alberoProgetti, avanzamento, statoProgetto } from "@/lib/task";
 import { cn } from "@/lib/utils";
 
 import { useProgetti, type ProgettoLista } from "./dati";
@@ -69,8 +69,13 @@ export function ProgettiLista({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) 
         />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {visibili.map((p) => (
-            <ProgettoCard key={p.id} progetto={p} />
+          {alberoProgetti(visibili).map((ramo) => (
+            <div key={ramo.padre.id} className="space-y-2 self-start">
+              <ProgettoCard progetto={ramo.padre} />
+              {ramo.figli.map((f) => (
+                <SottoprogettoRiga key={f.id} progetto={f} />
+              ))}
+            </div>
           ))}
         </div>
       )}
@@ -82,6 +87,32 @@ export function ProgettiLista({ filtroAmbito }: { filtroAmbito: FiltroAmbito }) 
         onSaved={(id) => router.push(`/task/progetti/${id}`)}
       />
     </div>
+  );
+}
+
+/** Riga compatta di un sottoprogetto, sotto la card del padre. */
+function SottoprogettoRiga({ progetto: p }: { progetto: ProgettoLista }) {
+  const stato = statoProgetto(p.stato ?? "attivo");
+  return (
+    <Link
+      href={`/task/progetti/${p.id}`}
+      className="ml-4 flex items-center gap-2 rounded-lg bg-card px-3 py-2 text-sm ring-1 ring-black/8 transition-shadow hover:shadow-md"
+    >
+      <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: p.colore ?? "var(--muted-foreground)" }} />
+      <span className={cn("truncate", p.stato === "in_pausa" && "text-muted-foreground")}>{p.nome}</span>
+      {p.stato !== "attivo" && p.stato !== "in_pausa" && (
+        <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-xs ring-1 ring-inset", stato.className)}>{stato.label}</span>
+      )}
+      <span
+        className="ml-auto h-1 w-10 shrink-0 overflow-hidden rounded-full bg-black/8"
+        title={`${p.task_fatte ?? 0} task fatte su ${p.task_totali ?? 0}`}
+      >
+        <span
+          className="block h-full rounded-full"
+          style={{ width: `${avanzamento(p.task_fatte ?? 0, p.task_totali ?? 0)}%`, backgroundColor: p.colore ?? "var(--primary)" }}
+        />
+      </span>
+    </Link>
   );
 }
 

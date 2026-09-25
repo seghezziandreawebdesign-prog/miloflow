@@ -1,17 +1,32 @@
 "use client";
 
-import { CalendarRange, ChevronDown, FolderKanban, Hourglass, Inbox, LayoutGrid, ListChecks, Plus, Sun, type LucideIcon } from "lucide-react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useQueryClient } from "@tanstack/react-query";
+import { CalendarRange, ChevronDown, FolderKanban, GripVertical, Hourglass, Inbox, LayoutGrid, ListChecks, Plus, Sun, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { riordinaProgetti } from "@/lib/actions/task";
 import type { FiltroAmbito } from "@/lib/ambito";
 import { todayISO } from "@/lib/dates/format";
-import { avanzamento, isInbox, taskDiOggi } from "@/lib/task";
+import { alberoProgetti, avanzamento, isInbox, taskDiOggi } from "@/lib/task";
 import { cn } from "@/lib/utils";
 
-import { useProgetti, useTaskAperte } from "./dati";
+import { chiaviProgetti, useProgetti, useTaskAperte, type ProgettoLista } from "./dati";
 import { useNuovoProgetto } from "./nuova-task";
 import { VISTE, type Vista } from "./viste";
 
@@ -124,24 +139,7 @@ function Contenuto({
         <ListChecks className={cn("size-4 shrink-0", vista === "tutte" ? "text-primary" : "text-muted-foreground")} />
         Tutte le task
       </Voce>
-      {correnti.map((p) => {
-        const attiva = p.id === progettoId;
-        return (
-          <Voce key={p.id} href={`/task/progetti/${p.id}`} attiva={attiva} onNavigate={onNavigate} large={large}>
-            <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: p.colore ?? "var(--muted-foreground)" }} />
-            <span className={cn("truncate", p.stato === "in_pausa" && "text-muted-foreground")}>{p.nome}</span>
-            <span
-              className="ml-auto h-1 w-8 shrink-0 overflow-hidden rounded-full bg-black/8"
-              title={`${p.task_fatte ?? 0} task fatte su ${p.task_totali ?? 0}`}
-            >
-              <span
-                className="block h-full rounded-full"
-                style={{ width: `${avanzamento(p.task_fatte ?? 0, p.task_totali ?? 0)}%`, backgroundColor: p.colore ?? "var(--primary)" }}
-              />
-            </span>
-          </Voce>
-        );
-      })}
+      <ColonnaProgetti progetti={correnti} progettoId={progettoId} onNavigate={onNavigate} large={large} />
       <Voce href="/task?vista=progetti" attiva={vista === "progetti"} onNavigate={onNavigate} large={large}>
         <FolderKanban className={cn("size-4 shrink-0", vista === "progetti" ? "text-primary" : "text-muted-foreground")} />
         Tutti i progetti
@@ -161,6 +159,157 @@ function Contenuto({
         Nuovo progetto
       </button>
     </nav>
+  );
+}
+
+/**
+ * Progetti attivi e in pausa, con i sottoprogetti sotto il padre. Il
+ * trascinamento (dalla maniglia) riordina un livello per volta; l'ordine
+ * locale si riallinea quando arrivano dati nuovi dal server.
+ */
+function ColonnaProgetti({
+  progetti,
+  progettoId,
+  onNavigate,
+  large,
+}: {
+  progetti: ProgettoLista[];
+  progettoId: string | null;
+  onNavigate?: () => void;
+  large?: boolean;
+}) {
+  const [stato, setStato] = useState({ progetti, albero: alberoProgetti(progetti) });
+  if (stato.progetti !== progetti) setStato({ progetti, albero: alberoProgetti(progetti) });
+  const albero = stato.albero;
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  function salvaOrdine(ids: string[]) {
+    startTransition(async () => {
+      const result = await riordinaProgetti(ids);
+      if (!result.ok) toast.error(result.error);
+      await queryClient.invalidateQueries({ queryKey: chiaviProgetti.tutti });
+      router.refresh();
+    });
+  }
+
+  function onDragEndRadici(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const da = albero.findIndex((r) => r.padre.id === active.id);
+    const a = albero.findIndex((r) => r.padre.id === over.id);
+    const nuovo = arrayMove(albero, da, a);
+    setStato((s) => ({ ...s, albero: nuovo }));
+    salvaOrdine(nuovo.map((r) => r.padre.id));
+  }
+
+  function onDragEndFigli(padreId: string, e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ramo = albero.find((r) => r.padre.id === padreId);
+    if (!ramo) return;
+    const da = ramo.figli.findIndex((f) => f.id === active.id);
+    const a = ramo.figli.findIndex((f) => f.id === over.id);
+    const figli = arrayMove(ramo.figli, da, a);
+    setStato((s) => ({ ...s, albero: s.albero.map((r) => (r.padre.id === padreId ? { ...r, figli } : r)) }));
+    salvaOrdine(figli.map((f) => f.id));
+  }
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEndRadici}>
+      <SortableContext items={albero.map((r) => r.padre.id)} strategy={verticalListSortingStrategy}>
+        {albero.map((ramo) => (
+          <RamoProgetti key={ramo.padre.id} ramo={ramo} progettoId={progettoId} onNavigate={onNavigate} large={large} sensors={sensors} onDragEndFigli={(e) => onDragEndFigli(ramo.padre.id, e)} />
+        ))}
+      </SortableContext>
+    </DndContext>
+  );
+}
+
+function RamoProgetti({
+  ramo,
+  progettoId,
+  onNavigate,
+  large,
+  sensors,
+  onDragEndFigli,
+}: {
+  ramo: { padre: ProgettoLista; figli: ProgettoLista[] };
+  progettoId: string | null;
+  onNavigate?: () => void;
+  large?: boolean;
+  sensors: ReturnType<typeof useSensors>;
+  onDragEndFigli: (e: DragEndEvent) => void;
+}) {
+  return (
+    <VoceProgetto progetto={ramo.padre} attiva={ramo.padre.id === progettoId} onNavigate={onNavigate} large={large}>
+      {ramo.figli.length > 0 && (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEndFigli}>
+          <SortableContext items={ramo.figli.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-0.5 pl-4">
+              {ramo.figli.map((f) => (
+                <VoceProgetto key={f.id} progetto={f} attiva={f.id === progettoId} onNavigate={onNavigate} large={large} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
+    </VoceProgetto>
+  );
+}
+
+function VoceProgetto({
+  progetto: p,
+  attiva,
+  onNavigate,
+  large,
+  children,
+}: {
+  progetto: ProgettoLista;
+  attiva: boolean;
+  onNavigate?: () => void;
+  large?: boolean;
+  children?: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn(isDragging && "z-10 opacity-80")}>
+      <div className="group relative">
+        <Voce href={`/task/progetti/${p.id}`} attiva={attiva} onNavigate={onNavigate} large={large}>
+          <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: p.colore ?? "var(--muted-foreground)" }} />
+          <span className={cn("truncate", p.stato === "in_pausa" && "text-muted-foreground")}>{p.nome}</span>
+          <span
+            className={cn("ml-auto h-1 w-8 shrink-0 overflow-hidden rounded-full bg-black/8", large ? "mr-7" : "group-hover:opacity-0")}
+            title={`${p.task_fatte ?? 0} task fatte su ${p.task_totali ?? 0}`}
+          >
+            <span
+              className="block h-full rounded-full"
+              style={{ width: `${avanzamento(p.task_fatte ?? 0, p.task_totali ?? 0)}%`, backgroundColor: p.colore ?? "var(--primary)" }}
+            />
+          </span>
+        </Voce>
+        <button
+          type="button"
+          aria-label={`Trascina per riordinare ${p.nome}`}
+          className={cn(
+            "absolute top-1/2 right-1 -translate-y-1/2 cursor-grab touch-none rounded p-1 text-muted-foreground/70 active:cursor-grabbing",
+            large ? "" : "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
+          )}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="size-4" />
+        </button>
+      </div>
+      {children}
+    </div>
   );
 }
 
