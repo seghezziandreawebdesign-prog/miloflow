@@ -153,6 +153,20 @@ insert into public.salvadanai_prelievi (salvadanaio_id, importo) values
 insert into public.salvadanai_valori (salvadanaio_id, valore) values
   ('70000000-0000-0000-0000-000000000001', 100);
 
+-- Categorie di prova: quelle del seed possono cambiare in produzione,
+-- quindi i conteggi usano solo queste.
+insert into public.categorie (id, nome, ambito) values
+  ('90000000-0000-0000-0000-000000000001', 'CatTest lavoro', 'lavoro'),
+  ('90000000-0000-0000-0000-000000000003', 'CatTest personale', 'personale');
+insert into public.categorie (id, nome, ambito, parent_id) values
+  ('90000000-0000-0000-0000-000000000002', 'CatTest figlia', 'lavoro', '90000000-0000-0000-0000-000000000001');
+
+-- Calendario esterno dell'owner con un'occorrenza in cache.
+insert into public.calendari_esterni (id, user_id, nome, url) values
+  ('80000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-00000000000a', 'Famiglia', 'https://example.com/famiglia.ics');
+insert into public.eventi_esterni (calendario_id, uid, titolo, inizio) values
+  ('80000000-0000-0000-0000-000000000001', 'uid-1', 'Cena di famiglia', now());
+
 -- Regole di coerenza delle task (trigger).
 insert into public.task (id, titolo, progetto_id) values
   ('40000000-0000-0000-0000-000000000010', 'Eredita cliente', '30000000-0000-0000-0000-000000000001');
@@ -329,6 +343,25 @@ select public._test_conta(
 select public._test_rifiutato(
   $q$insert into public.impostazioni_calendario (user_id) values ('00000000-0000-0000-0000-00000000000a')$q$,
   'crea le preferenze calendario di un altro utente');
+-- Calendari esterni: ognuno vede e gestisce solo i propri.
+select public._test_conta('select 1 from public.calendari_esterni', 0, 'calendari esterni di altri invisibili');
+select public._test_conta('select 1 from public.eventi_esterni', 0, 'eventi esterni di altri invisibili');
+select public._test_rifiutato(
+  $q$insert into public.calendari_esterni (user_id, nome, url)
+     values ('00000000-0000-0000-0000-00000000000a', 'X', 'https://example.com/x.ics')$q$,
+  'crea un calendario esterno per un altro utente');
+select public._test_rifiutato(
+  $q$insert into public.eventi_esterni (calendario_id, uid, titolo, inizio)
+     values ('80000000-0000-0000-0000-000000000001', 'x', 'X', now())$q$,
+  'scrive nella cache del calendario di un altro utente');
+insert into public.calendari_esterni (id, nome, url) values
+  ('80000000-0000-0000-0000-000000000002', 'Mio', 'https://example.com/mio.ics');
+insert into public.eventi_esterni (calendario_id, uid, titolo, inizio) values
+  ('80000000-0000-0000-0000-000000000002', 'uid-mio', 'Mio evento', now());
+select public._test_conta('select 1 from public.calendari_esterni', 1, 'vede solo il proprio calendario esterno');
+select public._test_righe(
+  $q$delete from public.calendari_esterni where id = '80000000-0000-0000-0000-000000000002'$q$,
+  1, 'elimina il proprio calendario esterno (con la cache in cascata)');
 select public._test_conta('select 1 from public.categorie', 0, 'categorie senza permesso budget');
 select public._test_conta('select 1 from public.metodi_pagamento', 0, 'metodi di pagamento senza permesso budget');
 select public._test_conta('select 1 from public.movimenti', 0, 'movimenti senza permesso budget');
@@ -444,7 +477,7 @@ select public._test_conta('select 1 from public.v_servizi where costo = 120', 1,
 select public._test_conta('select 1 from public.servizi_clienti_economico', 1, 'prezzo di rivendita di S1');
 select public._test_conta('select 1 from public.credenziali', 1, 'credenziali (solo S1)');
 select public._test_conta('select 1 from public.categorie where ambito = ''personale''', 0, 'nessuna categoria personale');
-select public._test_conta($q$select 1 from public.categorie where nome in ('Software','Attrezzatura','Formazione','Commercialista','Hosting','Domini','Licenze','SaaS')$q$, 8, 'categorie di lavoro (4 + 4 sottocategorie)');
+select public._test_conta($q$select 1 from public.categorie where nome like 'CatTest%'$q$, 2, 'categorie di lavoro seminate (padre e figlia, mai la personale)');
 select public._test_conta('select 1 from public.movimenti where descrizione like ''M %''', 1, 'movimenti di lavoro');
 select public._test_rifiutato('select public.genera_previsti(public.oggi())', 'genera i previsti senza essere owner');
 select public._test_rifiutato('select public.esporta_backup()', 'esporta il backup senza essere owner');
@@ -501,6 +534,8 @@ begin
 end;
 $$;
 select public._test_conta('select 1 from public.credenziali where etichetta like ''Pannello S_''', 2, 'owner: credenziali');
+select public._test_conta('select 1 from public.calendari_esterni where nome = ''Famiglia''', 1, 'owner: calendari esterni');
+select public._test_conta('select 1 from public.eventi_esterni where titolo = ''Cena di famiglia''', 1, 'owner: eventi esterni in cache');
 select public._test_conta('select 1 from public.v_servizi where nome = ''S4'' and stato_scadenza = ''scaduto''', 1, 'owner: stato scaduto calcolato');
 select public._test_conta('select 1 from public.v_servizi where nome = ''S1'' and stato_scadenza = ''urgente''', 1, 'owner: stato urgente calcolato');
 select public._test_righe(

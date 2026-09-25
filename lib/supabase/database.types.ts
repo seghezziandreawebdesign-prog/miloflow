@@ -98,6 +98,56 @@ export type Database = {
           },
         ]
       }
+      calendari_esterni: {
+        Row: {
+          ambito: Database["public"]["Enums"]["ambito"]
+          attivo: boolean
+          colore: string | null
+          created_at: string
+          errore_sync: string | null
+          id: string
+          nome: string
+          ultimo_sync: string | null
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          ambito?: Database["public"]["Enums"]["ambito"]
+          attivo?: boolean
+          colore?: string | null
+          created_at?: string
+          errore_sync?: string | null
+          id?: string
+          nome: string
+          ultimo_sync?: string | null
+          updated_at?: string
+          url: string
+          user_id?: string
+        }
+        Update: {
+          ambito?: Database["public"]["Enums"]["ambito"]
+          attivo?: boolean
+          colore?: string | null
+          created_at?: string
+          errore_sync?: string | null
+          id?: string
+          nome?: string
+          ultimo_sync?: string | null
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendari_esterni_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profili"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cassaforte: {
         Row: {
           created_at: string
@@ -699,6 +749,53 @@ export type Database = {
             columns: ["progetto_id"]
             isOneToOne: false
             referencedRelation: "v_progetti"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eventi_esterni: {
+        Row: {
+          calendario_id: string
+          created_at: string
+          fine: string | null
+          id: string
+          inizio: string
+          luogo: string | null
+          note: string | null
+          titolo: string
+          tutto_il_giorno: boolean
+          uid: string
+        }
+        Insert: {
+          calendario_id: string
+          created_at?: string
+          fine?: string | null
+          id?: string
+          inizio: string
+          luogo?: string | null
+          note?: string | null
+          titolo: string
+          tutto_il_giorno?: boolean
+          uid: string
+        }
+        Update: {
+          calendario_id?: string
+          created_at?: string
+          fine?: string | null
+          id?: string
+          inizio?: string
+          luogo?: string | null
+          note?: string | null
+          titolo?: string
+          tutto_il_giorno?: boolean
+          uid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eventi_esterni_calendario_id_fkey"
+            columns: ["calendario_id"]
+            isOneToOne: false
+            referencedRelation: "calendari_esterni"
             referencedColumns: ["id"]
           },
         ]
