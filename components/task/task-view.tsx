@@ -14,7 +14,7 @@ import { AggiuntaRapida } from "./aggiunta-rapida";
 import { AzioniMultipleTask } from "./azioni-multiple";
 import { useTaskAperte, type TaskLista } from "./dati";
 import { IntestazioneVista } from "./intestazione-vista";
-import { GruppoTask, ListaSkeleton, ListaTask, Superficie } from "./liste";
+import { GruppoTask, ListaSkeleton, ListaTask } from "./liste";
 import { useNuovaTask } from "./nuova-task";
 import { PianificaSettimana } from "./pianifica-settimana";
 import { ProgettiLista } from "./progetti-lista";
@@ -99,9 +99,7 @@ function VistaInbox({ tasks, filtroAmbito }: { tasks: TaskLista[]; filtroAmbito:
           description="Qui finiscono le task senza data di inizio, senza scadenza e senza progetto."
         />
       ) : (
-        <Superficie>
           <ListaTask tasks={inbox} />
-        </Superficie>
       )}
     </div>
   );
@@ -200,9 +198,7 @@ function VistaAttesa({ tasks }: { tasks: TaskLista[] }) {
     );
   }
   return (
-    <Superficie>
       <ListaTask tasks={inAttesa} />
-    </Superficie>
   );
 }
 

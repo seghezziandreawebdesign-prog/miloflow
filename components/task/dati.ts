@@ -16,7 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 // genitore (per le sottotask) e sottotask (per i conteggi).
 const SELECT_TASK = `*,
   progetti(id, nome, colore),
-  clienti(id, nome_breve, ragione_sociale, colore),
+  clienti(id, nome_breve, ragione_sociale, colore, logo_path, sito),
   servizi(id, nome),
   genitore:parent_id(id, titolo),
   sottotask:task!parent_id(id, stato)`;
@@ -24,7 +24,13 @@ const SELECT_TASK = `*,
 async function leggiTask(build: (q: ReturnType<typeof queryBase>) => ReturnType<typeof queryBase>) {
   const { data, error } = await build(queryBase());
   if (error) throw new Error(`Lettura task non riuscita: ${error.message}`);
-  return data.map(normalizzaTask);
+  // I loghi dei clienti stanno in un bucket privato: un solo giro di URL firmati.
+  const paths = [...new Set(data.flatMap((t) => (t.clienti?.logo_path ? [t.clienti.logo_path] : [])))];
+  const signed = paths.length
+    ? ((await createClient().storage.from("loghi").createSignedUrls(paths, 3600)).data ?? [])
+    : [];
+  const logoUrl = new Map(signed.flatMap((s) => (s.path && s.signedUrl ? [[s.path, s.signedUrl] as const] : [])));
+  return data.map((t) => normalizzaTask(t, logoUrl));
 }
 
 function queryBase() {
@@ -33,10 +39,11 @@ function queryBase() {
 
 type RigaTask = NonNullable<Awaited<ReturnType<typeof queryBase>>["data"]>[number];
 
-function normalizzaTask(t: RigaTask) {
+function normalizzaTask(t: RigaTask, logoUrl: Map<string, string> = new Map()) {
   return {
     ...t,
     cliente_nome: t.clienti ? nomeCliente(t.clienti) : null,
+    cliente_logo_url: t.clienti?.logo_path ? (logoUrl.get(t.clienti.logo_path) ?? null) : null,
     sottotask_aperte: t.sottotask.filter((s) => s.stato !== "fatto").length,
     sottotask_totali: t.sottotask.length,
   };

@@ -18,7 +18,7 @@ import { AzioniMultipleTask } from "./azioni-multiple";
 import { useProgetto, useSottoprogetti, useTaskProgetto } from "./dati";
 import { IntestazioneVista } from "./intestazione-vista";
 import { Kanban } from "./kanban";
-import { ListaSkeleton, ListaTask, Superficie } from "./liste";
+import { ListaSkeleton, ListaTask } from "./liste";
 import { useNuovoProgetto } from "./nuova-task";
 import { ProgettoCard } from "./progetti-lista";
 import { Progresso } from "./progresso";
@@ -138,13 +138,11 @@ export function ProgettoPagina({ id }: { id: string }) {
         <Kanban tasks={tasks ?? []} />
       ) : (
         <div className="space-y-6">
-          <Superficie>
             <ListaTask
               tasks={aperte}
               opzioni={{ senzaProgetto: true, senzaCliente: true }}
               vuoto="Nessuna task aperta: aggiungine una qui sopra."
             />
-          </Superficie>
           {fatte.length > 0 && <Completate tasks={fatte} />}
         </div>
       )}
@@ -173,9 +171,7 @@ function Completate({ tasks }: { tasks: Parameters<typeof ListaTask>[0]["tasks"]
         Completate ({tasks.length})
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-2">
-        <Superficie>
           <ListaTask tasks={tasks} opzioni={{ senzaProgetto: true, senzaCliente: true }} />
-        </Superficie>
       </CollapsibleContent>
     </Collapsible>
   );

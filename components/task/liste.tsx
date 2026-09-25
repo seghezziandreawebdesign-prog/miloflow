@@ -24,10 +24,15 @@ export function ListaTask({
     return vuoto ? <div className="px-2 py-3 text-sm text-muted-foreground">{vuoto}</div> : null;
   }
   return (
-    // Un piccolo respiro tra le righe al posto delle righe attaccate.
-    <div className={cn("flex flex-col gap-1", className)}>
+    // Ogni task è una card a sé, con un piccolo respiro tra una e l'altra.
+    <div className={cn("flex flex-col gap-1.5", className)}>
       {tasks.map((t) => (
-        <TaskRow key={t.id} task={t} opzioni={opzioni} />
+        <TaskRow
+          key={t.id}
+          task={t}
+          opzioni={opzioni}
+          className="rounded-xl bg-card px-3 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8"
+        />
       ))}
     </div>
   );
@@ -65,17 +70,8 @@ export function GruppoTask({
           </button>
         )}
       </div>
-      <Superficie>{children}</Superficie>
-    </section>
-  );
-}
-
-/** Riquadro bianco che contiene una lista (stile "inset grouped"). */
-export function Superficie({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={cn("overflow-hidden rounded-xl bg-card px-1 py-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-black/8", className)}>
       {children}
-    </div>
+    </section>
   );
 }
 

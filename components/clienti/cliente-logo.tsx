@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const noopSubscribe = () => () => {};
 
 const SIZES = {
+  xs: "size-5 text-[9px] rounded",
   sm: "size-8 text-xs rounded-md",
   md: "size-10 text-sm rounded-lg",
   lg: "size-16 text-lg rounded-xl",

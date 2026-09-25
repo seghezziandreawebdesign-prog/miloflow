@@ -2,6 +2,7 @@
 
 import { Building2, CalendarDays, CornerDownRight, Flag, FolderKanban, Hourglass, ListChecks, Repeat, Text } from "lucide-react";
 
+import { ClienteLogo } from "@/components/clienti/cliente-logo";
 import { useApriEntita } from "@/components/drawer/use-apri-entita";
 import { attributiSelezione, CasellaSelezione, useSelezione } from "@/components/selezione";
 import { formatGiornoRelativo, todayISO } from "@/lib/dates/format";
@@ -81,6 +82,18 @@ export function TaskRow({
         </p>
         <TaskMeta task={task} opzioni={opzioni} />
       </div>
+      {/* Il logo dice a colpo d'occhio di quale cliente è la task. */}
+      {task.clienti && !opzioni.senzaCliente && (
+        <span title={task.cliente_nome ?? undefined} className="mt-0.5">
+          <ClienteLogo
+            nome={task.cliente_nome ?? ""}
+            colore={task.clienti.colore}
+            logoUrl={task.cliente_logo_url}
+            sito={task.clienti.sito}
+            size="xs"
+          />
+        </span>
+      )}
       {!selezionando && !opzioni.senzaElimina && <EliminaTaskButton task={task} />}
       {children}
     </div>
