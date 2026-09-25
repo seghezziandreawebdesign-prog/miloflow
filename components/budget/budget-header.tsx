@@ -93,6 +93,13 @@ export function BudgetHeader({
       {tab === "report" && (
         <div className="space-y-3">
           <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-0.5 scrollbar-none sm:mx-0 sm:px-0">
+            <Link
+              href={`/budget/stampa/report?${new URLSearchParams(parametriReport(report)).toString()}`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "order-last ml-auto shrink-0")}
+            >
+              <Printer />
+              Esporta PDF
+            </Link>
             {PERIODI_REPORT.map((p) => (
               <Link
                 key={p.value}
