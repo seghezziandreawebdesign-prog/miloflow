@@ -1,10 +1,10 @@
 "use client";
 
-import { useCalendarController, type DateSelectInfo, type EventDropInfo, type EventResizeDoneInfo } from "@fullcalendar/react";
+import { useCalendarController, type DateSelectInfo, type DropInfo, type EventDropInfo, type EventResizeDoneInfo } from "@fullcalendar/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CalendarPlus, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useApriEntita } from "@/components/drawer/use-apri-entita";
@@ -12,6 +12,7 @@ import { Segmented } from "@/components/segmented";
 import { useAggiornaTask } from "@/components/task/dati";
 import { useNuovoEvento } from "@/components/task/nuova-task";
 import { Button } from "@/components/ui/button";
+import { sincronizzaCalendariEsterni } from "@/lib/actions/calendari-esterni";
 import { spostaEvento } from "@/lib/actions/eventi";
 import { ambitoDiDefault, type FiltroAmbito } from "@/lib/ambito";
 import {
@@ -20,6 +21,7 @@ import {
   riferimentoEvento,
   VISTE_CALENDARIO,
   vistaDaFullCalendar,
+  type RigaCalendario,
   type VistaCalendario,
 } from "@/lib/calendario";
 import { addDays } from "@/lib/dates/giorni";
@@ -28,7 +30,9 @@ import { cn } from "@/lib/utils";
 
 import type { PropsEventoFc } from "./calendario-fc";
 import { CreaDaSlot, type SlotScelto } from "./crea-da-slot";
+import { DaPianificare } from "./da-pianificare";
 import { invalidaCalendario, useCalendario } from "./dati";
+import { EventoEsternoDialog } from "./evento-esterno-dialog";
 import { FiltriCalendario, useFiltriCalendario } from "./filtri-calendario";
 
 // FullCalendar lavora solo nel browser.
@@ -67,7 +71,20 @@ export function CalendarioView({ filtroAmbito, impostazioni }: { filtroAmbito: F
   const [intervallo, setIntervallo] = useState<{ dal: string; al: string } | null>(null);
   const [titolo, setTitolo] = useState("");
   const [slot, setSlot] = useState<SlotScelto | null>(null);
+  const [esterno, setEsterno] = useState<RigaCalendario | null>(null);
   const { data, isFetching } = useCalendario(intervallo?.dal ?? null, intervallo?.al ?? null, filtroAmbito);
+
+  // All'apertura si aggiornano i calendari esterni non sincronizzati da un'ora.
+  const sincronizzato = useRef(false);
+  useEffect(() => {
+    if (sincronizzato.current) return;
+    sincronizzato.current = true;
+    void sincronizzaCalendariEsterni().then((r) => {
+      if (!r.ok) return;
+      if (r.data.sincronizzati > 0) invalidaCalendario(queryClient);
+      for (const errore of r.data.errori) toast.error(errore);
+    });
+  }, [queryClient]);
 
   // Su telefono si parte dal giorno, che è l'unica vista leggibile.
   const [vistaIniziale] = useState(() => {
@@ -134,10 +151,37 @@ export function CalendarioView({ filtroAmbito, impostazioni }: { filtroAmbito: F
     info.revert();
   }
 
+  /** Task trascinata dalla lista "Da pianificare" su un giorno o una fascia oraria. */
+  function onDropDaPianificare(info: DropInfo) {
+    const id = info.draggedEl.getAttribute("data-task-id");
+    if (!id) return;
+    const { data: giorno, ora } = localeDi(info.date);
+    const patch = info.allDay
+      ? { data_pianificata: giorno, ora_inizio: "" }
+      : { data_pianificata: giorno, ora_inizio: ora };
+    aggiornaTask.mutate(
+      { id, patch, cache: taskToDb(patch) },
+      {
+        onSuccess: () =>
+          toast.success(info.allDay ? `Pianificata per il ${giorno.split("-").reverse().join("/")}` : `Pianificata alle ${ora}`),
+      },
+    );
+  }
+
+  function onEventClick(p: PropsEventoFc) {
+    if (p.tipo === "esterno") {
+      setEsterno(data?.find((r) => r.tipo === "esterno" && r.id === p.id) ?? null);
+      return;
+    }
+    const rif = riferimentoEvento(p);
+    if (rif) apri(rif);
+  }
+
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:gap-6">
       <aside className="hidden lg:block">
         <FiltriCalendario attivi={attivi} onChange={setAttivi} />
+        <DaPianificare filtroAmbito={filtroAmbito} />
       </aside>
 
       <div className="flex min-w-0 flex-col gap-3">
@@ -167,6 +211,9 @@ export function CalendarioView({ filtroAmbito, impostazioni }: { filtroAmbito: F
         <div className="lg:hidden">
           <FiltriCalendario attivi={attivi} onChange={setAttivi} compatto />
         </div>
+        <div className="lg:hidden">
+          <DaPianificare filtroAmbito={filtroAmbito} richiudibile />
+        </div>
 
         <div
           className={cn(
@@ -189,16 +236,18 @@ export function CalendarioView({ filtroAmbito, impostazioni }: { filtroAmbito: F
               setTitolo(info.titolo);
               setVista(vistaDaFullCalendar(info.vista));
             }}
-            onEventClick={(p) => apri(riferimentoEvento(p))}
+            onEventClick={onEventClick}
             onSelect={onSelect}
             onEventDrop={onEventDrop}
             onEventResize={onEventDrop}
+            onDrop={onDropDaPianificare}
           />
         </div>
         <p className="text-xs text-muted-foreground lg:hidden">Tieni premuto su uno spazio vuoto per aggiungere, su un elemento per spostarlo.</p>
       </div>
 
       <CreaDaSlot slot={slot} ambito={ambitoDiDefault(filtroAmbito)} onClose={() => setSlot(null)} />
+      <EventoEsternoDialog evento={esterno} onClose={() => setEsterno(null)} />
     </div>
   );
 }

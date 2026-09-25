@@ -23,6 +23,16 @@ const DEFAULT: ImpostazioniCalendarioRiga = {
   ics_ambito: null,
 };
 
+/** I calendari esterni dell'utente, per le Impostazioni. */
+export async function leggiCalendariEsterni() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("calendari_esterni")
+    .select("id, nome, url, colore, ambito, attivo, ultimo_sync, errore_sync")
+    .order("created_at");
+  return data ?? [];
+}
+
 /** Le preferenze del calendario dell'utente, create al primo accesso. */
 export async function leggiImpostazioniCalendario(): Promise<ImpostazioniCalendarioRiga> {
   const supabase = await createClient();

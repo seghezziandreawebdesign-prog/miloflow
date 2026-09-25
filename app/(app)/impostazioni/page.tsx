@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { BackupSettings } from "@/components/impostazioni/backup-settings";
+import { CalendariEsterniSettings } from "@/components/impostazioni/calendari-esterni-settings";
 import { CalendarioSettings } from "@/components/impostazioni/calendario-settings";
 import { CassaforteSettings } from "@/components/impostazioni/cassaforte-settings";
 import { CategorieSettings } from "@/components/impostazioni/categorie-settings";
@@ -8,7 +9,7 @@ import { MetodiPagamentoSettings } from "@/components/impostazioni/metodi-pagame
 import { NotificheSettings } from "@/components/impostazioni/notifiche-settings";
 import { PageHeader } from "@/components/page-header";
 import { leggiCategorie } from "@/lib/queries/budget";
-import { leggiImpostazioniCalendario } from "@/lib/queries/calendario";
+import { leggiCalendariEsterni, leggiImpostazioniCalendario } from "@/lib/queries/calendario";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseUrl } from "@/lib/supabase/env";
 import { getUtenteCorrente } from "@/lib/utente.server";
@@ -19,7 +20,7 @@ export default async function ImpostazioniPage() {
   const utente = await getUtenteCorrente();
   const isOwner = utente.ruolo === "owner";
   const supabase = await createClient();
-  const [{ data: notifiche }, { data: metodi }, budget, calendario, categorie, clienti, servizi, task] = await Promise.all([
+  const [{ data: notifiche }, { data: metodi }, budget, calendario, calendariEsterni, categorie, clienti, servizi, task] = await Promise.all([
     isOwner
       ? supabase.from("impostazioni_notifiche").select("email, orario, giorni_anticipo, attivo, ultimo_invio").maybeSingle()
       : Promise.resolve({ data: null }),
@@ -30,6 +31,7 @@ export default async function ImpostazioniPage() {
       .order("nome"),
     supabase.rpc("puo", { p_sezione: "budget", p_livello: "scrittura" }),
     leggiImpostazioniCalendario(),
+    leggiCalendariEsterni(),
     leggiCategorie(),
     supabase.from("clienti").select("id", { count: "exact", head: true }),
     supabase.from("servizi").select("id", { count: "exact", head: true }),
@@ -45,6 +47,7 @@ export default async function ImpostazioniPage() {
       />
       <div className="max-w-3xl space-y-6">
         <CalendarioSettings iniziali={calendario} urlFunzioni={`${supabaseUrl}/functions/v1`} />
+        <CalendariEsterniSettings calendari={calendariEsterni} />
         {budget.data === true && <CategorieSettings categorie={categorie} />}
         <CassaforteSettings isOwner={isOwner} />
         {budget.data === true && (

@@ -13,6 +13,7 @@ export const TIPI_CALENDARIO = [
   { value: "evento", label: "Eventi", descrizione: "Appuntamenti e call" },
   { value: "rata", label: "Rate", descrizione: "Debiti da pagare" },
   { value: "movimento", label: "Spese previste", descrizione: "Dal budget" },
+  { value: "esterno", label: "Calendari esterni", descrizione: "In sola lettura" },
 ] as const;
 export type TipoCalendario = (typeof TIPI_CALENDARIO)[number]["value"];
 export const TUTTI_I_TIPI: TipoCalendario[] = TIPI_CALENDARIO.map((t) => t.value);
@@ -35,6 +36,10 @@ export type RigaCalendario = {
   ricorrenza: string | null;
   /** Colore scelto per l'evento: riempie lo sfondo. */
   colore_sfondo: string | null;
+  /** Solo per i calendari esterni: dettagli per il riquadro di sola lettura. */
+  luogo?: string | null;
+  note?: string | null;
+  origine?: string | null;
 };
 
 export type EventoCalendario = {
@@ -60,7 +65,7 @@ const AMBITI = {
   lavoro: { forte: "#3a7bd5", soft: "#e6eefb" },
   personale: { forte: "#9b59d0", soft: "#f1e8fa" },
 };
-const TIPI_COLORE: Record<Exclude<TipoCalendario, "task" | "evento">, { forte: string; soft: string }> = {
+const TIPI_COLORE: Record<Exclude<TipoCalendario, "task" | "evento" | "esterno">, { forte: string; soft: string }> = {
   deadline: { forte: "#ff3b30", soft: "#fdecea" },
   scadenza_servizio: { forte: "#e08a00", soft: "#fff4e0" },
   rata: { forte: "#1f8a3b", soft: "#e3f7e8" },
@@ -70,7 +75,8 @@ const TIPI_COLORE: Record<Exclude<TipoCalendario, "task" | "evento">, { forte: s
 export function coloriEvento(tipo: TipoCalendario, ambito: Ambito, coloreProgetto: string | null, coloreSfondo: string | null = null) {
   const a = AMBITI[ambito];
   switch (tipo) {
-    case "evento": {
+    case "evento":
+    case "esterno": {
       const sfondo = coloreSfondo ?? a.forte;
       return { backgroundColor: sfondo, borderColor: coloreProgetto ?? sfondo, textColor: "#ffffff", color: sfondo, contrastColor: "#ffffff" };
     }
@@ -83,8 +89,8 @@ export function coloriEvento(tipo: TipoCalendario, ambito: Ambito, coloreProgett
   }
 }
 
-/** Da un evento del calendario al riferimento per il pannello. */
-export function riferimentoEvento(p: { tipo: TipoCalendario; id: string }): { tipo: TipoEntita; id: string } {
+/** Da un evento del calendario al riferimento per il pannello; null per gli esterni (sola lettura). */
+export function riferimentoEvento(p: { tipo: TipoCalendario; id: string }): { tipo: TipoEntita; id: string } | null {
   switch (p.tipo) {
     case "task":
     case "deadline":
@@ -97,6 +103,8 @@ export function riferimentoEvento(p: { tipo: TipoCalendario; id: string }): { ti
       return { tipo: "debito", id: p.id };
     case "movimento":
       return { tipo: "movimento", id: p.id };
+    case "esterno":
+      return null;
   }
 }
 

@@ -29,15 +29,42 @@ async function leggiCalendario(dal: string, al: string, ambito: FiltroAmbito): P
     .lt("inizio", a)
     .or(`fine.gte.${da},and(fine.is.null,inizio.gte.${da})`);
   let ricorrenti = supabase.from("v_calendario").select("*").not("ricorrenza", "is", null).lt("inizio", a);
+  // Occorrenze dei calendari esterni: già espanse alla sincronizzazione.
+  let esterni = supabase
+    .from("eventi_esterni")
+    .select("id, titolo, inizio, fine, tutto_il_giorno, luogo, note, calendari_esterni!inner(nome, colore, ambito, attivo)")
+    .eq("calendari_esterni.attivo", true)
+    .lt("inizio", a)
+    .or(`fine.gte.${da},and(fine.is.null,inizio.gte.${da})`);
   if (ambito !== "tutto") {
     singoli = singoli.eq("ambito", ambito);
     ricorrenti = ricorrenti.eq("ambito", ambito);
+    esterni = esterni.eq("calendari_esterni.ambito", ambito);
   }
-  const [s, r] = await Promise.all([singoli, ricorrenti]);
+  const [s, r, e] = await Promise.all([singoli, ricorrenti, esterni]);
   if (s.error) throw new Error(`Lettura calendario non riuscita: ${s.error.message}`);
   if (r.error) throw new Error(`Lettura calendario non riuscita: ${r.error.message}`);
+  if (e.error) throw new Error(`Lettura calendari esterni non riuscita: ${e.error.message}`);
+  const righeEsterne: RigaCalendario[] = (e.data ?? []).map((x) => ({
+    id: x.id,
+    tipo: "esterno",
+    titolo: x.titolo,
+    inizio: x.inizio,
+    fine: x.fine,
+    tutto_il_giorno: x.tutto_il_giorno,
+    ambito: x.calendari_esterni.ambito,
+    cliente_id: null,
+    progetto_id: null,
+    colore: null,
+    modificabile: false,
+    ricorrenza: null,
+    colore_sfondo: x.calendari_esterni.colore,
+    luogo: x.luogo,
+    note: x.note,
+    origine: x.calendari_esterni.nome,
+  }));
   // Le colonne della vista arrivano come facoltative: qui si normalizzano.
-  return [...s.data, ...r.data].flatMap((x) =>
+  return righeEsterne.concat([...s.data, ...r.data].flatMap((x) =>
     x.id && x.tipo && x.titolo && x.inizio && x.ambito
       ? [
           {
@@ -57,7 +84,7 @@ async function leggiCalendario(dal: string, al: string, ambito: FiltroAmbito): P
           },
         ]
       : [],
-  );
+  ));
 }
 
 export function useCalendario(dal: string | null, al: string | null, ambito: FiltroAmbito) {

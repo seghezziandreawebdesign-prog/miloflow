@@ -1,6 +1,6 @@
 "use client";
 
-import FullCalendar, { type CalendarController, type DateSelectInfo, type EventDropInfo, type EventResizeDoneInfo } from "@fullcalendar/react";
+import FullCalendar, { type CalendarController, type DateSelectInfo, type DropInfo, type EventDropInfo, type EventResizeDoneInfo } from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/react/daygrid";
 import interactionPlugin from "@fullcalendar/react/interaction";
 import listPlugin from "@fullcalendar/react/list";
@@ -32,6 +32,7 @@ export default function CalendarioFc({
   onSelect,
   onEventDrop,
   onEventResize,
+  onDrop,
 }: {
   controller: CalendarController;
   eventi: EventoCalendario[];
@@ -44,6 +45,8 @@ export default function CalendarioFc({
   onSelect: (info: DateSelectInfo) => void;
   onEventDrop: (info: EventDropInfo) => void;
   onEventResize: (info: EventResizeDoneInfo) => void;
+  /** Rilascio di una task trascinata dalla lista "Da pianificare". */
+  onDrop: (info: DropInfo) => void;
 }) {
   const oraCorta = { hour: "2-digit", minute: "2-digit", hour12: false } as const;
   return (
@@ -81,6 +84,8 @@ export default function CalendarioFc({
       select={onSelect}
       eventDrop={onEventDrop}
       eventResize={onEventResize}
+      droppable
+      drop={onDrop}
       views={{
         listWeek: { listDayFormat: { weekday: "long", day: "numeric", month: "long" } },
         timeGridWeek: { dayHeaderFormat: { weekday: "short", day: "numeric" } },

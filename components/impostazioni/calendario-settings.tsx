@@ -116,7 +116,8 @@ export function CalendarioSettings({ iniziali, urlFunzioni }: { iniziali: Impost
               {token ? "Rigenera il link" : "Crea il link"}
             </Button>
             <div className="grid gap-2 sm:grid-cols-2">
-              {TIPI_CALENDARIO.map((t) => {
+              {/* I calendari esterni non escono nel feed: sono già altrove. */}
+              {TIPI_CALENDARIO.filter((t) => t.value !== "esterno").map((t) => {
                 const id = `ics-${t.value}`;
                 return (
                   <Field key={t.value} orientation="horizontal">

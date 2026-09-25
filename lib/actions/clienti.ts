@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { normalizeUrl } from "@/lib/clienti";
+import { nomeCliente, normalizeUrl, PALETTE_CLIENTI } from "@/lib/clienti";
 import {
   clienteSchema,
   clienteToRow,
@@ -33,7 +33,11 @@ export async function createCliente(input: unknown): Promise<ActionResult<{ id: 
     return { ok: false, error: "Controlla i campi evidenziati", fieldErrors: zodFieldErrors(parsed.error.issues) };
   }
   const supabase = await createClient();
-  const { data, error } = await supabase.from("clienti").insert(clienteToRow(parsed.data)).select("id").single();
+  // Un colore c'è sempre: se non è stato scelto, uno a caso della palette
+  // (lo usano il logo con le iniziali e il progetto creato qui sotto).
+  const riga = clienteToRow(parsed.data);
+  riga.colore ??= PALETTE_CLIENTI[Math.floor(Math.random() * PALETTE_CLIENTI.length)];
+  const { data, error } = await supabase.from("clienti").insert(riga).select("id").single();
   if (error) {
     if (error.code === "23505") {
       return { ok: false, error: "Esiste già un cliente con questa P.IVA", fieldErrors: { piva: "P.IVA già presente" } };
@@ -41,7 +45,22 @@ export async function createCliente(input: unknown): Promise<ActionResult<{ id: 
     if (error.code === "42501") return { ok: false, error: "Solo l'owner può creare nuovi clienti" };
     return { ok: false, error: dbErrorMessage(error, "Salvataggio non riuscito") };
   }
+  // Ogni cliente nasce col suo progetto: stesso nome, stesso colore, in fondo
+  // alla lista. Se non riesce, il cliente resta comunque creato.
+  const { data: ultimo } = await supabase.from("progetti").select("ordine").order("ordine", { ascending: false }).limit(1);
+  const { error: erroreProgetto } = await supabase.from("progetti").insert({
+    nome: nomeCliente(parsed.data),
+    ambito: "lavoro",
+    cliente_id: data.id,
+    colore: riga.colore,
+    ordine: (ultimo?.[0]?.ordine ?? 0) + 10,
+  });
+  if (erroreProgetto) {
+    revalidaCliente();
+    return { ok: false, error: "Cliente creato, ma non sono riuscito a creare il suo progetto" };
+  }
   revalidaCliente();
+  revalidatePath("/task", "layout");
   return { ok: true, data: { id: data.id } };
 }
 
