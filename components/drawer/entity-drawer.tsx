@@ -23,6 +23,7 @@ function Caricamento() {
   );
 }
 const ClienteDrawer = dynamic(() => import("./cliente-drawer").then((m) => m.ClienteDrawer), { loading: Caricamento });
+const ContrattoDrawer = dynamic(() => import("./contratto-drawer").then((m) => m.ContrattoDrawer), { loading: Caricamento });
 const DebitoDrawer = dynamic(() => import("./debito-drawer").then((m) => m.DebitoDrawer), { loading: Caricamento });
 const EventoDrawer = dynamic(() => import("./evento-drawer").then((m) => m.EventoDrawer), { loading: Caricamento });
 const MovimentoDrawer = dynamic(() => import("./movimento-drawer").then((m) => m.MovimentoDrawer), { loading: Caricamento });
@@ -57,10 +58,12 @@ export function EntityDrawer() {
         showCloseButton={false}
         className={cn(
           "block max-h-[92svh] overflow-y-auto p-0 max-sm:max-h-[94svh] max-sm:pb-0",
-          // Task e cliente hanno tanto contenuto: finestra quasi a tutto schermo.
-          tipo === "task" || tipo === "cliente"
+          // Task, cliente e servizio hanno tanto contenuto: finestra quasi a tutto schermo.
+          tipo === "task" || tipo === "cliente" || tipo === "servizio"
             ? "sm:h-[90svh] sm:max-h-[90svh] sm:max-w-[min(1200px,95vw)]"
-            : "sm:max-w-2xl",
+            : tipo === "contratto"
+              ? "sm:max-w-3xl"
+              : "sm:max-w-2xl",
         )}
       >
         {/* Chiusura sempre visibile anche scorrendo il contenuto. */}
@@ -90,6 +93,8 @@ function EntityContent({ riferimento }: { riferimento: RiferimentoEntita }) {
       return <ClienteDrawer id={riferimento.id} />;
     case "servizio":
       return <ServizioDrawer id={riferimento.id} />;
+    case "contratto":
+      return <ContrattoDrawer key={riferimento.id} id={riferimento.id} />;
     case "task":
       return <TaskDrawer key={riferimento.id} id={riferimento.id} />;
     case "progetto":

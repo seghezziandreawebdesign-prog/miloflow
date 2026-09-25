@@ -1,6 +1,7 @@
 import {
   Building2,
   CalendarDays,
+  FileSignature,
   ListChecks,
   RefreshCw,
   Settings,
@@ -16,6 +17,7 @@ export const NAVIGAZIONE: VoceNavigazione[] = [
   { href: "/task", label: "Task", icon: ListChecks },
   { href: "/calendario", label: "Calendario", icon: CalendarDays },
   { href: "/clienti", label: "Clienti", icon: Building2 },
+  { href: "/contratti", label: "Contratti", icon: FileSignature },
   { href: "/servizi", label: "Servizi & Scadenze", icon: RefreshCw },
   { href: "/budget", label: "Budget & Spese", icon: Wallet },
   { href: "/impostazioni", label: "Impostazioni", icon: Settings },

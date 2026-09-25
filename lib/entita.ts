@@ -3,6 +3,7 @@
 export const TIPI_ENTITA = [
   "cliente",
   "servizio",
+  "contratto",
   "task",
   "progetto",
   "evento",
@@ -15,6 +16,7 @@ export type TipoEntita = (typeof TIPI_ENTITA)[number];
 export const ETICHETTE_ENTITA: Record<TipoEntita, string> = {
   cliente: "Cliente",
   servizio: "Servizio",
+  contratto: "Contratto",
   task: "Task",
   progetto: "Progetto",
   evento: "Evento",
