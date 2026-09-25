@@ -161,7 +161,7 @@ export function ProgettoDrawer({ id }: { id: string }) {
         <section className="space-y-2">
           <h3 className="text-sm font-medium">Task aperte</h3>
           {aperte.length > 0 ? (
-            <div className="-mx-2">
+            <div className="-mx-2 flex flex-col gap-1">
               {aperte.slice(0, MAX_TASK).map((t) => (
                 <TaskRow key={t.id} task={t} opzioni={{ senzaProgetto: true, senzaCliente: true }} />
               ))}

@@ -24,7 +24,8 @@ export function ListaTask({
     return vuoto ? <div className="px-2 py-3 text-sm text-muted-foreground">{vuoto}</div> : null;
   }
   return (
-    <div className={cn("divide-y divide-black/5", className)}>
+    // Un piccolo respiro tra le righe al posto delle righe attaccate.
+    <div className={cn("flex flex-col gap-1", className)}>
       {tasks.map((t) => (
         <TaskRow key={t.id} task={t} opzioni={opzioni} />
       ))}
