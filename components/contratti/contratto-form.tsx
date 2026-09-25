@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Plus, X } from "lucide-react";
+import { Link2, Loader2, Plus, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import { Controller, useFieldArray, useForm, useWatch, type FieldPath } from "react-hook-form";
 import { toast } from "sonner";
@@ -18,10 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { saveContratto } from "@/lib/actions/contratti";
 import { formatCurrency } from "@/lib/dates/format";
-import { totaliContratto } from "@/lib/queries/contratti";
 import { contrattoSchema, type ContrattoFormValues } from "@/lib/schemas/contratti";
-import { frequenza, parseImporto } from "@/lib/servizi";
-import { cn } from "@/lib/utils";
+import { parseImporto } from "@/lib/servizi";
 
 import type { OpzioniContratto, ServizioOpzione } from "./use-opzioni-contratto";
 
@@ -40,12 +38,12 @@ export function ContrattoForm({
 }) {
   const isEdit = Boolean(contrattoId);
   const form = useForm<ContrattoFormValues>({ resolver: zodResolver(contrattoSchema), defaultValues });
-  const { register, control, handleSubmit, setError, formState } = form;
-  const righeField = useFieldArray({ control, name: "servizi" });
+  const { register, control, handleSubmit, setError, formState, setValue } = form;
+  const vociField = useFieldArray({ control, name: "voci" });
   const [saving, startSaving] = useTransition();
 
   const clienteId = useWatch({ control, name: "cliente_id" });
-  const righe = useWatch({ control, name: "servizi" });
+  const voci = useWatch({ control, name: "voci" });
   const err = formState.errors;
   const servizio = new Map(opzioni.servizi.map((s) => [s.id, s]));
 
@@ -64,24 +62,11 @@ export function ContrattoForm({
     }),
   );
 
-  // Totale live sulle righe compilate.
-  const compilate = righe.flatMap((r) => {
-    const s = servizio.get(r.servizio_id);
-    const prezzo = parseImporto(r.prezzo);
-    return s && prezzo !== null && !Number.isNaN(prezzo)
-      ? [{ prezzo, frequenza: s.frequenza, costo: s.costo }]
-      : [];
-  });
-  const totali = totaliContratto(compilate);
-
-  function aggiungiServizio(s: ServizioOpzione) {
-    // Il prezzo si precompila dal prezzo di rivendita già salvato per il cliente.
-    const rivendita = clienteId ? opzioni.prezzoRivendita.get(`${s.id}:${clienteId}`) : undefined;
-    righeField.append({
-      servizio_id: s.id,
-      prezzo: rivendita === undefined ? "" : String(rivendita).replace(".", ","),
-    });
-  }
+  // Totale live: la somma dei prezzi delle voci compilate.
+  const totale = voci.reduce((sum, v) => {
+    const n = parseImporto(v.prezzo);
+    return n !== null && !Number.isNaN(n) ? sum + n : sum;
+  }, 0);
 
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
@@ -118,7 +103,7 @@ export function ContrattoForm({
             <Input
               id="contratto-titolo"
               {...register("titolo")}
-              placeholder="es. Gestione sito e hosting"
+              placeholder="es. Gestione completa 2026"
               aria-invalid={Boolean(err.titolo) || undefined}
             />
             <FieldError errors={[err.titolo]} />
@@ -162,90 +147,100 @@ export function ContrattoForm({
           </Field>
         </div>
 
-        <Field data-invalid={Boolean(err.servizi) || undefined}>
-          <FieldLabel>Servizi e prezzi</FieldLabel>
-          {righeField.fields.length > 0 && (
-            <div className="overflow-hidden rounded-lg ring-1 ring-black/8">
-              <div className="hidden grid-cols-[1fr_8rem_6rem_2rem] items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground sm:grid">
-                <span>Servizio</span>
-                <span className="text-right">Prezzo al cliente</span>
-                <span className="text-right">Margine</span>
-                <span />
-              </div>
-              <div className="divide-y divide-black/5">
-                {righeField.fields.map((f, i) => {
-                  const s = servizio.get(righe[i]?.servizio_id ?? "");
-                  const prezzoNum = parseImporto(righe[i]?.prezzo ?? "");
-                  const margine =
-                    s && s.costo !== null && prezzoNum !== null && !Number.isNaN(prezzoNum) ? prezzoNum - s.costo : null;
-                  return (
-                    <div key={f.id} className="grid grid-cols-[1fr_2rem] items-center gap-2 px-3 py-2 sm:grid-cols-[1fr_8rem_6rem_2rem]">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <TipoIcona nome={s?.tipo_icona ?? null} className="size-4 shrink-0 text-muted-foreground" />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{s?.nome ?? "Servizio"}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {s ? frequenza(s.frequenza).label : ""}
-                            {s?.costo !== null && s?.costo !== undefined && ` · mi costa ${formatCurrency(s.costo)}`}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="order-3 col-span-2 sm:order-none sm:col-span-1">
-                        <Input
-                          {...register(`servizi.${i}.prezzo`)}
-                          inputMode="decimal"
-                          placeholder="0,00"
-                          className="text-right tabular-nums"
-                          aria-label={`Prezzo per ${s?.nome ?? "servizio"}`}
-                          aria-invalid={Boolean(err.servizi?.[i]?.prezzo) || undefined}
-                        />
-                      </div>
-                      <span
-                        className={cn(
-                          "hidden text-right text-xs tabular-nums sm:block",
-                          margine === null ? "text-muted-foreground" : margine >= 0 ? "text-emerald-700" : "text-red-700",
-                        )}
-                      >
-                        {margine === null ? "—" : `${margine >= 0 ? "+" : ""}${formatCurrency(margine)}`}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="justify-self-end text-muted-foreground"
-                        onClick={() => righeField.remove(i)}
-                        aria-label={`Togli ${s?.nome ?? "servizio"}`}
-                      >
-                        <X />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex flex-wrap items-baseline justify-between gap-2 border-t bg-muted/40 px-3 py-2">
-                <span className="text-sm font-medium">Totale</span>
-                <span className="text-right text-sm">
-                  <span className="font-semibold tabular-nums">{formatCurrency(totali.totale_annuo)} l&apos;anno</span>
-                  {totali.totale_annuo > 0 && (
-                    <span className="text-muted-foreground"> · ≈ {formatCurrency(totali.totale_annuo / 12)} al mese</span>
-                  )}
-                  {totali.una_tantum > 0 && (
-                    <span className="block text-xs text-muted-foreground">
-                      più {formatCurrency(totali.una_tantum)} una tantum
-                    </span>
-                  )}
-                </span>
-              </div>
-            </div>
-          )}
-          <ServizioPicker
-            opzioni={opzioni.servizi.filter((s) => !righe.some((r) => r.servizio_id === s.id))}
-            clienteId={clienteId}
-            clientiDelServizio={opzioni.clientiDelServizio}
-            onSelect={aggiungiServizio}
-          />
-          <FieldDescription>Il margine è calcolato sul costo di un periodo del servizio.</FieldDescription>
-          <FieldError errors={[err.servizi?.root ?? err.servizi]} />
+        <Field data-invalid={Boolean(err.voci) || undefined}>
+          <FieldLabel>Voci del contratto</FieldLabel>
+          <FieldDescription className="mt-0">
+            Le prestazioni che fai pagare (es. «Creazione sito web»). A ogni voce puoi collegare i servizi del
+            database — dominio, hosting… — come dettaglio, senza prezzo: il totale è la somma delle voci.
+          </FieldDescription>
+          <div className="space-y-3">
+            {vociField.fields.map((f, i) => {
+              const collegati = voci[i]?.servizi ?? [];
+              return (
+                <div key={f.id} className="space-y-2 rounded-lg p-3 ring-1 ring-black/8">
+                  <div className="grid grid-cols-[1fr_7rem_2rem] items-start gap-2">
+                    <Field data-invalid={Boolean(err.voci?.[i]?.descrizione) || undefined}>
+                      <Input
+                        {...register(`voci.${i}.descrizione`)}
+                        placeholder="es. Creazione sito web, Gestione social media"
+                        aria-label="Descrizione della voce"
+                        aria-invalid={Boolean(err.voci?.[i]?.descrizione) || undefined}
+                      />
+                      <FieldError errors={[err.voci?.[i]?.descrizione]} />
+                    </Field>
+                    <Field data-invalid={Boolean(err.voci?.[i]?.prezzo) || undefined}>
+                      <Input
+                        {...register(`voci.${i}.prezzo`)}
+                        inputMode="decimal"
+                        placeholder="€ 0,00"
+                        className="text-right tabular-nums"
+                        aria-label="Prezzo della voce"
+                        aria-invalid={Boolean(err.voci?.[i]?.prezzo) || undefined}
+                      />
+                      <FieldError errors={[err.voci?.[i]?.prezzo]} />
+                    </Field>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="mt-1 justify-self-end text-muted-foreground"
+                      onClick={() => vociField.remove(i)}
+                      aria-label="Togli la voce"
+                    >
+                      <X />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {collegati.map((sid) => {
+                      const s = servizio.get(sid);
+                      return (
+                        <span key={sid} className="inline-flex items-center gap-1 rounded-full bg-muted py-0.5 pr-1 pl-2 text-xs">
+                          <TipoIcona nome={s?.tipo_icona ?? null} className="size-3 text-muted-foreground" />
+                          {s?.nome ?? "Servizio"}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setValue(
+                                `voci.${i}.servizi`,
+                                collegati.filter((v) => v !== sid),
+                              )
+                            }
+                            className="rounded-full p-0.5 hover:bg-foreground/10"
+                            aria-label={`Scollega ${s?.nome ?? "servizio"}`}
+                          >
+                            <X className="size-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                    <ServiziPicker
+                      opzioni={opzioni.servizi.filter((s) => !collegati.includes(s.id))}
+                      clienteId={clienteId}
+                      clientiDelServizio={opzioni.clientiDelServizio}
+                      vuoto={collegati.length === 0}
+                      onSelect={(s) => setValue(`voci.${i}.servizi`, [...collegati, s.id])}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => vociField.append({ descrizione: "", prezzo: "", servizi: [] })}
+            >
+              <Plus />
+              Aggiungi voce
+            </Button>
+            <p className="text-sm">
+              <span className="text-muted-foreground">Totale · </span>
+              <span className="font-semibold tabular-nums">{formatCurrency(totale)}</span>
+            </p>
+          </div>
+          <FieldError errors={[err.voci?.root ?? err.voci]} />
         </Field>
 
         <Field>
@@ -267,16 +262,19 @@ export function ContrattoForm({
   );
 }
 
-/** Scelta di un servizio dal database, con i servizi del cliente scelto per primi. */
-function ServizioPicker({
+/** Collega un servizio del database alla voce, con i servizi del cliente scelto per primi. */
+function ServiziPicker({
   opzioni,
   clienteId,
   clientiDelServizio,
+  vuoto,
   onSelect,
 }: {
   opzioni: ServizioOpzione[];
   clienteId: string;
   clientiDelServizio: Map<string, string[]>;
+  /** La voce non ha ancora servizi: etichetta estesa. */
+  vuoto: boolean;
   onSelect: (s: ServizioOpzione) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -286,9 +284,11 @@ function ServizioPicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button type="button" variant="outline" size="sm" className="w-fit" />}>
-        <Plus />
-        Aggiungi servizio
+      <PopoverTrigger
+        render={<Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground" />}
+      >
+        <Link2 className="size-3" />
+        {vuoto ? "Collega servizi del database" : "Collega"}
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start">
         <Command>
@@ -307,10 +307,7 @@ function ServizioPicker({
                 >
                   <TipoIcona nome={s.tipo_icona} className="size-4 text-muted-foreground" />
                   <span className="min-w-0 flex-1 truncate">{s.nome}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {frequenza(s.frequenza).label}
-                    {delCliente(s) && " · del cliente"}
-                  </span>
+                  {delCliente(s) && <span className="text-xs text-muted-foreground">del cliente</span>}
                 </CommandItem>
               ))}
             </CommandGroup>

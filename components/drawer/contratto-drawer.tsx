@@ -27,7 +27,6 @@ import { deleteContratto, setStatoContratto } from "@/lib/actions/contratti";
 import { formatCurrency, formatDate } from "@/lib/dates/format";
 import { APRI_PARAM } from "@/lib/entita";
 import { caricaContratti } from "@/lib/queries/contratti";
-import { frequenza } from "@/lib/servizi";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -73,8 +72,6 @@ export function ContrattoDrawer({ id }: { id: string }) {
   }
 
   const attivo = c.stato === "attivo";
-  const costoMio = c.costo_annuo_mio;
-  const margine = c.totale_annuo - costoMio;
 
   function cambiaStato(stato: "attivo" | "concluso", messaggio: string) {
     startTransition(async () => {
@@ -157,71 +154,48 @@ export function ContrattoDrawer({ id }: { id: string }) {
 
       <div className="space-y-6 p-4 sm:p-5">
         <section>
-          {c.righe.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nessun servizio nel contratto.</p>
+          {c.voci.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nessuna voce nel contratto.</p>
           ) : (
             <div className="overflow-hidden rounded-lg ring-1 ring-black/8">
               <div className="grid grid-cols-[1fr_auto] items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
-                <span>Servizio</span>
+                <span>Voce</span>
                 <span className="text-right">Prezzo</span>
               </div>
               <ul className="divide-y divide-black/5">
-                {c.righe.map((r) => {
-                  const margineRiga = r.costo !== null ? r.prezzo - r.costo : null;
-                  return (
-                    <li key={r.id} className="grid grid-cols-[1fr_auto] items-center gap-2 px-3 py-2">
-                      <button
-                        type="button"
-                        onClick={() => apri({ tipo: "servizio", id: r.servizio_id })}
-                        className="flex min-w-0 items-center gap-2 text-left hover:underline"
-                      >
-                        <TipoIcona nome={r.tipo_icona} className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm font-medium">{r.nome}</span>
-                          <span className="block text-xs text-muted-foreground">
-                            {frequenza(r.frequenza).label}
-                            {r.stato_servizio !== "attivo" && ` · ${r.stato_servizio}`}
-                          </span>
-                        </span>
-                      </button>
-                      <span className="text-right text-sm">
-                        <span className="font-medium tabular-nums">{formatCurrency(r.prezzo)}</span>
-                        {margineRiga !== null && (
-                          <span
+                {c.voci.map((v) => (
+                  <li key={v.id} className="space-y-1.5 px-3 py-2.5">
+                    <div className="grid grid-cols-[1fr_auto] items-baseline gap-2">
+                      <span className="min-w-0 truncate text-sm font-medium">{v.descrizione}</span>
+                      <span className="text-right text-sm font-medium tabular-nums">{formatCurrency(v.prezzo)}</span>
+                    </div>
+                    {v.servizi.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {v.servizi.map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => apri({ tipo: "servizio", id: s.id })}
                             className={cn(
-                              "block text-xs tabular-nums",
-                              margineRiga >= 0 ? "text-emerald-700" : "text-red-700",
+                              "inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs hover:bg-muted/70",
+                              s.stato !== "attivo" && "text-muted-foreground line-through",
                             )}
+                            title={s.stato !== "attivo" ? `Servizio ${s.stato}` : undefined}
                           >
-                            {margineRiga >= 0 ? "+" : ""}
-                            {formatCurrency(margineRiga)}
-                          </span>
-                        )}
-                      </span>
-                    </li>
-                  );
-                })}
+                            <TipoIcona nome={s.tipo_icona} className="size-3 text-muted-foreground" />
+                            {s.nome}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                ))}
               </ul>
-              <div className="space-y-0.5 border-t bg-muted/40 px-3 py-2 text-right">
+              <div className="border-t bg-muted/40 px-3 py-2 text-right">
                 <p className="text-sm">
                   <span className="text-muted-foreground">Totale · </span>
-                  <span className="font-semibold tabular-nums">{formatCurrency(c.totale_annuo)} l&apos;anno</span>
-                  {c.totale_annuo > 0 && (
-                    <span className="text-muted-foreground"> · ≈ {formatCurrency(c.totale_annuo / 12)} al mese</span>
-                  )}
+                  <span className="font-semibold tabular-nums">{formatCurrency(c.totale)}</span>
                 </p>
-                {c.una_tantum > 0 && (
-                  <p className="text-xs text-muted-foreground">più {formatCurrency(c.una_tantum)} una tantum</p>
-                )}
-                {costoMio > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Mi costa {formatCurrency(costoMio)} l&apos;anno · margine{" "}
-                    <span className={cn("tabular-nums", margine >= 0 ? "text-emerald-700" : "text-red-700")}>
-                      {margine >= 0 ? "+" : ""}
-                      {formatCurrency(margine)}
-                    </span>
-                  </p>
-                )}
               </div>
             </div>
           )}

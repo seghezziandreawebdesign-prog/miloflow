@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { nomeCliente } from "@/lib/clienti";
-import { costoAnnuo, type Frequenza } from "@/lib/servizi";
 import type { Database } from "@/lib/supabase/database.types";
 
 /**
@@ -14,16 +13,18 @@ type Supa = SupabaseClient<Database>;
 
 const LOGO_TTL = 60 * 60; // 1 ora
 
-export type RigaContratto = {
+export type ServizioVoce = {
   id: string;
-  servizio_id: string;
-  prezzo: number;
   nome: string;
-  frequenza: Frequenza;
-  stato_servizio: string;
   tipo_icona: string | null;
-  /** Il costo che pago io per un periodo (null se il servizio non ne ha). */
-  costo: number | null;
+  stato: string;
+};
+
+export type VoceContratto = {
+  id: string;
+  descrizione: string;
+  prezzo: number;
+  servizi: ServizioVoce[];
 };
 
 export async function caricaContratti(supabase: Supa, filtro: { id?: string; clienteId?: string } = {}) {
@@ -39,19 +40,13 @@ export async function caricaContratti(supabase: Supa, filtro: { id?: string; cli
   if (contratti.length === 0) return [];
 
   const ids = contratti.map((c) => c.id);
-  const { data: righe, error: errRighe } = await supabase
-    .from("contratti_servizi")
-    .select("id, contratto_id, servizio_id, prezzo, ordine, servizi(id, nome, frequenza, stato, tipi_servizio(icona))")
+  const { data: voci, error: errVoci } = await supabase
+    .from("contratti_voci")
+    .select("id, contratto_id, descrizione, prezzo, ordine, contratti_voci_servizi(servizio_id, servizi(id, nome, stato, tipi_servizio(icona)))")
     .in("contratto_id", ids)
     .order("ordine")
     .order("created_at");
-  if (errRighe) throw new Error(`Lettura contratti non riuscita: ${errRighe.message}`);
-
-  const servizioIds = [...new Set((righe ?? []).map((r) => r.servizio_id))];
-  const { data: costi } = servizioIds.length
-    ? await supabase.from("servizi_economico").select("servizio_id, costo").in("servizio_id", servizioIds)
-    : { data: [] };
-  const costo = new Map((costi ?? []).map((c) => [c.servizio_id, c.costo]));
+  if (errVoci) throw new Error(`Lettura contratti non riuscita: ${errVoci.message}`);
 
   const logoPaths = [...new Set(contratti.flatMap((c) => (c.clienti?.logo_path ? [c.clienti.logo_path] : [])))];
   const signed = logoPaths.length
@@ -59,25 +54,31 @@ export async function caricaContratti(supabase: Supa, filtro: { id?: string; cli
     : [];
   const logoUrl = new Map(signed.flatMap((s) => (s.path && s.signedUrl ? [[s.path, s.signedUrl] as const] : [])));
 
-  const righePerContratto = new Map<string, RigaContratto[]>();
-  for (const r of righe ?? []) {
-    if (!r.servizi) continue;
-    const lista = righePerContratto.get(r.contratto_id) ?? [];
+  const vociPerContratto = new Map<string, VoceContratto[]>();
+  for (const v of voci ?? []) {
+    const lista = vociPerContratto.get(v.contratto_id) ?? [];
     lista.push({
-      id: r.id,
-      servizio_id: r.servizio_id,
-      prezzo: r.prezzo,
-      nome: r.servizi.nome,
-      frequenza: r.servizi.frequenza,
-      stato_servizio: r.servizi.stato,
-      tipo_icona: r.servizi.tipi_servizio?.icona ?? null,
-      costo: costo.get(r.servizio_id) ?? null,
+      id: v.id,
+      descrizione: v.descrizione,
+      prezzo: v.prezzo,
+      servizi: v.contratti_voci_servizi.flatMap((l) =>
+        l.servizi
+          ? [
+              {
+                id: l.servizi.id,
+                nome: l.servizi.nome,
+                tipo_icona: l.servizi.tipi_servizio?.icona ?? null,
+                stato: l.servizi.stato,
+              },
+            ]
+          : [],
+      ),
     });
-    righePerContratto.set(r.contratto_id, lista);
+    vociPerContratto.set(v.contratto_id, lista);
   }
 
   return contratti.map((c) => {
-    const lista = righePerContratto.get(c.id) ?? [];
+    const lista = vociPerContratto.get(c.id) ?? [];
     return {
       id: c.id,
       titolo: c.titolo,
@@ -95,30 +96,15 @@ export async function caricaContratti(supabase: Supa, filtro: { id?: string; cli
             logo_url: c.clienti.logo_path ? (logoUrl.get(c.clienti.logo_path) ?? null) : null,
           }
         : null,
-      righe: lista,
-      ...totaliContratto(lista),
+      voci: lista,
+      totale: totaleContratto(lista),
     };
   });
 }
 
 export type ContrattoLista = Awaited<ReturnType<typeof caricaContratti>>[number];
 
-/** Totale annuo normalizzato sulle frequenze, più le una tantum contate una volta. */
-export function totaliContratto(righe: Pick<RigaContratto, "prezzo" | "frequenza" | "costo">[]) {
-  let totaleAnnuo = 0;
-  let costoAnnuoMio = 0;
-  let unaTantum = 0;
-  for (const r of righe) {
-    if (r.frequenza === "una_tantum") {
-      unaTantum += r.prezzo;
-    } else {
-      totaleAnnuo += costoAnnuo(r.prezzo, r.frequenza);
-      costoAnnuoMio += costoAnnuo(r.costo, r.frequenza);
-    }
-  }
-  return {
-    totale_annuo: Math.round(totaleAnnuo * 100) / 100,
-    costo_annuo_mio: Math.round(costoAnnuoMio * 100) / 100,
-    una_tantum: Math.round(unaTantum * 100) / 100,
-  };
+/** Il totale del contratto: la somma dei prezzi delle voci. */
+export function totaleContratto(voci: Pick<VoceContratto, "prezzo">[]) {
+  return Math.round(voci.reduce((sum, v) => sum + v.prezzo, 0) * 100) / 100;
 }

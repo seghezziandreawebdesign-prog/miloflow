@@ -18,13 +18,21 @@ export const contrattoSchema = z
     data_inizio: data,
     data_fine: data,
     note: testo,
-    servizi: z
-      .array(z.object({ servizio_id: z.uuid(), prezzo }))
-      .min(1, "Aggiungi almeno un servizio")
+    // Le voci sono prestazioni libere ("Creazione sito web") con il prezzo
+    // concordato; i servizi del database si collegano come dettaglio.
+    voci: z
+      .array(
+        z.object({
+          descrizione: testo.min(1, "Descrivi la voce").max(200, "Al massimo 200 caratteri"),
+          prezzo,
+          servizi: z.array(z.uuid()).max(50),
+        }),
+      )
+      .min(1, "Aggiungi almeno una voce")
       .max(100),
   })
   .check((ctx) => {
-    const { data_inizio, data_fine, servizi } = ctx.value;
+    const { data_inizio, data_fine } = ctx.value;
     if (data_inizio && data_fine && data_fine < data_inizio) {
       ctx.issues.push({
         code: "custom",
@@ -32,18 +40,6 @@ export const contrattoSchema = z
         path: ["data_fine"],
         input: data_fine,
       });
-    }
-    const visti = new Set<string>();
-    for (const [i, r] of servizi.entries()) {
-      if (visti.has(r.servizio_id)) {
-        ctx.issues.push({
-          code: "custom",
-          message: "Servizio già nel contratto",
-          path: ["servizi", i, "servizio_id"],
-          input: r.servizio_id,
-        });
-      }
-      visti.add(r.servizio_id);
     }
   });
 
@@ -57,7 +53,7 @@ export function contrattoVuoto(clienteId = ""): ContrattoFormValues {
     data_inizio: "",
     data_fine: "",
     note: "",
-    servizi: [],
+    voci: [{ descrizione: "", prezzo: "", servizi: [] }],
   };
 }
 
@@ -77,6 +73,6 @@ export function contrattoToRpc(v: ContrattoFormValues) {
       data_fine: v.data_fine,
       note: v.note,
     },
-    p_servizi: v.servizi.map((r) => ({ servizio_id: r.servizio_id, prezzo: numero(r.prezzo) })),
+    p_voci: v.voci.map((r) => ({ descrizione: r.descrizione, prezzo: numero(r.prezzo), servizi: r.servizi })),
   };
 }

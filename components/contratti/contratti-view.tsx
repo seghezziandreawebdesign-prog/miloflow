@@ -44,7 +44,7 @@ export function ContrattiView({ contratti }: { contratti: ContrattoLista[] }) {
   const q = query.trim().toLowerCase();
   const filtrati = contratti.filter((c) => {
     if (stato !== "tutti" && c.stato !== stato) return false;
-    if (q && ![c.titolo, c.cliente?.nome, ...c.righe.map((r) => r.nome)].some((v) => v?.toLowerCase().includes(q))) {
+    if (q && ![c.titolo, c.cliente?.nome, ...c.voci.map((v) => v.descrizione)].some((v) => v?.toLowerCase().includes(q))) {
       return false;
     }
     return true;
@@ -65,7 +65,7 @@ export function ContrattiView({ contratti }: { contratti: ContrattoLista[] }) {
         <EmptyState
           icon={FileSignature}
           title="Nessun contratto"
-          description="Scegli un cliente, aggiungi i suoi servizi con il prezzo che paga e ottieni il totale."
+          description="Scegli un cliente, aggiungi le voci con il prezzo che paga (es. «Creazione sito web») e ottieni il totale."
           action={
             <Button onClick={() => setCreaAperto(true)}>
               <Plus />
@@ -129,17 +129,13 @@ export function ContrattiView({ contratti }: { contratti: ContrattoLista[] }) {
                       {c.titolo && <span className="font-normal text-muted-foreground"> · {c.titolo}</span>}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {c.righe.length === 1 ? "1 servizio" : `${c.righe.length} servizi`}
+                      {c.voci.length === 1 ? "1 voce" : `${c.voci.length} voci`}
+                      {c.voci.length > 0 && ` · ${c.voci.map((v) => v.descrizione).join(", ")}`}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="text-right text-sm">
-                    <p className="font-medium tabular-nums">{formatCurrency(c.totale_annuo)} l&apos;anno</p>
-                    {c.una_tantum > 0 && (
-                      <p className="text-xs text-muted-foreground">+ {formatCurrency(c.una_tantum)} una tantum</p>
-                    )}
-                  </div>
+                  <p className="text-right text-sm font-medium tabular-nums">{formatCurrency(c.totale)}</p>
                   <StatoContrattoBadge stato={c.stato} />
                 </div>
               </button>

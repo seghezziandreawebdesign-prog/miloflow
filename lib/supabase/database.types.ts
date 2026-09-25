@@ -544,60 +544,89 @@ export type Database = {
           },
         ]
       }
-      contratti_servizi: {
+      contratti_voci: {
         Row: {
           contratto_id: string
           created_at: string
           created_by: string | null
+          descrizione: string
           id: string
           note: string | null
           ordine: number
           prezzo: number
-          servizio_id: string
           updated_at: string
         }
         Insert: {
           contratto_id: string
           created_at?: string
           created_by?: string | null
+          descrizione: string
           id?: string
           note?: string | null
           ordine?: number
-          prezzo: number
-          servizio_id: string
+          prezzo?: number
           updated_at?: string
         }
         Update: {
           contratto_id?: string
           created_at?: string
           created_by?: string | null
+          descrizione?: string
           id?: string
           note?: string | null
           ordine?: number
           prezzo?: number
-          servizio_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "contratti_servizi_contratto_id_fkey"
+            foreignKeyName: "contratti_voci_contratto_id_fkey"
             columns: ["contratto_id"]
             isOneToOne: false
             referencedRelation: "contratti"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      contratti_voci_servizi: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          servizio_id: string
+          voce_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          servizio_id: string
+          voce_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          servizio_id?: string
+          voce_id?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "contratti_servizi_servizio_id_fkey"
+            foreignKeyName: "contratti_voci_servizi_servizio_id_fkey"
             columns: ["servizio_id"]
             isOneToOne: false
             referencedRelation: "servizi"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "contratti_servizi_servizio_id_fkey"
+            foreignKeyName: "contratti_voci_servizi_servizio_id_fkey"
             columns: ["servizio_id"]
             isOneToOne: false
             referencedRelation: "v_servizi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratti_voci_servizi_voce_id_fkey"
+            columns: ["voce_id"]
+            isOneToOne: false
+            referencedRelation: "contratti_voci"
             referencedColumns: ["id"]
           },
         ]
@@ -2396,7 +2425,7 @@ export type Database = {
       }
       riordina_progetti: { Args: { p_ids: string[] }; Returns: undefined }
       salva_contratto: {
-        Args: { p_contratto: Json; p_id: string; p_servizi: Json }
+        Args: { p_contratto: Json; p_id: string; p_voci: Json }
         Returns: string
       }
       salva_debito: {

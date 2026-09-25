@@ -12,6 +12,10 @@ export function contrattoToForm(c: ContrattoLista): ContrattoFormValues {
     data_inizio: c.data_inizio ?? "",
     data_fine: c.data_fine ?? "",
     note: c.note ?? "",
-    servizi: c.righe.map((r) => ({ servizio_id: r.servizio_id, prezzo: numero(r.prezzo) })),
+    voci: c.voci.map((v) => ({
+      descrizione: v.descrizione,
+      prezzo: numero(v.prezzo),
+      servizi: v.servizi.map((s) => s.id),
+    })),
   };
 }

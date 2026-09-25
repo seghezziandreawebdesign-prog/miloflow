@@ -16,7 +16,7 @@ export default async function ContrattiPage() {
     <>
       <PageHeader
         title="Contratti"
-        description="Che cosa paga ogni cliente: i servizi attivi con i prezzi e il totale."
+        description="Che cosa paga ogni cliente: le voci con i prezzi, i servizi collegati e il totale."
       />
       <Suspense>
         <ContrattiView contratti={contratti} />
