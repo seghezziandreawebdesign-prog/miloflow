@@ -184,6 +184,22 @@ select public._test_conta(
   1, 'il cambio di ambito del progetto si propaga alle task');
 update public.progetti set ambito = 'personale' where id = '30000000-0000-0000-0000-000000000002';
 
+-- Sottoprogetti: un solo livello, indipendenti dal padre (niente ereditarietà).
+insert into public.progetti (id, ambito, nome, parent_id) values
+  ('30000000-0000-0000-0000-000000000003', 'personale', 'P3 sotto P1', '30000000-0000-0000-0000-000000000001');
+select public._test_conta(
+  $q$select 1 from public.progetti where id = '30000000-0000-0000-0000-000000000003'
+     and ambito = 'personale' and cliente_id is null and parent_id = '30000000-0000-0000-0000-000000000001'$q$,
+  1, 'il sottoprogetto non eredita ambito né cliente dal padre');
+select public._test_rifiutato(
+  $q$insert into public.progetti (nome, parent_id) values ('Nipote', '30000000-0000-0000-0000-000000000003')$q$,
+  'sottoprogetto di secondo livello');
+select public._test_rifiutato(
+  $q$update public.progetti set parent_id = '30000000-0000-0000-0000-000000000002'
+     where id = '30000000-0000-0000-0000-000000000001'$q$,
+  'un progetto con sottoprogetti non può diventare figlio');
+delete from public.progetti where id = '30000000-0000-0000-0000-000000000003';
+
 -- Eventi: con un progetto ereditano ambito e cliente, con un cliente sono di lavoro,
 -- a giornata intera partono a mezzanotte di Roma.
 insert into public.eventi (id, ambito, titolo, inizio, progetto_id) values
@@ -348,6 +364,25 @@ select public._test_rifiutato(
 select public._test_rifiutato(
   $q$select public.completa_task('40000000-0000-0000-0000-000000000005')$q$,
   'completa una task di un cliente non suo');
+-- Progetti: scrive solo nell'ambito lavoro e sui propri clienti (mai senza cliente).
+insert into public.progetti (id, ambito, nome, cliente_id) values
+  ('30000000-0000-0000-0000-000000000010', 'lavoro', 'P collab', '10000000-0000-0000-0000-00000000000a');
+select public._test_rifiutato(
+  $q$insert into public.progetti (ambito, nome) values ('personale', 'X')$q$,
+  'crea un progetto personale');
+select public._test_rifiutato(
+  $q$insert into public.progetti (ambito, nome, cliente_id)
+     values ('lavoro', 'X', '10000000-0000-0000-0000-00000000000b')$q$,
+  'crea un progetto per un cliente non suo');
+select public._test_rifiutato(
+  $q$insert into public.progetti (ambito, nome) values ('lavoro', 'X')$q$,
+  'crea un progetto senza cliente');
+select public._test_righe(
+  $q$delete from public.progetti where id = '30000000-0000-0000-0000-000000000002'$q$,
+  0, 'elimina un progetto personale');
+select public._test_righe(
+  $q$delete from public.progetti where id = '30000000-0000-0000-0000-000000000010'$q$,
+  1, 'elimina un progetto del proprio cliente');
 -- Allegati delle task (bucket allegati, cartella task/<id>): valgono le policy della task.
 select public._test_conta(
   $q$select 1 where public.storage_accesso('allegati', 'task/40000000-0000-0000-0000-000000000001/x.png', 'scrittura')$q$,

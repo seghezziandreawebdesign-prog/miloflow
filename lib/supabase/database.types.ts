@@ -1010,6 +1010,8 @@ export type Database = {
           descrizione: string | null
           id: string
           nome: string
+          ordine: number
+          parent_id: string | null
           scadenza: string | null
           stato: Database["public"]["Enums"]["stato_progetto"]
           updated_at: string
@@ -1023,6 +1025,8 @@ export type Database = {
           descrizione?: string | null
           id?: string
           nome: string
+          ordine?: number
+          parent_id?: string | null
           scadenza?: string | null
           stato?: Database["public"]["Enums"]["stato_progetto"]
           updated_at?: string
@@ -1036,6 +1040,8 @@ export type Database = {
           descrizione?: string | null
           id?: string
           nome?: string
+          ordine?: number
+          parent_id?: string | null
           scadenza?: string | null
           stato?: Database["public"]["Enums"]["stato_progetto"]
           updated_at?: string
@@ -1053,6 +1059,20 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "v_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progetti_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "progetti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progetti_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "v_progetti"
             referencedColumns: ["id"]
           },
         ]
@@ -1908,6 +1928,8 @@ export type Database = {
           descrizione: string | null
           id: string | null
           nome: string | null
+          ordine: number | null
+          parent_id: string | null
           scadenza: string | null
           stato: Database["public"]["Enums"]["stato_progetto"] | null
           task_fatte: number | null
@@ -1927,6 +1949,20 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "v_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progetti_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "progetti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progetti_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "v_progetti"
             referencedColumns: ["id"]
           },
         ]
