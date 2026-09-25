@@ -109,6 +109,14 @@ insert into public.credenziali (servizio_id, etichetta, tipo, url_password_manag
   ('20000000-0000-0000-0000-000000000001', 'Pannello S1', 'link_password_manager', 'https://vault.example/s1'),
   ('20000000-0000-0000-0000-000000000004', 'Pannello S4', 'link_password_manager', 'https://vault.example/s4');
 
+-- CT1 per il cliente A (con S1), CT2 per il cliente B (con S2).
+insert into public.contratti (id, cliente_id, titolo) values
+  ('a0000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-00000000000a', 'CT1'),
+  ('a0000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-00000000000b', 'CT2');
+insert into public.contratti_servizi (contratto_id, servizio_id, prezzo) values
+  ('a0000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 200),
+  ('a0000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 90);
+
 insert into public.progetti (id, ambito, nome, cliente_id) values
   ('30000000-0000-0000-0000-000000000001', 'lavoro', 'P1', '10000000-0000-0000-0000-00000000000a'),
   ('30000000-0000-0000-0000-000000000002', 'personale', 'P2', null);
@@ -329,6 +337,8 @@ select public._test_conta('select 1 from public.servizi_clienti', 1, 'collegamen
 select public._test_conta('select 1 from public.v_servizi where costo is null', 1, 'v_servizi senza costi');
 select public._test_conta('select 1 from public.servizi_economico', 0, 'costi senza permesso budget');
 select public._test_conta('select 1 from public.servizi_clienti_economico', 0, 'prezzi di rivendita senza permesso budget');
+select public._test_conta('select 1 from public.contratti', 0, 'contratti senza permesso budget');
+select public._test_conta('select 1 from public.contratti_servizi', 0, 'righe dei contratti senza permesso budget');
 select public._test_conta('select 1 from public.credenziali', 0, 'credenziali senza permesso');
 -- 8 del seed iniziale + "Accesso" (migration servizi_senza_scadenza).
 select public._test_conta('select 1 from public.tipi_servizio', 9, 'tipi di servizio');
@@ -475,6 +485,11 @@ select public._test_come('00000000-0000-0000-0000-00000000000c');
 select public._test_conta('select 1 from public.servizi_economico', 1, 'costi con budget (solo S1)');
 select public._test_conta('select 1 from public.v_servizi where costo = 120', 1, 'v_servizi con costo di S1');
 select public._test_conta('select 1 from public.servizi_clienti_economico', 1, 'prezzo di rivendita di S1');
+select public._test_conta('select 1 from public.contratti', 1, 'contratti con budget (solo CT1 del cliente A)');
+select public._test_conta('select 1 from public.contratti_servizi', 1, 'righe visibili (solo quella di CT1)');
+select public._test_rifiutato(
+  $q$select public.salva_contratto(null, '{"cliente_id":"10000000-0000-0000-0000-00000000000a"}'::jsonb, '[]'::jsonb)$q$,
+  'crea un contratto con budget in sola lettura');
 select public._test_conta('select 1 from public.credenziali', 1, 'credenziali (solo S1)');
 select public._test_conta('select 1 from public.categorie where ambito = ''personale''', 0, 'nessuna categoria personale');
 select public._test_conta($q$select 1 from public.categorie where nome like 'CatTest%'$q$, 2, 'categorie di lavoro seminate (padre e figlia, mai la personale)');

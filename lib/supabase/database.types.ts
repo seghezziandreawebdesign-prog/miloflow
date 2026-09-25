@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       accessi_clienti: {
@@ -461,6 +486,118 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "v_clienti"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratti: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          created_by: string | null
+          data_fine: string | null
+          data_inizio: string | null
+          id: string
+          note: string | null
+          stato: Database["public"]["Enums"]["stato_contratto"]
+          titolo: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          created_by?: string | null
+          data_fine?: string | null
+          data_inizio?: string | null
+          id?: string
+          note?: string | null
+          stato?: Database["public"]["Enums"]["stato_contratto"]
+          titolo?: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_fine?: string | null
+          data_inizio?: string | null
+          id?: string
+          note?: string | null
+          stato?: Database["public"]["Enums"]["stato_contratto"]
+          titolo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratti_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratti_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "v_clienti"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratti_servizi: {
+        Row: {
+          contratto_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          ordine: number
+          prezzo: number
+          servizio_id: string
+          updated_at: string
+        }
+        Insert: {
+          contratto_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          ordine?: number
+          prezzo: number
+          servizio_id: string
+          updated_at?: string
+        }
+        Update: {
+          contratto_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          ordine?: number
+          prezzo?: number
+          servizio_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratti_servizi_contratto_id_fkey"
+            columns: ["contratto_id"]
+            isOneToOne: false
+            referencedRelation: "contratti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratti_servizi_servizio_id_fkey"
+            columns: ["servizio_id"]
+            isOneToOne: false
+            referencedRelation: "servizi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratti_servizi_servizio_id_fkey"
+            columns: ["servizio_id"]
+            isOneToOne: false
+            referencedRelation: "v_servizi"
             referencedColumns: ["id"]
           },
         ]
@@ -2258,6 +2395,10 @@ export type Database = {
         Returns: undefined
       }
       riordina_progetti: { Args: { p_ids: string[] }; Returns: undefined }
+      salva_contratto: {
+        Args: { p_contratto: Json; p_id: string; p_servizi: Json }
+        Returns: string
+      }
       salva_debito: {
         Args: { p_debito: Json; p_id: string; p_rate: Json }
         Returns: string
@@ -2346,6 +2487,7 @@ export type Database = {
         | "task"
         | "budget"
       stato_cliente: "attivo" | "potenziale" | "in_pausa" | "archiviato"
+      stato_contratto: "attivo" | "concluso"
       stato_movimento: "previsto" | "pagato"
       stato_progetto: "attivo" | "in_pausa" | "completato" | "archiviato"
       stato_servizio: "attivo" | "disdetto" | "archiviato"
@@ -2486,6 +2628,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       ambito: ["lavoro", "personale"],
@@ -2510,6 +2655,7 @@ export const Constants = {
         "budget",
       ],
       stato_cliente: ["attivo", "potenziale", "in_pausa", "archiviato"],
+      stato_contratto: ["attivo", "concluso"],
       stato_movimento: ["previsto", "pagato"],
       stato_progetto: ["attivo", "in_pausa", "completato", "archiviato"],
       stato_servizio: ["attivo", "disdetto", "archiviato"],
