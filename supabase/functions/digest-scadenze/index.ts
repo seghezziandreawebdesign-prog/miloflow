@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
 
   const digest = componiDigest({
     oggi,
-    siteUrl: Deno.env.get("SITE_URL") ?? "https://miloflow.vercel.app",
+    siteUrl: Deno.env.get("SITE_URL") ?? "https://miloflow.it",
     servizi: (servizi.data ?? [])
       // giorni null = servizio senza scadenza (accesso): non entra nel digest.
       .filter((s) => s.giorni_alla_scadenza !== null && s.giorni_alla_scadenza <= (s.preavviso_effettivo ?? 30))

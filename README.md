@@ -88,12 +88,12 @@ In Authentication:
 
 - **Sign In / Providers**: disattiva *Allow new users to sign up*.
 - **URL Configuration**:
-  - *Site URL*: l'URL di produzione, per esempio `https://miloflow.vercel.app`;
-  - *Redirect URLs*: `http://localhost:3000/**` e `https://<dominio-produzione>/**`.
+  - *Site URL*: l'URL di produzione, `https://miloflow.it`;
+  - *Redirect URLs*: `http://localhost:3000/**` e `https://miloflow.it/**`.
 
 ## Deploy
 
-Vercel, collegato al repository GitHub. In Vercel → Settings → Environment Variables vanno le stesse variabili di `.env.local`. `NEXT_PUBLIC_SITE_URL` va impostata con l'URL di produzione. Ogni push su `main` va in produzione, ogni branch genera una preview.
+Vercel, collegato al repository GitHub. L'URL di produzione è **https://miloflow.it** (dominio su SiteGround puntato a Vercel); `miloflow.vercel.app` resta come alias e `www.miloflow.it` fa redirect 308 al dominio principale. In Vercel → Settings → Environment Variables vanno le stesse variabili di `.env.local`. `NEXT_PUBLIC_SITE_URL` va impostata con l'URL di produzione (`https://miloflow.it`). Ogni push su `main` va in produzione, ogni branch genera una preview.
 
 ## Controlli
 
