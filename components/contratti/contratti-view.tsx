@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { ClienteLogo } from "@/components/clienti/cliente-logo";
 import { useApriEntita } from "@/components/drawer/use-apri-entita";
+import { APRI_PARAM, formatApri } from "@/lib/entita";
 import { EmptyState } from "@/components/empty-state";
 import { BarraFiltri, CampoRicerca } from "@/components/filtri/barra-filtri";
 import { FiltroChip } from "@/components/filtri/filtro-chip";
@@ -50,12 +51,21 @@ export function ContrattiView({ contratti }: { contratti: ContrattoLista[] }) {
     return true;
   });
 
+  // Un solo replace: chiudere il dialog e aprire il pannello in due passi
+  // separati lasciava ?nuovo=1 nell'URL e il dialog restava aperto.
+  function apriCreato(id: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("nuovo");
+    params.set(APRI_PARAM, formatApri({ tipo: "contratto", id }));
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
   const dialog = (
     <ContrattoDialog
       open={creaAperto}
       onOpenChange={setCreaAperto}
       defaultValues={contrattoVuoto()}
-      onSaved={(id) => apri({ tipo: "contratto", id })}
+      onSaved={apriCreato}
     />
   );
 

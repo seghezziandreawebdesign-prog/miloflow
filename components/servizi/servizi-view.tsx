@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { useApriEntita } from "@/components/drawer/use-apri-entita";
+import { APRI_PARAM, formatApri } from "@/lib/entita";
 import { EmptyState } from "@/components/empty-state";
 import { BarraFiltri, CampoRicerca } from "@/components/filtri/barra-filtri";
 import { FiltroChip } from "@/components/filtri/filtro-chip";
@@ -121,12 +122,22 @@ export function ServiziView({
 
   const filtriAttivi = stato !== "attivo" || tipo !== "tutti" || cliente !== "tutti" || chiPaga !== "tutti" || query !== "";
 
+  // Un solo replace: chiudere il dialog e aprire il pannello in due passi
+  // separati lasciava ?nuovo=1 nell'URL e il dialog restava aperto.
+  function apriCreato(id: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("nuovo");
+    params.delete("scadenza");
+    params.set(APRI_PARAM, formatApri({ tipo: "servizio", id }));
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
   const dialog = (
     <ServizioDialog
       open={creaAperto}
       onOpenChange={setCreaAperto}
       defaultValues={servizioVuoto(ambitoDiDefault(filtroAmbito), scadenzaIniziale)}
-      onSaved={(id) => apri({ tipo: "servizio", id })}
+      onSaved={apriCreato}
     />
   );
 
