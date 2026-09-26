@@ -134,19 +134,25 @@ export async function setRicevuta(id: string, path: string | null): Promise<Acti
   return { ok: true };
 }
 
-/** "Aggiorna previsti": il mese scelto e il successivo (come il cron). */
+/**
+ * "Aggiorna previsti": tutti i mesi, dal mese guardato (o da quello corrente,
+ * se è precedente) fino a un anno dopo oggi. La funzione è idempotente, quindi
+ * ripeterla non crea duplicati.
+ */
 export async function aggiornaPrevisti(mese: string): Promise<ActionResult<{ righe: number }>> {
   if (!dataSchema.safeParse(mese).success) return NESSUN_PERMESSO;
   const supabase = await createClient();
-  const primo = primoDelMese(mese);
-  const [a, b] = await Promise.all([
-    supabase.rpc("genera_previsti", { p_mese: primo }),
-    supabase.rpc("genera_previsti", { p_mese: aggiungiMesi(primo, 1) }),
-  ]);
-  const error = a.error ?? b.error;
-  if (error) return { ok: false, error: messaggioRpc(error, "Aggiornamento non riuscito") };
+  const corrente = primoDelMese(todayISO());
+  const da = primoDelMese(mese) < corrente ? primoDelMese(mese) : corrente;
+  const fine = aggiungiMesi(corrente, 12);
+  let righe = 0;
+  for (let m = da; m <= fine; m = aggiungiMesi(m, 1)) {
+    const { data, error } = await supabase.rpc("genera_previsti", { p_mese: m });
+    if (error) return { ok: false, error: messaggioRpc(error, "Aggiornamento non riuscito") };
+    righe += data ?? 0;
+  }
   revalida();
-  return { ok: true, data: { righe: (a.data ?? 0) + (b.data ?? 0) } };
+  return { ok: true, data: { righe } };
 }
 
 // ---------------------------------------------------------------------------
