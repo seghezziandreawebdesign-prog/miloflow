@@ -261,23 +261,19 @@ export function CampiPrincipali({
               className="min-w-[8.5rem] flex-1"
             />
             <div className="flex items-center gap-1.5">
-              <Input
-                type="time"
+              <OraAlBlur
                 aria-label="Ora di inizio"
                 value={valori.ora_inizio}
                 disabled={!valori.data_pianificata}
-                onChange={(e) => onChange({ ora_inizio: e.target.value })}
-                className="w-[6.5rem] shrink-0"
+                onCommit={(v) => onChange({ ora_inizio: v })}
               />
               <span className="text-xs text-muted-foreground">–</span>
-              <Input
-                type="time"
+              <OraAlBlur
                 aria-label="Ora di fine"
                 // La fine è inizio + durata: cambiandola si riscrive la durata.
                 value={oraFineDa(valori.ora_inizio, valori.durata_min)}
                 disabled={!valori.data_pianificata || !valori.ora_inizio}
-                onChange={(e) => onChange({ durata_min: durataDaOre(valori.ora_inizio, e.target.value) })}
-                className="w-[6.5rem] shrink-0"
+                onCommit={(v) => onChange({ durata_min: durataDaOre(valori.ora_inizio, v) })}
               />
             </div>
           </div>
@@ -308,6 +304,48 @@ export function CampiPrincipali({
 }
 
 /** Campo di testo che notifica il valore solo quando si esce dal campo. */
+/**
+ * Ora che si salva uscendo dal campo o con Invio. Nel pannello ogni modifica
+ * scrive sul server e il pannello si risincronizza: salvando a ogni tasto,
+ * l'ora si "sfalsava" mentre la stavi ancora scrivendo.
+ */
+function OraAlBlur({
+  value,
+  onCommit,
+  disabled,
+  "aria-label": ariaLabel,
+}: {
+  value: string;
+  onCommit: (value: string) => void;
+  disabled?: boolean;
+  "aria-label": string;
+}) {
+  const [bozza, setBozza] = useState(value);
+  const [origine, setOrigine] = useState(value);
+  // Se il valore cambia da fuori (salvataggio, altra scheda), riparte da lì.
+  if (value !== origine) {
+    setOrigine(value);
+    setBozza(value);
+  }
+  const commit = () => {
+    if (bozza !== value) onCommit(bozza);
+  };
+  return (
+    <Input
+      type="time"
+      aria-label={ariaLabel}
+      value={bozza}
+      disabled={disabled}
+      onChange={(e) => setBozza(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commit();
+      }}
+      className="w-[6.5rem] shrink-0"
+    />
+  );
+}
+
 export function TestoAlBlur({
   value,
   onCommit,
