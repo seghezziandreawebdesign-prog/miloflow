@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 
 // Una sola stringa letterale: il parser dei tipi di Supabase non legge le concatenazioni.
 const COLONNE_MOVIMENTO =
-  "id, ambito, data, importo, descrizione, categoria_id, stato, servizio_id, rata_id, periodo, metodo_pagamento_id, ricevuta_path, created_at, categoria_nome, categoria_colore, categoria_icona, categoria_parent_id, categoria_padre_nome, metodo_nome, metodo_tipo, metodo_cifre, servizio_nome, debito_id, debito_creditore, rata_numero, salvadanaio_id, salvadanaio_nome";
+  "id, ambito, data, importo, descrizione, categoria_id, stato, tipo, servizio_id, rata_id, periodo, metodo_pagamento_id, ricevuta_path, created_at, categoria_nome, categoria_colore, categoria_icona, categoria_parent_id, categoria_padre_nome, metodo_nome, metodo_tipo, metodo_cifre, servizio_nome, debito_id, debito_creditore, rata_numero, salvadanaio_id, salvadanaio_nome";
 
 type Ambitabile<Q> = Q & { eq: (col: "ambito", v: "lavoro" | "personale") => Q };
 
@@ -21,6 +21,7 @@ type RigaVista = {
   descrizione: string | null;
   categoria_id: string | null;
   stato: "pagato" | "previsto" | null;
+  tipo: "spesa" | "entrata" | null;
   servizio_id: string | null;
   rata_id: string | null;
   periodo: string | null;
@@ -52,6 +53,7 @@ function normalizzaMovimento(r: RigaVista): Movimento {
     descrizione: r.descrizione,
     categoria_id: r.categoria_id,
     stato: r.stato!,
+    tipo: r.tipo!,
     servizio_id: r.servizio_id,
     rata_id: r.rata_id,
     periodo: r.periodo,
@@ -209,6 +211,8 @@ export async function prossimiPrevisti(oggi: string, ambito: FiltroAmbito, giorn
       .from("v_movimenti")
       .select(COLONNE_MOVIMENTO)
       .eq("stato", "previsto")
+      // "Rate e spese previste": le entrate previste non sono da pagare.
+      .eq("tipo", "spesa")
       .lte("data", addDays(oggi, giorni)),
     ambito,
   )

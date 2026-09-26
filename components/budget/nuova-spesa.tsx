@@ -34,9 +34,9 @@ const AMBITI = [
   { value: "personale", label: "Personale" },
 ] as const;
 
-const STATI = [
-  { value: "pagato", label: "Pagata" },
-  { value: "previsto", label: "Prevista" },
+const TIPI = [
+  { value: "spesa", label: "Spesa" },
+  { value: "entrata", label: "Entrata" },
 ] as const;
 
 type Richiesta = Partial<MovimentoFormValues>;
@@ -126,6 +126,7 @@ export function MovimentoDialog({
   const set = <K extends keyof MovimentoFormValues>(k: K, v: MovimentoFormValues[K]) => setValori((x) => ({ ...x, [k]: v }));
   const importoValido = (parseImporto(valori.importo) ?? 0) > 0;
   const categorie = opzioni.data?.categorie ?? [];
+  const entrata = valori.tipo === "entrata";
 
   function avanti() {
     if (passo === 1) {
@@ -134,7 +135,8 @@ export function MovimentoDialog({
         return;
       }
       setErrori({});
-      setPasso(2);
+      // Le categorie sono di spesa: per un'entrata si salta quel passo.
+      setPasso(entrata ? 3 : 2);
     } else if (passo === 2) {
       setPasso(3);
     }
@@ -151,7 +153,7 @@ export function MovimentoDialog({
         return;
       }
       if (ricevuta) await caricaRicevuta(result.data.id, ricevuta);
-      toast.success(nuovo ? "Spesa salvata" : "Movimento aggiornato");
+      toast.success(nuovo ? (entrata ? "Entrata salvata" : "Spesa salvata") : "Movimento aggiornato");
       invalidaBudget(queryClient);
       router.refresh();
       onOpenChange(false);
@@ -159,10 +161,12 @@ export function MovimentoDialog({
     });
   }
 
-  const titolo = nuovo ? "Nuova spesa" : "Modifica movimento";
+  const titolo = nuovo ? (entrata ? "Nuova entrata" : "Nuova spesa") : "Modifica movimento";
   const sottotitolo = nuovo
     ? passo === 1
-      ? "Quanto hai speso?"
+      ? entrata
+        ? "Quanto hai incassato?"
+        : "Quanto hai speso?"
       : passo === 2
         ? "Per cosa?"
         : "Gli altri dettagli sono facoltativi."
@@ -176,7 +180,13 @@ export function MovimentoDialog({
         <DialogHeader>
           <div className="flex items-center gap-2">
             {nuovo && passo > 1 && (
-              <Button type="button" variant="ghost" size="icon-sm" aria-label="Indietro" onClick={() => setPasso((p) => (p === 3 ? 2 : 1))}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Indietro"
+                onClick={() => setPasso((p) => (p === 3 && !entrata ? 2 : 1))}
+              >
                 <ArrowLeft />
               </Button>
             )}
@@ -202,18 +212,23 @@ export function MovimentoDialog({
                   <FieldError>{errori.importo}</FieldError>
                 </Field>
                 {!bloccato && (
-                  <Segmented
-                    label=""
-                    value={valori.ambito}
-                    onChange={(ambito) => set("ambito", ambito)}
-                    opzioni={AMBITI}
-                    className="flex justify-center"
-                  />
+                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+                    <Segmented
+                      label=""
+                      value={valori.tipo}
+                      onChange={(tipo) => {
+                        set("tipo", tipo);
+                        if (tipo === "entrata") set("categoria_id", "");
+                      }}
+                      opzioni={TIPI}
+                    />
+                    <Segmented label="" value={valori.ambito} onChange={(ambito) => set("ambito", ambito)} opzioni={AMBITI} />
+                  </div>
                 )}
               </div>
             )}
 
-            {(passo === 2 || !nuovo) && (
+            {(passo === 2 || !nuovo) && !entrata && (
               <Field>
                 {!nuovo && <FieldLabel>Categoria</FieldLabel>}
                 {opzioni.isPending ? (
@@ -241,7 +256,10 @@ export function MovimentoDialog({
                 {nuovo && (
                   <p className="text-sm">
                     <span className="font-semibold tabular-nums">€ {valori.importo}</span>
-                    <span className="text-muted-foreground"> · {nomeCategoria(valori.categoria_id, categorie) ?? "Senza categoria"}</span>
+                    <span className="text-muted-foreground">
+                      {" · "}
+                      {entrata ? "Entrata" : (nomeCategoria(valori.categoria_id, categorie) ?? "Senza categoria")}
+                    </span>
                   </p>
                 )}
                 <Field data-invalid={Boolean(errori.descrizione) || undefined}>
@@ -262,7 +280,7 @@ export function MovimentoDialog({
                     <FieldError>{errori.data}</FieldError>
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="spesa-metodo">Pagato con</FieldLabel>
+                    <FieldLabel htmlFor="spesa-metodo">{entrata ? "Incassato con" : "Pagato con"}</FieldLabel>
                     <MetodoSelect
                       id="spesa-metodo"
                       metodi={opzioni.data?.metodi ?? []}
@@ -273,7 +291,15 @@ export function MovimentoDialog({
                   </Field>
                 </div>
                 {!bloccato && (
-                  <Segmented label="Stato" value={valori.stato} onChange={(stato) => set("stato", stato)} opzioni={STATI} />
+                  <Segmented
+                    label="Stato"
+                    value={valori.stato}
+                    onChange={(stato) => set("stato", stato)}
+                    opzioni={[
+                      { value: "pagato", label: entrata ? "Incassata" : "Pagata" },
+                      { value: "previsto", label: "Prevista" },
+                    ]}
+                  />
                 )}
                 {nuovo && (
                   <Field>
@@ -316,7 +342,7 @@ export function MovimentoDialog({
               ) : (
                 <Button type="submit" disabled={pending}>
                   {pending && <Loader2 className="animate-spin" />}
-                  {nuovo ? "Salva spesa" : "Salva"}
+                  {nuovo ? (entrata ? "Salva entrata" : "Salva spesa") : "Salva"}
                 </Button>
               )}
             </div>

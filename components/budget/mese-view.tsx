@@ -72,7 +72,8 @@ export function MeseView({
         )}
       </div>
 
-      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
+        <Contatore label="Guadagnato" valore={totali.guadagnato} tono={totali.guadagnato > 0 ? "text-scadenza-ok" : "text-muted-foreground"} />
         <Contatore label="Budget" valore={totali.budget} />
         <Contatore label="Speso" valore={totali.speso} />
         <Contatore label="Previsto da pagare" valore={totali.previsto} tono="text-muted-foreground" />

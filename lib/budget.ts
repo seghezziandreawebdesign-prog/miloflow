@@ -8,6 +8,7 @@ import type { Database } from "@/lib/supabase/database.types";
 type Enums = Database["public"]["Enums"];
 export type TipoDebito = Enums["tipo_debito"];
 export type StatoMovimento = Enums["stato_movimento"];
+export type TipoMovimento = Enums["tipo_movimento"];
 export type AmbitoCategoria = Enums["ambito_categoria"];
 export type Ambito = Enums["ambito"];
 
@@ -245,6 +246,7 @@ export type MovimentoBase = {
   data: string;
   importo: number;
   stato: StatoMovimento;
+  tipo: TipoMovimento;
   categoria_id: string | null;
   servizio_id: string | null;
   rata_id: string | null;
@@ -298,6 +300,8 @@ export type TotaliMese = {
   speso: number;
   previsto: number;
   rimanente: number;
+  /** Entrate incassate nel mese: fuori da budget, barre e spese. */
+  guadagnato: number;
   barre: BarraCategoria[];
 };
 
@@ -337,8 +341,10 @@ export function totaliMese(
 ): TotaliMese {
   const overrides = new Map(budgetMensili.map((b) => [b.categoria_id, b.importo]));
   const inAmbito = movimenti.filter((m) => ambito === "tutto" || m.ambito === ambito);
+  // Le entrate stanno fuori da budget e barre: contano solo nel guadagnato.
+  const spese = inAmbito.filter((m) => m.tipo !== "entrata");
   const perPadre = new Map<string | null, { speso: number; previsto: number }>();
-  for (const m of inAmbito) {
+  for (const m of spese) {
     const chiave = idPadre(m.categoria_id, categorie);
     const acc = perPadre.get(chiave) ?? { speso: 0, previsto: 0 };
     if (m.stato === "pagato") acc.speso += m.importo;
@@ -378,9 +384,10 @@ export function totaliMese(
   });
 
   const budget = somma(barre.map((b) => b.budget ?? 0));
-  const speso = somma(inAmbito.filter((m) => m.stato === "pagato").map((m) => m.importo));
-  const previsto = somma(inAmbito.filter((m) => m.stato === "previsto").map((m) => m.importo));
-  return { budget, speso, previsto, rimanente: arrotonda(budget - speso - previsto), barre };
+  const speso = somma(spese.filter((m) => m.stato === "pagato").map((m) => m.importo));
+  const previsto = somma(spese.filter((m) => m.stato === "previsto").map((m) => m.importo));
+  const guadagnato = somma(inAmbito.filter((m) => m.tipo === "entrata" && m.stato === "pagato").map((m) => m.importo));
+  return { budget, speso, previsto, rimanente: arrotonda(budget - speso - previsto), guadagnato, barre };
 }
 
 // ---------------------------------------------------------------------------
@@ -393,7 +400,7 @@ export type FettaCategoria = { id: string | null; nome: string; colore: string |
 export function spesaPerCategoria(movimenti: MovimentoBase[], categorie: Categoria[]): FettaCategoria[] {
   const acc = new Map<string | null, number>();
   for (const m of movimenti) {
-    if (m.stato !== "pagato") continue;
+    if (m.stato !== "pagato" || m.tipo === "entrata") continue;
     const chiave = idPadre(m.categoria_id, categorie);
     acc.set(chiave, (acc.get(chiave) ?? 0) + m.importo);
   }
@@ -412,7 +419,7 @@ export type PuntoMensile = { mese: string; lavoro: number; personale: number };
 export function spesaPerMese(movimenti: MovimentoBase[], mesi: string[]): PuntoMensile[] {
   const punti = new Map(mesi.map((m) => [m, { mese: m, lavoro: 0, personale: 0 }]));
   for (const m of movimenti) {
-    if (m.stato !== "pagato") continue;
+    if (m.stato !== "pagato" || m.tipo === "entrata") continue;
     const punto = punti.get(primoDelMese(m.data));
     if (!punto) continue;
     punto[m.ambito] += m.importo;
@@ -422,7 +429,7 @@ export function spesaPerMese(movimenti: MovimentoBase[], mesi: string[]): PuntoM
 
 /** Fisse = servizi e rate; variabili = tutto il resto (solo pagati). */
 export function fisseVsVariabili(movimenti: MovimentoBase[]): { fisse: number; variabili: number } {
-  const pagati = movimenti.filter((m) => m.stato === "pagato");
+  const pagati = movimenti.filter((m) => m.stato === "pagato" && m.tipo !== "entrata");
   // Fisse: servizi, rate e i versamenti del piano mensile di un salvadanaio.
   const fissa = (m: MovimentoBase) => m.servizio_id !== null || m.rata_id !== null || (Boolean(m.salvadanaio_id) && Boolean(m.periodo));
   const fisse = somma(pagati.filter(fissa).map((m) => m.importo));

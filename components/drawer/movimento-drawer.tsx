@@ -131,9 +131,16 @@ export function MovimentoDrawer({ id }: { id: string }) {
         <div className="flex items-center gap-3">
           <CategoriaIcona nome={m.categoria_icona} colore={m.categoria_colore} size="lg" />
           <div className="min-w-0">
-            <PannelloTitle className="truncate">{m.descrizione || categoria || "Movimento"}</PannelloTitle>
+            <PannelloTitle className="truncate">
+              {m.descrizione || categoria || (m.tipo === "entrata" ? "Entrata" : "Movimento")}
+            </PannelloTitle>
             <PannelloDescription>
-              <span className="text-lg font-semibold text-foreground tabular-nums">{formatCurrency(m.importo!)}</span>
+              <span
+                className={`text-lg font-semibold tabular-nums ${m.tipo === "entrata" ? "text-scadenza-ok" : "text-foreground"}`}
+              >
+                {m.tipo === "entrata" ? "+" : ""}
+                {formatCurrency(m.importo!)}
+              </span>
               {" · "}
               {capitalize(formatLongDate(m.data!))}
             </PannelloDescription>
@@ -257,6 +264,7 @@ export function MovimentoDrawer({ id }: { id: string }) {
           movimentoId={id}
           bloccato={generato}
           defaultValues={{
+            tipo: m.tipo ?? "spesa",
             ambito: m.ambito!,
             data: m.data!,
             importo: String(m.importo).replace(".", ","),

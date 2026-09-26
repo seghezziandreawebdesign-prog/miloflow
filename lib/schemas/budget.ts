@@ -29,6 +29,7 @@ export const numero = (v: string) => {
 // ---------------------------------------------------------------------------
 
 export const movimentoSchema = z.object({
+  tipo: z.enum(["spesa", "entrata"]),
   ambito: z.enum(["lavoro", "personale"]),
   data: dataISO,
   importo: importoObbligatorio,
@@ -40,16 +41,18 @@ export const movimentoSchema = z.object({
 export type MovimentoFormValues = z.infer<typeof movimentoSchema>;
 
 export function movimentoVuoto(ambito: "lavoro" | "personale", oggi: string): MovimentoFormValues {
-  return { ambito, data: oggi, importo: "", descrizione: "", categoria_id: "", stato: "pagato", metodo_pagamento_id: "" };
+  return { tipo: "spesa", ambito, data: oggi, importo: "", descrizione: "", categoria_id: "", stato: "pagato", metodo_pagamento_id: "" };
 }
 
 export function movimentoToDb(v: MovimentoFormValues) {
   return {
+    tipo: v.tipo,
     ambito: v.ambito,
     data: v.data,
     importo: numero(v.importo) ?? 0,
     descrizione: v.descrizione || null,
-    categoria_id: v.categoria_id || null,
+    // Le categorie sono di spesa: un'entrata non ne ha.
+    categoria_id: v.tipo === "entrata" ? null : v.categoria_id || null,
     stato: v.stato,
     metodo_pagamento_id: v.metodo_pagamento_id || null,
   };

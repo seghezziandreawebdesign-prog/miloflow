@@ -28,9 +28,9 @@ export function ListaMovimenti({ movimenti, oggi, scrittura }: { movimenti: Movi
     <div className="space-y-4">
       {[...giorni.entries()].map(([giorno, lista]) => (
         <section key={giorno}>
-          <h3 className="mb-1.5 flex items-baseline justify-between px-1 text-xs font-medium text-muted-foreground">
+          <h3 className="mb-1.5 flex items-baseline justify-between gap-2 px-1 text-xs font-medium text-muted-foreground">
             <span>{capitalize(formatGiornoRelativo(giorno, oggi))}</span>
-            <span className="tabular-nums">{formatCurrency(lista.reduce((acc, m) => acc + m.importo, 0))}</span>
+            <TotaliGiorno lista={lista} />
           </h3>
           <ul className="divide-y rounded-xl bg-card ring-1 ring-black/8">
             {lista.map((m) => (
@@ -40,6 +40,19 @@ export function ListaMovimenti({ movimenti, oggi, scrittura }: { movimenti: Movi
         </section>
       ))}
     </div>
+  );
+}
+
+/** Spese ed entrate del giorno, separate: sommarle insieme non direbbe nulla. */
+function TotaliGiorno({ lista }: { lista: Movimento[] }) {
+  const spese = lista.filter((m) => m.tipo !== "entrata").reduce((acc, m) => acc + m.importo, 0);
+  const entrate = lista.filter((m) => m.tipo === "entrata").reduce((acc, m) => acc + m.importo, 0);
+  return (
+    <span className="tabular-nums">
+      {entrate > 0 && <span className="text-scadenza-ok">+{formatCurrency(entrate)}</span>}
+      {entrate > 0 && spese > 0 && " · "}
+      {(spese > 0 || entrate === 0) && formatCurrency(spese)}
+    </span>
   );
 }
 
@@ -64,7 +77,9 @@ export function RigaMovimento({ movimento: m, scrittura, compatta }: { movimento
         <CategoriaIcona nome={m.categoria_icona} colore={m.categoria_colore} className={previsto ? "opacity-50" : undefined} />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            <span className={cn("truncate text-sm", !previsto && "font-medium text-foreground")}>{m.descrizione || categoria || "Movimento"}</span>
+            <span className={cn("truncate text-sm", !previsto && "font-medium text-foreground")}>
+              {m.descrizione || categoria || (m.tipo === "entrata" ? "Entrata" : "Movimento")}
+            </span>
             {m.servizio_id && <RefreshCw className="size-3 shrink-0" aria-label="Da un servizio" />}
             {m.rata_id && <Landmark className="size-3 shrink-0" aria-label="Rata di un debito" />}
             {m.salvadanaio_id && <PiggyBank className="size-3 shrink-0" aria-label="Versamento in un risparmio o investimento" />}
@@ -72,14 +87,23 @@ export function RigaMovimento({ movimento: m, scrittura, compatta }: { movimento
           </span>
           {!compatta && (
             <span className="block truncate text-xs text-muted-foreground">
-              {[categoria, origine, m.metodo_nome ? (m.metodo_cifre ? `${m.metodo_nome} •${m.metodo_cifre}` : m.metodo_nome) : null, previsto ? "previsto" : null]
+              {[m.tipo === "entrata" ? "entrata" : categoria, origine, m.metodo_nome ? (m.metodo_cifre ? `${m.metodo_nome} •${m.metodo_cifre}` : m.metodo_nome) : null, previsto ? "prevista" : null]
                 .filter(Boolean)
                 .join(" · ")}
               <span className={`ml-1.5 inline-block size-1.5 rounded-full align-middle ${m.ambito === "personale" ? "bg-ambito-personale" : "bg-ambito-lavoro"}`} />
             </span>
           )}
         </span>
-        <span className={cn("shrink-0 text-sm tabular-nums", !previsto && "font-medium text-foreground")}>{formatCurrency(m.importo)}</span>
+        <span
+          className={cn(
+            "shrink-0 text-sm tabular-nums",
+            !previsto && "font-medium text-foreground",
+            m.tipo === "entrata" && "text-scadenza-ok",
+          )}
+        >
+          {m.tipo === "entrata" ? "+" : ""}
+          {formatCurrency(m.importo)}
+        </span>
       </button>
       {previsto && scrittura && (
         <Button variant="outline" size="sm" className="shrink-0" onClick={() => setPaga(true)}>

@@ -54,6 +54,7 @@ const mov = (m: Partial<MovimentoBase> & { id: string; importo: number }): Movim
   ambito: "lavoro",
   data: "2026-09-10",
   stato: "pagato",
+  tipo: "spesa",
   categoria_id: null,
   servizio_id: null,
   rata_id: null,
@@ -229,6 +230,19 @@ describe("totali del mese", () => {
   it("nasconde le categorie vuote senza budget", () => {
     const t = totaliMese([], categorie, [], "tutto");
     expect(t.barre.map((b) => b.categoria?.id)).toEqual(["sw", "casa"]);
+  });
+
+  it("le entrate contano nel guadagnato e non nelle spese", () => {
+    const t = totaliMese(
+      [...movimenti, mov({ id: "6", importo: 900, tipo: "entrata" }), mov({ id: "7", importo: 50, tipo: "entrata", stato: "previsto" })],
+      categorie,
+      [],
+      "tutto",
+    );
+    expect(t.guadagnato).toBe(900);
+    expect(t.speso).toBe(747);
+    expect(t.previsto).toBe(25);
+    expect(t.barre.find((b) => b.categoria === null)).toMatchObject({ speso: 12 });
   });
 });
 

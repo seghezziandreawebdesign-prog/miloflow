@@ -1111,6 +1111,7 @@ export type Database = {
           salvadanaio_id: string | null
           servizio_id: string | null
           stato: Database["public"]["Enums"]["stato_movimento"]
+          tipo: Database["public"]["Enums"]["tipo_movimento"]
           updated_at: string
         }
         Insert: {
@@ -1129,6 +1130,7 @@ export type Database = {
           salvadanaio_id?: string | null
           servizio_id?: string | null
           stato?: Database["public"]["Enums"]["stato_movimento"]
+          tipo?: Database["public"]["Enums"]["tipo_movimento"]
           updated_at?: string
         }
         Update: {
@@ -1147,6 +1149,7 @@ export type Database = {
           salvadanaio_id?: string | null
           servizio_id?: string | null
           stato?: Database["public"]["Enums"]["stato_movimento"]
+          tipo?: Database["public"]["Enums"]["tipo_movimento"]
           updated_at?: string
         }
         Relationships: [
@@ -2123,6 +2126,7 @@ export type Database = {
           servizio_id: string | null
           servizio_nome: string | null
           stato: Database["public"]["Enums"]["stato_movimento"] | null
+          tipo: Database["public"]["Enums"]["tipo_movimento"] | null
           updated_at: string | null
         }
         Relationships: [
@@ -2531,6 +2535,7 @@ export type Database = {
         | "contanti"
         | "conto"
         | "altro"
+      tipo_movimento: "spesa" | "entrata"
       tipo_salvadanaio: "risparmio" | "investimento"
     }
     CompositeTypes: {
@@ -2700,6 +2705,7 @@ export const Constants = {
         "conto",
         "altro",
       ],
+      tipo_movimento: ["spesa", "entrata"],
       tipo_salvadanaio: ["risparmio", "investimento"],
     },
   },
