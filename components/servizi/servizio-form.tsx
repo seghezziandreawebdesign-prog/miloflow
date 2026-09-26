@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChevronDown, Loader2, Lock } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Controller, useFieldArray, useForm, useWatch, type FieldPath } from "react-hook-form";
@@ -14,7 +14,6 @@ import { Segmented } from "@/components/segmented";
 import { TipoIcona } from "@/components/tipo-icona";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,10 +29,6 @@ import { cn } from "@/lib/utils";
 
 import { ClientiPicker } from "./clienti-picker";
 import type { OpzioniServizio } from "./use-opzioni-servizio";
-
-const CAMPI_DETTAGLI: string[] = [
-  "ambito", "tipo_id", "fornitore", "rinnovo_automatico", "preavviso_giorni", "stato", "note", "clienti",
-];
 
 export function ServizioForm({
   servizioId,
@@ -55,7 +50,6 @@ export function ServizioForm({
   const form = useForm<ServizioFormValues>({ resolver: zodResolver(servizioSchema), defaultValues });
   const { register, control, handleSubmit, setError, formState } = form;
   const clientiField = useFieldArray({ control, name: "clienti" });
-  const [dettagliAperti, setDettagliAperti] = useState(isEdit);
   const [saving, startSaving] = useTransition();
 
   const tipoId = useWatch({ control, name: "tipo_id" });
@@ -83,7 +77,6 @@ export function ServizioForm({
         if (!result.ok) {
           for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
             setError(field as FieldPath<ServizioFormValues>, { message });
-            if (CAMPI_DETTAGLI.some((c) => field.startsWith(c))) setDettagliAperti(true);
           }
           toast.error(result.error);
           return;
@@ -104,9 +97,6 @@ export function ServizioForm({
         toast.success(isEdit ? "Servizio aggiornato" : "Servizio creato");
         onSaved(id);
       }),
-    (errors) => {
-      if (Object.keys(errors).some((k) => CAMPI_DETTAGLI.includes(k))) setDettagliAperti(true);
-    },
   );
 
   const costoNum = parseImporto(costo);
@@ -362,13 +352,9 @@ export function ServizioForm({
         </div>
       </fieldset>
 
-      <Collapsible open={dettagliAperti} onOpenChange={setDettagliAperti}>
-        <CollapsibleTrigger render={<Button type="button" variant="ghost" className="-ml-2 text-muted-foreground" />}>
-          <ChevronDown className={cn("transition-transform", dettagliAperti && "rotate-180")} />
-          Altri dettagli
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <FieldGroup className="mt-3 gap-4">
+      <fieldset className="space-y-3 rounded-lg border p-3">
+        <legend className="px-1 text-sm font-medium">Dettagli</legend>
+          <FieldGroup className="gap-4">
             <div className="flex flex-wrap gap-4">
               <Controller
                 control={control}
@@ -482,8 +468,7 @@ export function ServizioForm({
               <Textarea id="servizio-note" rows={3} {...register("note")} />
             </Field>
           </FieldGroup>
-        </CollapsibleContent>
-      </Collapsible>
+      </fieldset>
       </div>
       </div>
 
