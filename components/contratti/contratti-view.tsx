@@ -11,12 +11,28 @@ import { EmptyState } from "@/components/empty-state";
 import { BarraFiltri, CampoRicerca } from "@/components/filtri/barra-filtri";
 import { FiltroChip } from "@/components/filtri/filtro-chip";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/dates/format";
+import { formatCurrency, formatDate, todayISO } from "@/lib/dates/format";
 import type { ContrattoLista } from "@/lib/queries/contratti";
 import { contrattoVuoto } from "@/lib/schemas/contratti";
+import { cn } from "@/lib/utils";
 
 import { ContrattoDialog } from "./contratto-dialog";
 import { StatoContrattoBadge } from "./stato-badge";
+
+/** La scadenza si legge dalla lista, senza aprire il contratto. */
+function ScadenzaContratto({ contratto: c }: { contratto: ContrattoLista }) {
+  if (!c.data_fine) {
+    return c.data_inizio ? (
+      <p className="text-xs text-muted-foreground">dal {formatDate(c.data_inizio)}</p>
+    ) : null;
+  }
+  const scaduto = c.stato === "attivo" && c.data_fine < todayISO();
+  return (
+    <p className={cn("text-xs", scaduto ? "font-medium text-red-600" : "text-muted-foreground")}>
+      {scaduto ? "scaduto il" : "scade il"} {formatDate(c.data_fine)}
+    </p>
+  );
+}
 
 const FILTRI_STATO = [
   { value: "attivo", label: "Attivi" },
@@ -145,7 +161,10 @@ export function ContrattiView({ contratti }: { contratti: ContrattoLista[] }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-right text-sm font-medium tabular-nums">{formatCurrency(c.totale)}</p>
+                  <div className="text-right">
+                    <p className="text-sm font-medium tabular-nums">{formatCurrency(c.totale)}</p>
+                    <ScadenzaContratto contratto={c} />
+                  </div>
                   <StatoContrattoBadge stato={c.stato} />
                 </div>
               </button>
