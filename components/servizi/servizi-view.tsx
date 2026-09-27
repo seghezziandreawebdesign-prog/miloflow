@@ -111,7 +111,9 @@ export function ServiziView({
       if (scadenza === "senza" && giorni !== null) return false;
       if (scadenza === "tutti" && stato !== "tutti" && s.stato !== stato) return false;
       if (tipo !== "tutti" && s.tipo_id !== tipo) return false;
-      if (cliente !== "tutti" && !s.clienti.some((c) => c.id === cliente)) return false;
+      // "Nessuno" = i servizi miei, non collegati ad alcun cliente.
+      if (cliente === "nessuno" && s.clienti.length > 0) return false;
+      if (cliente !== "tutti" && cliente !== "nessuno" && !s.clienti.some((c) => c.id === cliente)) return false;
       if (chiPaga !== "tutti" && s.chi_paga !== chiPaga) return false;
       if (q && ![s.nome, s.fornitore, ...s.clienti.map((c) => c.nome)].some((v) => v?.toLowerCase().includes(q))) {
         return false;
@@ -218,7 +220,12 @@ export function ServiziView({
           <FiltroChip label="Tipo" value={tipo} onChange={setTipo} opzioni={[{ value: "tutti", label: "Tutti" }, ...tipi]} />
         )}
         {clienti.length > 0 && (
-          <FiltroChip label="Cliente" value={cliente} onChange={setCliente} opzioni={[{ value: "tutti", label: "Tutti" }, ...clienti]} />
+          <FiltroChip
+            label="Cliente"
+            value={cliente}
+            onChange={setCliente}
+            opzioni={[{ value: "tutti", label: "Tutti" }, { value: "nessuno", label: "Nessuno (solo miei)" }, ...clienti]}
+          />
         )}
         <FiltroChip label="Chi paga" value={chiPaga} onChange={setChiPaga} opzioni={FILTRI_CHI_PAGA} />
       </BarraFiltri>
