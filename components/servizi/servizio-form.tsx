@@ -117,6 +117,43 @@ export function ServizioForm({
           <FieldError errors={[err.nome]} />
         </Field>
 
+        {/* Le due scelte di fondo stanno in cima: cos'è (abbonamento o
+            accesso) e di chi è (attività o persona). Un accesso — email,
+            account Google… — non ha costi né scadenze: spariscono. */}
+        <div className="flex flex-wrap items-start gap-x-6 gap-y-4">
+          <Controller
+            control={control}
+            name="senza_scadenza"
+            render={({ field }) => (
+              <Segmented
+                label="Che cos'è"
+                value={field.value ? "accesso" : "scadenza"}
+                onChange={(v) => field.onChange(v === "accesso")}
+                opzioni={[
+                  { value: "scadenza", label: "Con scadenza" },
+                  { value: "accesso", label: "Accesso (email, account…)" },
+                ]}
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="ambito"
+            render={({ field }) => (
+              <Segmented
+                label="Di chi è"
+                value={field.value}
+                onChange={field.onChange}
+                opzioni={[
+                  { value: "lavoro", label: "Lavoro" },
+                  { value: "personale", label: "Personale" },
+                ]}
+              />
+            )}
+          />
+        </div>
+
+        {!senzaScadenza && (
         <div className="grid gap-4 sm:grid-cols-3">
           {mostraEconomico && (
             <Field data-invalid={Boolean(err.costo) || undefined}>
@@ -168,24 +205,7 @@ export function ServizioForm({
             </>
           )}
         </div>
-
-        <Field orientation="horizontal">
-          <Controller
-            control={control}
-            name="senza_scadenza"
-            render={({ field }) => (
-              <Checkbox
-                id="servizio-senza-scadenza"
-                aria-label="Senza scadenza"
-                checked={field.value}
-                onCheckedChange={(v) => field.onChange(v === true)}
-              />
-            )}
-          />
-          <FieldLabel htmlFor="servizio-senza-scadenza" className="font-normal">
-            Senza scadenza (accesso, email, account…)
-          </FieldLabel>
-        </Field>
+        )}
 
         <Field>
           <FieldLabel htmlFor="servizio-clienti">Clienti</FieldLabel>
@@ -203,9 +223,9 @@ export function ServizioForm({
         </Field>
 
         {/* Il prezzo che paga il cliente sta accanto al costo, non nei dettagli. */}
-        {mostraEconomico && clientiField.fields.length > 0 && (
+        {mostraEconomico && !senzaScadenza && clientiField.fields.length > 0 && (
           <Field>
-            <FieldLabel>Prezzo al cliente</FieldLabel>
+            <FieldLabel>Prezzo al cliente (facoltativo)</FieldLabel>
             <div className="space-y-2">
               {clientiField.fields.map((f, i) => {
                 const prezzo = parseImporto(clienti[i]?.prezzo_rivendita ?? "");
@@ -239,6 +259,7 @@ export function ServizioForm({
           </Field>
         )}
 
+        {!senzaScadenza && (
         <div className="grid gap-4 sm:grid-cols-2">
           <Controller
             control={control}
@@ -288,7 +309,8 @@ export function ServizioForm({
             </Field>
           )}
         </div>
-        {mostraEconomico && chiPaga === "io" && (
+        )}
+        {mostraEconomico && !senzaScadenza && chiPaga === "io" && (
           <Field>
             <FieldLabel>Categoria di spesa</FieldLabel>
             <Controller
@@ -355,24 +377,6 @@ export function ServizioForm({
       <fieldset className="space-y-3 rounded-lg border p-3">
         <legend className="px-1 text-sm font-medium">Dettagli</legend>
           <FieldGroup className="gap-4">
-            <div className="flex flex-wrap gap-4">
-              <Controller
-                control={control}
-                name="ambito"
-                render={({ field }) => (
-                  <Segmented
-                    label="Ambito"
-                    value={field.value}
-                    onChange={field.onChange}
-                    opzioni={[
-                      { value: "lavoro", label: "Lavoro" },
-                      { value: "personale", label: "Personale" },
-                    ]}
-                  />
-                )}
-              />
-            </div>
-
             <div className="grid gap-4 sm:grid-cols-2">
               <Field>
                 <FieldLabel>Tipo</FieldLabel>

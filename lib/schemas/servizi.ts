@@ -89,11 +89,12 @@ export function servizioToRpc(v: ServizioFormValues) {
       stato: v.stato,
       note: v.note,
     },
+    // Un accesso (email, account…) non ha costi: i dati economici si svuotano.
     p_economico: {
-      costo: numero(v.costo),
+      costo: v.senza_scadenza ? "" : numero(v.costo),
       valuta: "EUR",
-      metodo_pagamento_id: v.chi_paga === "io" ? v.metodo_pagamento_id : "",
-      categoria_spesa_id: v.categoria_spesa_id,
+      metodo_pagamento_id: !v.senza_scadenza && v.chi_paga === "io" ? v.metodo_pagamento_id : "",
+      categoria_spesa_id: v.senza_scadenza ? "" : v.categoria_spesa_id,
     },
     p_clienti: v.clienti.map((c) => ({ cliente_id: c.cliente_id, prezzo_rivendita: numero(c.prezzo_rivendita) })),
   };
